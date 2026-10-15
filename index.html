@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IENSRVERSE 2D Arcade | IE Nuestra Señora del Rosario - Chaparral</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Orbitron & Inter -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Inter:wght@300;400;600;700;800&display=swap">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            red: '#e50914',
+                            crimson: '#b71c1c',
+                            blue: '#00d2ff',
+                            gold: '#ffd700',
+                            dark: '#0a0b10',
+                            card: '#121520',
+                            border: '#1f293d'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'neon-red': '0 0 20px rgba(229, 9, 20, 0.6), 0 0 40px rgba(229, 9, 20, 0.2)',
+                        'neon-blue': '0 0 20px rgba(0, 210, 255, 0.6), 0 0 40px rgba(0, 210, 255, 0.2)',
+                        'neon-gold': '0 0 20px rgba(255, 215, 0, 0.6), 0 0 40px rgba(255, 215, 0, 0.2)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Arcade Effects */
+        body {
+            background-color: #08090d;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(229, 9, 20, 0.15), transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 210, 255, 0.1), transparent 30%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+            background-attachment: fixed;
+            color: #f3f4f6;
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.2) 50%,
+                rgba(0, 0, 0, 0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 99;
+            opacity: 0.4;
+        }
+
+        .glass-card {
+            background: rgba(18, 21, 32, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(229, 9, 20, 0.6);
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(229, 9, 20, 0.3);
+        }
+
+        .text-glow-red {
+            text-shadow: 0 0 10px rgba(229, 9, 20, 0.8), 0 0 20px rgba(229, 9, 20, 0.4);
+        }
+
+        .text-glow-blue {
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.8), 0 0 20px rgba(0, 210, 255, 0.4);
+        }
+
+        .text-glow-gold {
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+        }
+
+        /* Glitch Animation for Banner Title */
+        .glitch-title {
+            position: relative;
+            display: inline-block;
+        }
+
+        .glitch-title::before, .glitch-title::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            clip: rect(0, 0, 0, 0);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #08090d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e50914;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00d2ff;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-brand-red selection:text-white pb-20">
+    <div class="scanline"></div>
+
+    <!-- HEADER / NAVBAR INSTITUCIONAL -->
+    <header class="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-brand-red/30 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            
+            <!-- Branding con Escudo -->
+            <div class="flex items-center gap-4">
+                <div class="relative group cursor-pointer" onclick="filterBySubject('all')">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-brand-red via-brand-gold to-brand-blue rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+                    <img src="ESCUDOiensr.png" alt="Escudo IENSR Chaparral" class="relative w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg">
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-orbitron font-extrabold text-xl lg:text-2xl tracking-wider text-white">IENSR<span class="text-brand-red text-glow-red">VERSE</span></span>
+                        <span class="bg-brand-red/20 text-brand-red text-xs font-orbitron font-bold px-2 py-0.5 rounded border border-brand-red/40 uppercase animate-pulse">2D Arcade</span>
+                    </div>
+                    <p class="text-xs text-gray-400 font-medium hidden sm:block">IE Nuestra Señora del Rosario • Chaparral, Tolima</p>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="flex items-center gap-3">
+                <a href="#materias" class="hidden md:flex items-center gap-2 bg-brand-border hover:bg-gray-800 text-gray-200 text-sm font-semibold px-4 py-2 rounded-lg border border-gray-700 transition">
+                    <i class="fa-solid fa-layer-group text-brand-blue"></i> Materias
+                </a>
+                <button onclick="openSubmitModal()" class="flex items-center gap-2 bg-gradient-to-r from-brand-red to-brand-crimson hover:from-red-600 hover:to-red-800 text-white font-orbitron font-bold text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow-neon-red transition-all duration-300 transform active:scale-95">
+                    <i class="fa-solid fa-upload animate-bounce"></i> <span>Publicar Juego</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO / BANNER PRINCIPAL CON LEMA INSTITUCIONAL -->
+    <section class="relative overflow-hidden py-12 lg:py-20 px-4">
+        <div class="max-w-7xl mx-auto text-center relative z-10">
+            <!-- Badges -->
+            <div class="inline-flex items-center gap-2 bg-black/60 border border-brand-gold/40 px-4 py-1.5 rounded-full mb-6">
+                <i class="fa-solid fa-award text-brand-gold"></i>
+                <span class="text-xs sm:text-sm font-semibold text-brand-gold uppercase tracking-wider">Ciencia • Virtud • Trabajo</span>
+            </div>
+
+            <!-- Main Title -->
+            <h1 class="font-orbitron text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight uppercase leading-none mb-6">
+                El Multiverso Gamer de <br>
+                <span class="bg-gradient-to-r from-brand-red via-brand-gold to-brand-blue bg-clip-text text-transparent">Nuestra Señora del Rosario</span>
+            </h1>
+
+            <p class="max-w-3xl mx-auto text-gray-300 text-base sm:text-lg mb-8 leading-relaxed font-light">
+                Explora los videojuegos en 2D desarrollados por las mentes creativas del Chaparral. Batallas de lógica, aventuras educativas e historias interactivas conectadas a nuestras asignaturas.
+            </p>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mt-10">
+                <div class="bg-brand-card/80 border border-brand-border p-4 rounded-xl text-center">
+                    <div class="font-orbitron text-3xl font-bold text-brand-red text-glow-red" id="stat-total-games">12</div>
+                    <div class="text-xs text-gray-400 font-medium uppercase mt-1">Juegos Creados</div>
+                </div>
+                <div class="bg-brand-card/80 border border-brand-border p-4 rounded-xl text-center">
+                    <div class="font-orbitron text-3xl font-bold text-brand-blue text-glow-blue">8</div>
+                    <div class="text-xs text-gray-400 font-medium uppercase mt-1">Materias / Áreas</div>
+                </div>
+                <div class="bg-brand-card/80 border border-brand-border p-4 rounded-xl text-center">
+                    <div class="font-orbitron text-3xl font-bold text-brand-gold text-glow-gold">100%</div>
+                    <div class="text-xs text-gray-400 font-medium uppercase mt-1">Talento Rosario</div>
+                </div>
+                <div class="bg-brand-card/80 border border-brand-border p-4 rounded-xl text-center">
+                    <div class="font-orbitron text-3xl font-bold text-emerald-400">GH</div>
+                    <div class="text-xs text-gray-400 font-medium uppercase mt-1">GitHub Pages Ready</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEARCH & FILTER SYSTEM BY SUBJECTS -->
+    <section id="materias" class="max-w-7xl mx-auto px-4 my-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <div>
+                <h2 class="font-orbitron text-2xl lg:text-3xl font-extrabold text-white flex items-center gap-3">
+                    <i class="fa-solid fa-gamepad text-brand-red"></i> Categorías por Materia
+                </h2>
+                <p class="text-sm text-gray-400">Filtra las experiencias 2D según la asignatura académica</p>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative w-full md:w-80">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="searchInput" oninput="searchGames()" placeholder="Buscar juego o estudiante..." 
+                    class="w-full bg-brand-card border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-brand-red transition">
+            </div>
+        </div>
+
+        <!-- Subject Tabs Grid -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar scroll-smooth" id="subject-tabs">
+            <button onclick="filterBySubject('all')" class="subject-btn active shrink-0 bg-brand-red text-white font-orbitron text-xs font-bold px-5 py-2.5 rounded-lg transition-all shadow-neon-red flex items-center gap-2">
+                <i class="fa-solid fa-border-all"></i> Todas las Materias
+            </button>
+            <button onclick="filterBySubject('matematicas')" class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
+                <i class="fa-solid fa-calculator text-blue-400"></i> Matemáticas
+            </button>
+            <button onclick="filterBySubject('tecnologia')" class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
+                <i class="fa-solid fa-code text-green-400"></i> Tecnología e Informática
+            </button>
+            <button onclick="filterBySubject('ciencias-naturales')" class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
+                <i class="fa-solid fa-flask text-emerald-400"></i> Ciencias Naturales
+            </button>
+            <button onclick="filterBySubject('lenguaje')" class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-purple-400"></i> Lenguaje y Literatura
+            </button>
+            <button onclick="filterBySubject('sociales')" class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
+                <i class="fa-solid fa-earth-americas text-amber-400"></i> Ciencias Sociales
+            </button>
+            <button onclick="filterBySubject('ed-fisica')" class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
+                <i class="fa-solid fa-person-running text-red-400"></i> Edu. Física / Deporte
+            </button>
+            <button onclick="filterBySubject('ingles')" class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
+                <i class="fa-solid fa-language text-cyan-400"></i> Inglés (English)
+            </button>
+        </div>
+    </section>
+
+    <!-- GAMES GALLERY GRID -->
+    <main class="max-w-7xl mx-auto px-4 my-8">
+        <div id="games-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 lg:gap-8">
+            <!-- Dynamic Content Injected via JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-16 bg-brand-card/40 rounded-2xl border border-gray-800">
+            <i class="fa-solid fa-ghost text-5xl text-gray-600 mb-4 animate-bounce"></i>
+            <h3 class="font-orbitron text-xl text-white font-bold mb-2">No se encontraron juegos en esta categoría</h3>
+            <p class="text-gray-400 text-sm max-w-md mx-auto">Sé el primer estudiante en publicar un juego en este espacio utilizando la subcarpeta correspondiente en GitHub.</p>
+            <button onclick="openSubmitModal()" class="mt-6 inline-block bg-brand-red text-white font-orbitron text-xs font-bold px-5 py-2.5 rounded-lg shadow-neon-red">
+                Publicar Videojuego
+            </button>
+        </div>
+    </main>
+
+    <!-- MODAL DE REPRODUCTOR DE JUEGO (EMBED/FULLSCREEN) -->
+    <div id="gameModal" class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 lg:p-8 overflow-y-auto">
+        <!-- Top bar modal -->
+        <div class="flex items-center justify-between border-b border-gray-800 pb-4 max-w-7xl w-full mx-auto">
+            <div class="flex items-center gap-3">
+                <span id="modalSubjectBadge" class="bg-brand-blue/20 text-brand-blue text-xs font-orbitron font-bold px-3 py-1 rounded border border-brand-blue/40 uppercase">Materia</span>
+                <h3 id="modalGameTitle" class="font-orbitron text-xl sm:text-2xl font-bold text-white">Título del Juego</h3>
+                <span id="modalAuthor" class="text-xs text-gray-400 hidden sm:inline-block">Por: Estudiante</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a id="modalExternalLink" href="#" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-up-right-from-square"></i> <span class="hidden sm:inline">Abrir en Pestaña</span>
+                </a>
+                <button onclick="closeGameModal()" class="bg-brand-red text-white hover:bg-red-700 w-9 h-9 rounded-lg flex items-center justify-center font-bold transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Frame container -->
+        <div class="my-auto w-full max-w-6xl mx-auto aspect-video bg-black rounded-2xl border-2 border-brand-red/50 shadow-neon-red overflow-hidden relative">
+            <iframe id="gameIframe" src="" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
+        <!-- Footer info modal -->
+        <div class="max-w-7xl w-full mx-auto border-t border-gray-800 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p id="modalDescription" class="text-sm text-gray-300">Descripción del juego y objetivo académico.</p>
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+                <i class="fa-brands fa-github text-white text-base"></i> Ruta en GitHub: <code id="modalGitHubPath" class="text-brand-gold bg-black px-2 py-1 rounded font-mono">./juegos/matematicas/juego1/</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE GUÍA PARA PUBLICAR UN JUEGO -->
+    <div id="submitModal" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-brand-card border border-brand-red/50 rounded-2xl max-w-2xl w-full p-6 sm:p-8 relative shadow-neon-red">
+            <button onclick="closeSubmitModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-brand-red/20 rounded-xl flex items-center justify-center border border-brand-red/50 text-brand-red text-2xl">
+                    <i class="fa-solid fa-rocket"></i>
+                </div>
+                <div>
+                    <h3 class="font-orbitron text-xl font-bold text-white">¿Cómo publicar tu juego 2D?</h3>
+                    <p class="text-xs text-gray-400">Sigue la estructura de subcarpetas en GitHub Pages</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-sm text-gray-300">
+                <div class="flex items-start gap-3 bg-black/50 p-3.5 rounded-xl border border-gray-800">
+                    <span class="font-orbitron font-bold text-brand-red text-lg">01</span>
+                    <div>
+                        <p class="font-bold text-white">Crea tu carpeta en el repositorio</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Dentro del repositorio de GitHub de la IE, ubica la carpeta correspondiente a tu materia. Ejemplo: <code class="text-brand-blue">/juegos/matematicas/nombre-tu-juego/</code></p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3 bg-black/50 p-3.5 rounded-xl border border-gray-800">
+                    <span class="font-orbitron font-bold text-brand-blue text-lg">02</span>
+                    <div>
+                        <p class="font-bold text-white">Archivos del videojuego HTML5/2D</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Asegúrate de que tu archivo principal se llame exactamente <code class="text-brand-gold">index.html</code> e incluya tus assets (imágenes, sonidos, código JS).</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3 bg-black/50 p-3.5 rounded-xl border border-gray-800">
+                    <span class="font-orbitron font-bold text-brand-gold text-lg">03</span>
+                    <div>
+                        <p class="font-bold text-white">Registra la URL de tu subcarpeta</p>
+                        <p class="text-xs text-gray-400 mt-0.5">La dirección final será automáticamente: <br><code class="text-emerald-400 text-xs">https://ienuestra-senora-del-rosario.github.io/iensrverse/juegos/materia/tu-juego/</code></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-4 border-t border-gray-800 flex justify-between items-center">
+                <span class="text-xs text-gray-500">¿Dudas? Consulta al docente de Tecnología</span>
+                <button onclick="closeSubmitModal()" class="bg-gray-800 hover:bg-gray-700 text-white font-orbitron text-xs font-bold px-5 py-2.5 rounded-lg transition">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER INSTITUCIONAL -->
+    <footer class="mt-20 border-t border-gray-800 bg-black/80 py-10 px-4 text-center">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <img src="ESCUDOiensr.jpg" alt="Escudo IENSR" class="w-10 h-10 rounded-full border border-gray-700">
+                <div class="text-left">
+                    <p class="font-orbitron text-sm font-bold text-white">IE Nuestra Señora del Rosario</p>
+                    <p class="text-xs text-gray-500">Chaparral, Tolima - Colombia</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-gray-400">
+                &copy; <span id="current-year"></span> <span class="text-brand-red font-bold">IENSRVERSE</span>. Plataforma educativa de desarrollo de videojuegos en 2D.
+            </p>
+
+            <div class="flex items-center gap-4 text-gray-400 text-lg">
+                <a href="https://github.com" target="_blank" class="hover:text-white transition" title="Repositorio GitHub"><i class="fa-brands fa-github"></i></a>
+                <a href="#" class="hover:text-brand-red transition" title="Portal Institucional"><i class="fa-solid fa-graduation-cap"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT SYSTEM & GAME REPOSITORY DATA -->
+    <script>
+        // Set dynamic current year
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+
+        // BASE DE DATOS DE JUEGOS PUBLICADOS (Rutas relativas a subcarpetas en GitHub Pages)
+        const gamesData = [
+            {
+                id: 'mat-1',
+                title: 'Misión Álgebra: El Reino de Chaparral',
+                author: 'Carlos Andrés Gómez (Grado 10-1)',
+                subject: 'matematicas',
+                subjectName: 'Matemáticas',
+                badgeColor: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
+                description: 'Supera plataformas 2D respondiendo ecuaciones matemáticas para desbloquear los puentes del río Saldanha.',
+                image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80',
+                folderPath: './juegos/matematicas/mision-algebra/',
+                likes: 42
+            },
+            {
+                id: 'tec-1',
+                title: 'Cyber-Rosario: Invasion Bug',
+                author: 'Laura Sofia Molina (Grado 11-2)',
+                subject: 'tecnologia',
+                subjectName: 'Tecnología e Informática',
+                badgeColor: 'text-green-400 border-green-400/30 bg-green-400/10',
+                description: 'Juego tipo Shoot &apos;em up donde limpias los servidores del colegio de virus cibernéticos ejecutando código.',
+                image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=600&q=80',
+                folderPath: './juegos/tecnologia/cyber-rosario/',
+                likes: 68
+            },
+            {
+                id: 'nat-1',
+                title: 'BioGuardians: Parque Las Hermosas',
+                author: 'Equipo Ecológico (Grado 9-3)',
+                subject: 'ciencias-naturales',
+                subjectName: 'Ciencias Naturales',
+                badgeColor: 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10',
+                description: 'Un RPG 2D de recolección para proteger la fauna y flora nativa del Tolima clasificando ecosistemas.',
+                image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80',
+                folderPath: './juegos/ciencias-naturales/bioguardians/',
+                likes: 35
+            },
+            {
+                id: 'len-1',
+                title: 'Leyendas Tolimenses: La Ortografía Perdida',
+                author: 'Santiago Rojas (Grado 8-1)',
+                subject: 'lenguaje',
+                subjectName: 'Lenguaje y Literatura',
+                badgeColor: 'text-purple-400 border-purple-400/30 bg-purple-400/10',
+                description: 'Aventura gráfica de acertijos donde debes corregir textos clásicos para derrotar al Mohán.',
+                image: 'https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?auto=format&fit=crop&w=600&q=80',
+                folderPath: './juegos/lenguaje/leyendas-tolima/',
+                likes: 51
+            },
+            {
+                id: 'soc-1',
+                title: 'Ruta de la Independencia: Tolima 1819',
+                author: 'Mariana Silva (Grado 11-1)',
+                subject: 'sociales',
+                subjectName: 'Ciencias Sociales',
+                badgeColor: 'text-amber-400 border-amber-400/30 bg-amber-400/10',
+                description: 'Estrategia 2D por turnos reconstruyendo los hechos históricos y geográficos de nuestra región.',
+                image: 'https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?auto=format&fit=crop&w=600&q=80',
+                folderPath: './juegos/sociales/ruta-1819/',
+                likes: 29
+            },
+            {
+                id: 'edf-1',
+                title: 'Rosario Runner: Maratón Chaparral',
+                author: 'Daniel Torres (Grado 7-2)',
+                subject: 'ed-fisica',
+                subjectName: 'Educación Física',
+                badgeColor: 'text-red-400 border-red-400/30 bg-red-400/10',
+                description: 'Endless runner 2D esquivando obstáculos e identificando hábitos de vida saludable.',
+                image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80',
+                folderPath: './juegos/ed-fisica/rosario-runner/',
+                likes: 84
+            }
+        ];
+
+        let currentSubjectFilter = 'all';
+
+        // Render Games Cards into DOM
+        function renderGames(filter = 'all', searchQuery = '') {
+            const container = document.getElementById('games-container');
+            const emptyState = document.getElementById('empty-state');
+            container.innerHTML = '';
+
+            const filteredGames = gamesData.filter(game => {
+                const matchesSubject = filter === 'all' || game.subject === filter;
+                const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      game.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      game.subjectName.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesSubject && matchesSearch;
+            });
+
+            if (filteredGames.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                
+                filteredGames.forEach(game => {
+                    const card = document.createElement('div');
+                    card.className = 'glass-card rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 relative group';
+                    
+                    card.innerHTML = `
+                        <div>
+                            <!-- Card Image Banner -->
+                            <div class="relative h-44 rounded-xl overflow-hidden mb-4 bg-black">
+                                <img src="${game.image}" alt="${game.title}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500 opacity-80 group-hover:opacity-100">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                <span class="absolute top-3 left-3 text-[10px] font-orbitron font-bold px-2.5 py-1 rounded-md border ${game.badgeColor} uppercase tracking-wider backdrop-blur-md">
+                                    ${game.subjectName}
+                                </span>
+                                <div class="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs text-brand-gold flex items-center gap-1 font-orbitron">
+                                    <i class="fa-solid fa-heart text-brand-red"></i> <span>${game.likes}</span>
+                                </div>
+                            </div>
+
+                            <!-- Card Info -->
+                            <h3 class="font-orbitron text-lg font-bold text-white group-hover:text-brand-red transition line-clamp-1 mb-1">${game.title}</h3>
+                            <p class="text-xs text-brand-blue font-semibold mb-3 flex items-center gap-1.5">
+                                <i class="fa-solid fa-user-astronaut"></i> ${game.author}
+                            </p>
+                            <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4">${game.description}</p>
+                        </div>
+
+                        <!-- Card Footer Action -->
+                        <div class="pt-3 border-t border-gray-800/80 flex items-center justify-between gap-2">
+                            <div class="text-[11px] text-gray-500 font-mono flex items-center gap-1">
+                                <i class="fa-solid fa-folder-tree text-brand-gold"></i> Subcarpeta
+                            </div>
+                            <button onclick="launchGame('${game.id}')" class="bg-gradient-to-r from-brand-red to-brand-crimson hover:from-red-600 hover:to-red-800 text-white font-orbitron text-xs font-bold px-4 py-2 rounded-lg shadow-neon-red transition flex items-center gap-2 transform active:scale-95">
+                                <i class="fa-solid fa-play"></i> JUGAR 2D
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            document.getElementById('stat-total-games').textContent = gamesData.length;
+        }
+
+        // Filter Handlers
+        function filterBySubject(subjectKey) {
+            currentSubjectFilter = subjectKey;
+            
+            // Update Tab UI States
+            const tabs = document.querySelectorAll('.subject-btn');
+            tabs.forEach(tab => {
+                if (tab.getAttribute('onclick').includes(`'${subjectKey}'`)) {
+                    tab.className = 'subject-btn active shrink-0 bg-brand-red text-white font-orbitron text-xs font-bold px-5 py-2.5 rounded-lg transition-all shadow-neon-red flex items-center gap-2';
+                } else {
+                    tab.className = 'subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2';
+                }
+            });
+
+            const searchVal = document.getElementById('searchInput').value;
+            renderGames(subjectKey, searchVal);
+        }
+
+        function searchGames() {
+            const searchVal = document.getElementById('searchInput').value;
+            renderGames(currentSubjectFilter, searchVal);
+        }
+
+        // Launch Game Modal Functions
+        function launchGame(gameId) {
+            const game = gamesData.find(g => g.id === gameId);
+            if (!game) return;
+
+            document.getElementById('modalGameTitle').textContent = game.title;
+            document.getElementById('modalAuthor').textContent = `Por: ${game.author}`;
+            document.getElementById('modalSubjectBadge').textContent = game.subjectName;
+            document.getElementById('modalDescription').textContent = game.description;
+            document.getElementById('modalGitHubPath').textContent = game.folderPath;
+            
+            const iframe = document.getElementById('gameIframe');
+            iframe.src = game.folderPath + 'index.html';
+
+            const externalBtn = document.getElementById('modalExternalLink');
+            externalBtn.href = game.folderPath + 'index.html';
+
+            document.getElementById('gameModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeGameModal() {
+            const modal = document.getElementById('gameModal');
+            modal.classList.add('hidden');
+            document.getElementById('gameIframe').src = '';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Submit Guide Modal
+        function openSubmitModal() {
+            document.getElementById('submitModal').classList.remove('hidden');
+        }
+
+        function closeSubmitModal() {
+            document.getElementById('submitModal').classList.add('hidden');
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            renderGames('all');
+        });
+    </script>
+</body>
+</html>
