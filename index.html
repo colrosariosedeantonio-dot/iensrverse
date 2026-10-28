@@ -300,50 +300,6 @@
         </div>
     </main>
 
-    <!-- MODAL DE REPRODUCTOR DE JUEGO (EMBED/FULLSCREEN) -->
-    <div id="gameModal"
-        class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 lg:p-8 overflow-y-auto">
-        <!-- Top bar modal -->
-        <div class="flex items-center justify-between border-b border-gray-800 pb-4 max-w-7xl w-full mx-auto">
-            <div class="flex items-center gap-3">
-                <span id="modalSubjectBadge"
-                    class="bg-brand-blue/20 text-brand-blue text-xs font-orbitron font-bold px-3 py-1 rounded border border-brand-blue/40 uppercase">Materia</span>
-                <h3 id="modalGameTitle" class="font-orbitron text-xl sm:text-2xl font-bold text-white">Título del Juego
-                </h3>
-                <span id="modalAuthor" class="text-xs text-gray-400 hidden sm:inline-block">Por: Estudiante</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <a id="modalExternalLink" href="#" target="_blank"
-                    class="bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-up-right-from-square"></i> <span class="hidden sm:inline">Abrir en
-                        Pestaña</span>
-                </a>
-                <button onclick="closeGameModal()"
-                    class="bg-brand-red text-white hover:bg-red-700 w-9 h-9 rounded-lg flex items-center justify-center font-bold transition">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Frame container -->
-        <div
-            class="my-auto w-full max-w-6xl mx-auto aspect-video bg-black rounded-2xl border-2 border-brand-red/50 shadow-neon-red overflow-hidden relative">
-            <iframe id="gameIframe" src="" class="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen></iframe>
-        </div>
-
-        <!-- Footer info modal -->
-        <div
-            class="max-w-7xl w-full mx-auto border-t border-gray-800 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
-            <p id="modalDescription" class="text-sm text-gray-300">Descripción del juego y objetivo académico.</p>
-            <div class="flex items-center gap-2 text-xs text-gray-400">
-                <i class="fa-brands fa-github text-white text-base"></i> Ruta en GitHub: <code id="modalGitHubPath"
-                    class="text-brand-gold bg-black px-2 py-1 rounded font-mono">./juegos/matematicas/juego1/</code>
-            </div>
-        </div>
-    </div>
-
     <!-- MODAL DE GUÍA PARA PUBLICAR UN JUEGO -->
     <div id="submitModal"
         class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
@@ -548,6 +504,7 @@
                 filteredGames.forEach(game => {
                     const card = document.createElement('div');
                     card.className = 'glass-card rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 relative group';
+                    const gamePath = game.gamePath || game.folderPath + 'index.html';
 
                     card.innerHTML = `
                         <div>
@@ -576,9 +533,9 @@
                             <div class="text-[11px] text-gray-500 font-mono flex items-center gap-1">
                                 <i class="fa-solid fa-folder-tree text-brand-gold"></i> Subcarpeta
                             </div>
-                            <button onclick="launchGame('${game.id}')" class="bg-gradient-to-r from-brand-red to-brand-crimson hover:from-red-600 hover:to-red-800 text-white font-orbitron text-xs font-bold px-4 py-2 rounded-lg shadow-neon-red transition flex items-center gap-2 transform active:scale-95">
+                            <a href="${gamePath}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${game.title} en una nueva pestaña" class="bg-gradient-to-r from-brand-red to-brand-crimson hover:from-red-600 hover:to-red-800 text-white font-orbitron text-xs font-bold px-4 py-2 rounded-lg shadow-neon-red transition flex items-center gap-2 transform active:scale-95">
                                 <i class="fa-solid fa-play"></i> JUGAR 2D
-                            </button>
+                            </a>
                         </div>
                     `;
                     container.appendChild(card);
@@ -609,35 +566,6 @@
         function searchGames() {
             const searchVal = document.getElementById('searchInput').value;
             renderGames(currentSubjectFilter, searchVal);
-        }
-
-        // Launch Game Modal Functions
-        function launchGame(gameId) {
-            const game = gamesData.find(g => g.id === gameId);
-            if (!game) return;
-
-            document.getElementById('modalGameTitle').textContent = game.title;
-            document.getElementById('modalAuthor').textContent = `Por: ${game.author}`;
-            document.getElementById('modalSubjectBadge').textContent = game.subjectName;
-            document.getElementById('modalDescription').textContent = game.description;
-            const gamePath = game.gamePath || game.folderPath + 'index.html';
-            document.getElementById('modalGitHubPath').textContent = game.gamePath || game.folderPath;
-
-            const iframe = document.getElementById('gameIframe');
-            iframe.src = gamePath;
-
-            const externalBtn = document.getElementById('modalExternalLink');
-            externalBtn.href = gamePath;
-
-            document.getElementById('gameModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeGameModal() {
-            const modal = document.getElementById('gameModal');
-            modal.classList.add('hidden');
-            document.getElementById('gameIframe').src = '';
-            document.body.style.overflow = 'auto';
         }
 
         // Submit Guide Modal
