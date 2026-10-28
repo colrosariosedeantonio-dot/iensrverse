@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Mico Tropical: Aventura Frutal & Matemática</title>
+  <style>
+    :root {
+      --ink: #18352d;
+      --lime: #d8ff67;
+      --pink: #ff7198;
+      --gold: #ffd700
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #073f3d;
+      color: #fff;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      touch-action: none;
+      user-select: none
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    #gameShell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 1100px;
+      max-height: 760px;
+      background: #72e6cf;
+      overflow: hidden
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      touch-action: none
+    }
+
+    #hud {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: calc(10px + env(safe-area-inset-top)) 12px 0;
+      pointer-events: none;
+      text-shadow: 0 2px 3px #164e45;
+      z-index: 5
+    }
+
+    .pill {
+      background: #123f37d9;
+      border: 2px solid #ffffff55;
+      border-radius: 16px;
+      padding: 7px 12px;
+      font-size: clamp(11px, 2.5vw, 15px);
+      font-weight: 800;
+      white-space: nowrap
+    }
+
+    /* Ventanas emergentes / Modales */
+    .overlayModal {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(90%, 520px);
+      padding: 22px;
+      border: 3px solid #fff9;
+      border-radius: 24px;
+      background: #104b40ee;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 20;
+      backdrop-filter: blur(4px)
+    }
+
+    .overlayModal h1 {
+      margin: 0 0 10px;
+      font-size: clamp(24px, 5.5vw, 38px);
+      line-height: 1.1;
+      color: var(--lime)
+    }
+
+    .overlayModal p {
+      margin: 8px 0 16px;
+      line-height: 1.4;
+      font-weight: 600;
+      font-size: 15px
+    }
+
+    /* Estilos de Botones */
+    button {
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 900;
+      color: #18352d;
+      background: var(--lime);
+      border-radius: 15px;
+      padding: 12px 20px;
+      box-shadow: 0 4px 0 #85ae2d;
+      touch-action: manipulation;
+      transition: transform 0.05s, background 0.2s
+    }
+
+    button:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #85ae2d
+    }
+
+    /* Desafío Matemático */
+    #mathModal {
+      display: none;
+      background: #0d3a32f6;
+      border-color: var(--gold)
+    }
+
+    #mathModal h2 {
+      color: var(--gold);
+      margin: 0 0 10px;
+      font-size: 26px
+    }
+
+    #mathQuestion {
+      font-size: 32px;
+      font-weight: 900;
+      background: #082721;
+      padding: 14px;
+      border-radius: 16px;
+      border: 2px dashed var(--gold);
+      margin: 15px 0;
+      color: #fff
+    }
+
+    .mathOptions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 15px
+    }
+
+    .mathBtn {
+      background: #ffffff;
+      color: #123f37;
+      font-size: 22px;
+      box-shadow: 0 4px 0 #b3b3b3;
+      border-radius: 14px;
+      padding: 12px
+    }
+
+    .mathBtn:hover {
+      background: var(--lime)
+    }
+
+    /* Controles en Pantalla */
+    #controls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(12px + env(safe-area-inset-bottom));
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 16px;
+      pointer-events: none;
+      z-index: 10
+    }
+
+    .pad {
+      display: grid;
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(2, 48px);
+      gap: 5px;
+      pointer-events: auto
+    }
+
+    .pad button,
+    .action button {
+      background: #fffde4e8;
+      border: 2px solid #ffffffaa;
+      box-shadow: 0 4px 0 #3b7e6a;
+      color: #174b3f;
+      font-size: 22px;
+      padding: 0;
+      border-radius: 15px;
+      min-width: 48px;
+      min-height: 44px
+    }
+
+    .pad .up {
+      grid-column: 2;
+      grid-row: 1
+    }
+
+    .pad .left {
+      grid-column: 1;
+      grid-row: 2
+    }
+
+    .pad .down {
+      grid-column: 2;
+      grid-row: 2
+    }
+
+    .pad .right {
+      grid-column: 3;
+      grid-row: 2
+    }
+
+    .action {
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end
+    }
+
+    .action button {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      font-size: 14px;
+      background: #ffdf78;
+      font-weight: 900
+    }
+
+    @media (min-width:700px) {
+      #controls {
+        padding: 0 28px 20px
+      }
+
+      .pad {
+        grid-template-columns: repeat(3, 62px);
+        grid-template-rows: repeat(2, 55px)
+      }
+
+      .pad button {
+        font-size: 26px
+      }
+
+      .action button {
+        width: 76px;
+        height: 76px
+      }
+    }
+
+    @media (max-height:480px) {
+      #controls {
+        bottom: 6px
+      }
+
+      .pad {
+        grid-template-columns: repeat(3, 43px);
+        grid-template-rows: repeat(2, 37px);
+        gap: 3px
+      }
+
+      .pad button {
+        min-height: 36px;
+        min-width: 40px
+      }
+
+      .action button {
+        height: 50px;
+        width: 50px
+      }
+
+      #hud {
+        padding-top: 6px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="gameShell">
+    <canvas id="game" width="960" height="600" aria-label="Juego Mico Tropical"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div class="pill" id="levelLabel">🌴 NIVEL 1/5</div>
+      <div class="pill" id="fruitLabel">🍌 Frutas: 0/0</div>
+      <div class="pill" id="lifeLabel">❤️❤️❤️</div>
+    </div>
+
+    <!-- Modal Principal / Inicio / Fin -->
+    <div id="centerMsg" class="overlayModal">
+      <h1>🐒 Mico Tropical</h1>
+      <p>¡Corre, salta y recoge todas las frutas! Esquiva enemigos y resuelve acertijos de matemáticas cuando estés en
+        peligro para recuperar tus vidas.</p>
+      <p>⌨️ Flechas o A/D para moverte · ↑, W o ESPACIO para saltar<br>📱 Controles táctiles en pantalla.</p>
+      <button id="startBtn">¡JUGAR AHORA!</button>
+    </div>
+
+    <!-- Modal de Desafío Matemático -->
+    <div id="mathModal" class="overlayModal">
+      <h2>🧠 ¡DESAFÍO MATEMÁTICO!</h2>
+      <p>¡Responde correctamente para salvar tu vida!</p>
+      <div id="mathQuestion">5 + 3 = ?</div>
+      <div class="mathOptions" id="mathOptions"></div>
+    </div>
+
+    <!-- Botones Táctiles -->
+    <div id="controls">
+      <div class="pad">
+        <button class="up" data-key="ArrowUp" aria-label="Saltar">⬆</button>
+        <button class="left" data-key="ArrowLeft" aria-label="Izquierda">⬅</button>
+        <button class="down" data-key="ArrowDown" aria-label="Agacharse">⬇</button>
+        <button class="right" data-key="ArrowRight" aria-label="Derecha">➡</button>
+      </div>
+      <div class="action"><button id="jumpBtn" data-key="Space">SALTO<br>🐾</button></div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // -------------------------------------------------------------
+      // SINTETIZADOR DE AUDIO (Web Audio API)
+      // -------------------------------------------------------------
+      class SoundEffects {
+        constructor() {
+          this.ctx = null;
+        }
+        init() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        }
+        playTone(freq, type, duration, startVol = 0.1, endVol = 0) {
+          if (!this.ctx) return;
+          try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(startVol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(Math.max(endVol, 0.0001), this.ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+          } catch (e) { }
+        }
+        jump() {
+          if (!this.ctx) return;
+          try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(450, this.ctx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.15);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.15);
+          } catch (e) { }
+        }
+        fruit() {
+          this.playTone(587, 'sine', 0.08, 0.12);
+          setTimeout(() => this.playTone(880, 'sine', 0.12, 0.12), 60);
+        }
+        enemyStomp() {
+          this.playTone(220, 'square', 0.08, 0.15);
+          setTimeout(() => this.playTone(440, 'triangle', 0.1, 0.15), 70);
+        }
+        hurt() {
+          if (!this.ctx) return;
+          try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+            osc.frequency.linearRampToValueAtTime(60, this.ctx.currentTime + 0.25);
+            gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.25);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.25);
+          } catch (e) { }
+        }
+        mathOpen() {
+          this.playTone(320, 'triangle', 0.1, 0.1);
+          setTimeout(() => this.playTone(480, 'triangle', 0.15, 0.1), 90);
+        }
+        correct() {
+          this.playTone(523, 'sine', 0.1, 0.15);
+          setTimeout(() => this.playTone(659, 'sine', 0.1, 0.15), 100);
+          setTimeout(() => this.playTone(783, 'sine', 0.2, 0.18), 200);
+        }
+        wrong() {
+          this.playTone(200, 'sawtooth', 0.15, 0.18);
+          setTimeout(() => this.playTone(140, 'sawtooth', 0.25, 0.2), 140);
+        }
+        win() {
+          const notes = [440, 554, 659, 880];
+          notes.forEach((n, i) => {
+            setTimeout(() => this.playTone(n, 'triangle', 0.18, 0.15), i * 110);
+          });
+        }
+      }
+
+      const sfx = new SoundEffects();
+
+      // -------------------------------------------------------------
+      // VARIABLES Y CONFIGURACIÓN DEL JUEGO
+      // -------------------------------------------------------------
+      const canvas = document.getElementById('game'), ctx = canvas.getContext('2d');
+      const msg = document.getElementById('centerMsg'), startBtn = document.getElementById('startBtn');
+      const mathModal = document.getElementById('mathModal'), mathQuestion = document.getElementById('mathQuestion'), mathOptions = document.getElementById('mathOptions');
+      const levelLabel = document.getElementById('levelLabel'), fruitLabel = document.getElementById('fruitLabel'), lifeLabel = document.getElementById('lifeLabel');
+      const W = 960, H = 600, keys = new Set();
+
+      let running = false, level = 0, score = 0, lives = 3, world, player, camera = 0, last = 0, invuln = 0;
+      let particles = [];
+      let animTimer = 0; // Para sincronizar caminata
+
+      const levelNames = ['La playa de las bananas', 'La jungla saltarina', 'El río de los cocodrilos', 'El volcán frutal', 'El templo de la selva'];
+      const configs = [
+        { length: 2100, platforms: 5, enemies: 3, fruit: 13, speed: 1.25, gap: 115 },
+        { length: 2450, platforms: 7, enemies: 5, fruit: 16, speed: 1.65, gap: 135 },
+        { length: 2750, platforms: 8, enemies: 7, fruit: 18, speed: 2.0, gap: 150 },
+        { length: 3050, platforms: 10, enemies: 9, fruit: 21, speed: 2.3, gap: 165 },
+        { length: 3400, platforms: 12, enemies: 12, fruit: 25, speed: 2.65, gap: 175 }
+      ];
+
+      const rand = (a, b) => a + Math.random() * (b - a);
+
+      function buildLevel(n) {
+        const c = configs[n], plats = [{ x: 0, y: 495, w: 500, h: 105 }, { x: 570, y: 495, w: 350, h: 105 }];
+        let x = 920;
+        while (x < c.length - 280) {
+          let gap = rand(75, c.gap), pw = rand(115, 235), py = rand(365, 475);
+          x += gap; if (x + pw > c.length - 180) pw = c.length - 180 - x;
+          if (pw > 55) plats.push({ x, y: py, w: pw, h: 18 });
+          x += pw;
+          if (Math.random() < .35) plats.push({ x: x - 80, y: 495, w: rand(100, 220), h: 105 });
+        }
+        plats.push({ x: c.length - 210, y: 495, w: 210, h: 105 });
+        const fruits = [];
+        for (let i = 0; i < c.fruit; i++) {
+          let fx = rand(100, c.length - 220), fy = rand(300, 455);
+          const near = plats.filter(p => fx > p.x - 15 && fx < p.x + p.w + 15).sort((a, b) => Math.abs(a.y - fy) - Math.abs(b.y - fy))[0];
+          if (near) fy = Math.min(near.y - 28, Math.max(near.y - 90, fy));
+          fruits.push({ x: fx, y: fy, type: ['🍌', '🍍', '🥭', '🍉', '🍊'][i % 5], got: false });
+        }
+        const enemies = [];
+        for (let i = 0; i < c.enemies; i++) {
+          const ex = rand(300, c.length - 250), p = plats.filter(p => ex >= p.x && ex <= p.x + p.w && p.y >= 430).sort((a, b) => a.y - b.y)[0] || plats[0];
+          enemies.push({ x: ex, y: p.y - 34, w: 34, h: 32, vx: (Math.random() < .5 ? -1 : 1) * c.speed, base: p.x, end: p.x + p.w - 35, type: ['🦀', '🐍', '🐗', '🦜', '🐊'][i % 5], alive: true });
+        }
+        return { length: c.length, plats, fruits, enemies, goal: c.length - 100, name: levelNames[n] };
+      }
+
+      function resetPlayer() {
+        player = { x: 60, y: 420, w: 38, h: 50, vx: 0, vy: 0, onGround: false, face: 1, walkFrame: 0 };
+        camera = 0;
+        invuln = 1.2;
+      }
+
+      function startGame() {
+        sfx.init();
+        level = 0; score = 0; lives = 3;
+        loadLevel();
+        running = true;
+        msg.style.display = 'none';
+        mathModal.style.display = 'none';
+        last = performance.now();
+        requestAnimationFrame(loop);
+      }
+
+      function loadLevel() { world = buildLevel(level); resetPlayer(); updateHUD() }
+      function updateHUD() {
+        levelLabel.textContent = `🌴 NIVEL ${level + 1}/5`;
+        fruitLabel.textContent = `🍌 Frutas: ${world.fruits.filter(f => f.got).length}/${world.fruits.length} · ⭐ ${score}`;
+        lifeLabel.textContent = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
+      }
+
+      function rectHit(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y }
+
+      function jump() {
+        if (!running) return;
+        if (player.onGround) {
+          player.vy = -650;
+          player.onGround = false;
+          sfx.jump();
+        }
+      }
+
+      function pressed(k) { return keys.has(k) || keys.has(k.toLowerCase()) }
+
+      // -------------------------------------------------------------
+      // SISTEMA DE MATEMÁTICAS Y DAÑO
+      // -------------------------------------------------------------
+      function triggerMathChallenge(fallPenalty = false, levelTransition = false) {
+        running = false;
+        sfx.mathOpen();
+        mathModal.querySelector('h2').textContent = levelTransition ? '🧠 ¡PREGUNTA PARA AVANZAR!' : '🧠 ¡DESAFÍO MATEMÁTICO!';
+        mathModal.querySelector('p').textContent = levelTransition ? 'Responde correctamente para pasar al siguiente nivel.' : '¡Responde correctamente para salvar tu vida!';
+
+        // Generar preguntas adaptadas al nivel actual
+        let num1, num2, op, answer;
+        const opType = Math.floor(Math.random() * (level > 2 ? 3 : 2));
+
+        if (opType === 0) { // Suma
+          num1 = Math.floor(rand(5, 12 + level * 5));
+          num2 = Math.floor(rand(3, 10 + level * 4));
+          op = '+';
+          answer = num1 + num2;
+        } else if (opType === 1) { // Resta
+          num1 = Math.floor(rand(10, 20 + level * 5));
+          num2 = Math.floor(rand(1, num1 - 1));
+          op = '-';
+          answer = num1 - num2;
+        } else { // Multiplicación sencilla
+          num1 = Math.floor(rand(2, 6 + Math.floor(level / 2)));
+          num2 = Math.floor(rand(2, 9));
+          op = '×';
+          answer = num1 * num2;
+        }
+
+        mathQuestion.textContent = `${num1} ${op} ${num2} = ?`;
+
+        // Crear opciones de respuesta
+        const options = new Set([answer]);
+        while (options.size < 4) {
+          let offset = (Math.random() < 0.5 ? 1 : -1) * Math.floor(rand(1, 6));
+          let wrong = answer + offset;
+          if (wrong >= 0 && wrong !== answer) options.add(wrong);
+        }
+
+        const shuffled = Array.from(options).sort(() => Math.random() - 0.5);
+        mathOptions.innerHTML = '';
+
+        shuffled.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'mathBtn';
+          btn.textContent = opt;
+          btn.onclick = () => handleMathAnswer(opt === answer, fallPenalty, levelTransition);
+          mathOptions.appendChild(btn);
+        });
+
+        mathModal.style.display = 'block';
+      }
+
+      function handleMathAnswer(isCorrect, fallPenalty, levelTransition = false) {
+        if (levelTransition) {
+          if (!isCorrect) {
+            sfx.wrong();
+            triggerMathChallenge(false, true);
+            return;
+          }
+
+          sfx.correct();
+          mathModal.style.display = 'none';
+          level++;
+          loadLevel();
+          msg.innerHTML = `<h1>¡Nivel Superado! 🌺</h1><p>${world.name}<br>¡Más frutas y desafíos te esperan!</p><button id="nextBtn">CONTINUAR</button>`;
+          msg.style.display = 'block';
+          document.getElementById('nextBtn').onclick = () => {
+            msg.style.display = 'none';
+            running = true;
+            last = performance.now();
+            requestAnimationFrame(loop);
+          };
+          return;
+        }
+
+        mathModal.style.display = 'none';
+        if (isCorrect) {
+          sfx.correct();
+          score += 15;
+          createParticles(player.x - camera + 20, player.y + 20, '#d8ff67', 20);
+          // ¡Premio! Conservas o ganas la vida
+          resetPlayer();
+          if (fallPenalty) player.x = Math.max(30, player.x);
+          running = true;
+          last = performance.now();
+          requestAnimationFrame(loop);
+        } else {
+          sfx.wrong();
+          lives--;
+          updateHUD();
+          if (lives <= 0) {
+            msg.innerHTML = `<h1>¡Game Over! 🙈</h1><p>Te has quedado sin corazones.<br>Puntuación Final: <strong>${score}</strong></p><button id="retryBtn">INTENTAR DE NUEVO</button>`;
+            msg.style.display = 'block';
+            document.getElementById('retryBtn').onclick = startGame;
+          } else {
+            resetPlayer();
+            if (fallPenalty) player.x = Math.max(30, player.x);
+            running = true;
+            last = performance.now();
+            requestAnimationFrame(loop);
+          }
+        }
+      }
+
+      function hurt(fall = false) {
+        sfx.hurt();
+        triggerMathChallenge(fall);
+      }
+
+      function createParticles(x, y, color, count = 8) {
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x, y,
+            vx: rand(-120, 120),
+            vy: rand(-180, 50),
+            life: 0.4,
+            color,
+            size: rand(3, 6)
+          });
+        }
+      }
+
+      // -------------------------------------------------------------
+      // BUCLE PRINCIPAL DE ACTUALIZACIÓN (UPDATE)
+      // -------------------------------------------------------------
+      function update(dt) {
+        const p = player, left = pressed('ArrowLeft') || pressed('a'), right = pressed('ArrowRight') || pressed('d');
+
+        if (left) {
+          p.vx = -270;
+          p.face = -1;
+          p.walkFrame += dt * 12;
+        } else if (right) {
+          p.vx = 270;
+          p.face = 1;
+          p.walkFrame += dt * 12;
+        } else {
+          p.vx *= Math.pow(.001, dt);
+          p.walkFrame = 0;
+        }
+
+        if ((pressed('ArrowUp') || pressed('w') || pressed(' ') || pressed('Space')) && p.onGround) jump();
+
+        p.vy += 1500 * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.x = Math.max(0, Math.min(world.length - p.w, p.x));
+
+        p.onGround = false;
+        for (const pl of world.plats) {
+          if (p.vy >= 0 && p.x + p.w > pl.x && p.x < pl.x + pl.w && p.y + p.h >= pl.y && p.y + p.h - p.vy * dt <= pl.y) {
+            p.y = pl.y - p.h;
+            p.vy = 0;
+            p.onGround = true;
+          }
+        }
+
+        if (p.y > H + 120) { hurt(true); return; }
+        if (invuln > 0) invuln -= dt;
+
+        // Frutas
+        for (const f of world.fruits) {
+          if (!f.got && rectHit(p, { x: f.x - 13, y: f.y - 13, w: 26, h: 26 })) {
+            f.got = true;
+            score += 10;
+            sfx.fruit();
+            createParticles(f.x, f.y, '#ffd700', 10);
+          }
+        }
+
+        // Enemigos
+        for (const e of world.enemies) {
+          if (!e.alive) continue;
+          e.x += e.vx * dt;
+          if (e.x < e.base || e.x > e.end) e.vx *= -1;
+
+          if (rectHit(p, { x: e.x + 4, y: e.y + 4, w: e.w - 8, h: e.h - 8 }) && invuln <= 0) {
+            if (p.vy > 100 && p.y + p.h < e.y + 22) {
+              e.alive = false;
+              p.vy = -450;
+              score += 25;
+              sfx.enemyStomp();
+              createParticles(e.x + 16, e.y + 16, '#ff5555', 12);
+            } else {
+              hurt(false);
+              return;
+            }
+          }
+        }
+
+        // Partículas
+        for (let i = particles.length - 1; i >= 0; i--) {
+          let pt = particles[i];
+          pt.x += pt.vx * dt;
+          pt.y += pt.vy * dt;
+          pt.life -= dt;
+          if (pt.life <= 0) particles.splice(i, 1);
+        }
+
+        // Fin del Nivel / Meta
+        if (p.x > world.goal && world.fruits.every(f => f.got)) {
+          sfx.win();
+          if (level < 4) {
+            triggerMathChallenge(false, true);
+          } else {
+            running = false;
+            msg.innerHTML = `<h1>¡Campeón de la Selva! 🏆</h1><p>¡Has completado todos los niveles y dominado las matemáticas!<br>Puntuación Final: <strong>${score}</strong></p><button id="againBtn">JUGAR OTRA VEZ</button>`;
+            msg.style.display = 'block';
+            document.getElementById('againBtn').onclick = startGame;
+          }
+        }
+
+        updateHUD();
+        camera = Math.max(0, Math.min(world.length - W, p.x - W * .34));
+      }
+
+      // -------------------------------------------------------------
+      // RENDERIZADO Y DIBUJO
+      // -------------------------------------------------------------
+      function drawBackground() {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#65dff0'); g.addColorStop(.6, '#b7f6b0'); g.addColorStop(1, '#38b878');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+        ctx.fillStyle = '#ffe777'; ctx.beginPath(); ctx.arc(790 - camera * .06, 92, 43, 0, Math.PI * 2); ctx.fill();
+
+        for (let i = 0; i < 7; i++) {
+          let x = ((i * 230 - camera * .18) % (W + 250) + W + 250) % (W + 250) - 100;
+          ctx.fillStyle = i % 2 ? '#48bd89' : '#299c7d';
+          ctx.beginPath(); ctx.ellipse(x, 320, 180, 100, 0, Math.PI, Math.PI * 2); ctx.fill();
+        }
+        for (let i = 0; i < 9; i++) {
+          let x = ((i * 190 - camera * .42) % (W + 180) + W + 180) % (W + 180) - 60;
+          drawPalm(x, 365, 1 + (i % 3) * .15);
+        }
+      }
+
+      function drawPalm(x, y, s) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+        ctx.strokeStyle = '#87512d'; ctx.lineWidth = 13; ctx.beginPath(); ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(12, -55, -4, -125); ctx.stroke();
+        ctx.strokeStyle = '#197b43'; ctx.lineWidth = 12;
+        for (let i = 0; i < 7; i++) {
+          let a = -Math.PI * .95 + i * Math.PI * 1.9 / 6;
+          ctx.beginPath(); ctx.moveTo(-4, -125);
+          ctx.quadraticCurveTo(Math.cos(a) * 40, -145 + Math.sin(a) * 22, Math.cos(a) * 90, -125 + Math.sin(a) * 45);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawWorld() {
+        ctx.save();
+        ctx.translate(-camera, 0);
+
+        // Plataformas
+        for (const pl of world.plats) {
+          ctx.fillStyle = '#9c6237'; ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
+          ctx.fillStyle = '#39a94d'; ctx.fillRect(pl.x, pl.y, pl.w, 10);
+          ctx.fillStyle = '#70d957';
+          for (let x = pl.x + 8; x < pl.x + pl.w; x += 28) {
+            ctx.beginPath(); ctx.ellipse(x, pl.y + 2, 9, 4, 0, Math.PI, Math.PI * 2); ctx.fill();
+          }
+        }
+
+        // Frutas
+        for (const f of world.fruits) if (!f.got) {
+          ctx.font = '27px serif'; ctx.textAlign = 'center';
+          ctx.fillText(f.type, f.x, f.y + 9);
+        }
+
+        // Enemigos
+        for (const e of world.enemies) if (e.alive) {
+          ctx.font = '31px serif'; ctx.textAlign = 'center';
+          ctx.fillText(e.type, e.x + e.w / 2, e.y + e.h);
+        }
+
+        // Meta
+        ctx.font = '65px serif'; ctx.textAlign = 'center'; ctx.fillText('🌺', world.goal, 450);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 15px system-ui'; ctx.fillText('META', world.goal, 472);
+
+        // Partículas
+        for (const pt of particles) {
+          ctx.fillStyle = pt.color;
+          ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Personaje (Mico)
+        drawAnimatedMonkey(player, invuln > 0 && Math.floor(invuln * 12) % 2 === 0);
+
+        ctx.restore();
+      }
+
+      // -------------------------------------------------------------
+      // DIBUJO DEL MONO ANIMADO (SPRITES POR CÓDIGO)
+      // -------------------------------------------------------------
+      function drawAnimatedMonkey(p, blink) {
+        if (blink) return;
+
+        ctx.save();
+        ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+        ctx.scale(p.face, 1);
+
+        animTimer += 0.05;
+        const isJumping = !p.onGround;
+        const isMoving = Math.abs(p.vx) > 10;
+        const legAngle = isMoving ? Math.sin(p.walkFrame) * 0.6 : 0;
+        const armAngle = isMoving ? -Math.sin(p.walkFrame) * 0.6 : 0;
+        const tailCurve = Math.sin(animTimer * 2) * 8;
+
+        // Cola animada
+        ctx.strokeStyle = '#744126'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-10, 8);
+        ctx.quadraticCurveTo(-28, 5 + tailCurve, -20, -12);
+        ctx.stroke();
+
+        // Pierna Trasera / Izquierda
+        ctx.save();
+        ctx.translate(-6, 16);
+        ctx.rotate(isJumping ? -0.4 : -legAngle);
+        ctx.fillStyle = '#693c1e';
+        ctx.beginPath(); ctx.ellipse(0, 6, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#4a2812'; ctx.beginPath(); ctx.ellipse(0, 13, 6, 3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // Pierna Delantera / Derecha
+        ctx.save();
+        ctx.translate(6, 16);
+        ctx.rotate(isJumping ? 0.5 : legAngle);
+        ctx.fillStyle = '#8b542e';
+        ctx.beginPath(); ctx.ellipse(0, 6, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#58331f'; ctx.beginPath(); ctx.ellipse(0, 13, 6, 3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // Cuerpo
+        ctx.fillStyle = '#8b542e';
+        ctx.beginPath(); ctx.ellipse(0, 4, 13, 17, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#e7b878';
+        ctx.beginPath(); ctx.ellipse(2, 5, 8, 11, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Brazo Trasero
+        ctx.save();
+        ctx.translate(-8, 0);
+        ctx.rotate(isJumping ? -2.2 : -armAngle);
+        ctx.fillStyle = '#693c1e';
+        ctx.beginPath(); ctx.ellipse(0, 6, 4, 8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // Brazo Delantero
+        ctx.save();
+        ctx.translate(8, 0);
+        ctx.rotate(isJumping ? -2.5 : armAngle);
+        ctx.fillStyle = '#8b542e';
+        ctx.beginPath(); ctx.ellipse(0, 6, 4, 8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // Cabeza y Orejas
+        ctx.save();
+        ctx.translate(0, -12);
+
+        // Orejas
+        ctx.fillStyle = '#8b542e';
+        ctx.beginPath(); ctx.arc(-12, -2, 6, 0, Math.PI * 2); ctx.arc(12, -2, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f4c78a';
+        ctx.beginPath(); ctx.arc(-12, -2, 3, 0, Math.PI * 2); ctx.arc(12, -2, 3, 0, Math.PI * 2); ctx.fill();
+
+        // Cara
+        ctx.fillStyle = '#9a6135'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f3c98c'; ctx.beginPath(); ctx.ellipse(2, 3, 10, 7, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Ojos
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(-4, -3, 4, 0, Math.PI * 2); ctx.arc(6, -3, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#172c25';
+        ctx.beginPath(); ctx.arc(-3, -3, 2, 0, Math.PI * 2); ctx.arc(7, -3, 2, 0, Math.PI * 2); ctx.fill();
+
+        // Nariz y Boca
+        ctx.fillStyle = '#58331f'; ctx.beginPath(); ctx.ellipse(2, 2, 3, 2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#58331f'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(2, 4, 3, 0.2, 1.4); ctx.stroke();
+
+        ctx.restore();
+
+        ctx.restore();
+      }
+
+      function draw() {
+        drawBackground();
+        drawWorld();
+      }
+
+      function loop(t) {
+        if (!running) return;
+        let dt = Math.min(.033, (t - last) / 1000 || 0);
+        last = t;
+        update(dt);
+        draw();
+        if (running) requestAnimationFrame(loop);
+      }
+
+      function renderIdle() {
+        if (!running) {
+          drawBackground();
+          if (world) drawWorld();
+          else { world = buildLevel(0); resetPlayer(); drawWorld(); }
+        }
+      }
+
+      // -------------------------------------------------------------
+      // EVENTOS Y CONTROLES
+      // -------------------------------------------------------------
+      startBtn.addEventListener('click', startGame);
+
+      window.addEventListener('keydown', e => {
+        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Space'].includes(e.key)) e.preventDefault();
+        keys.add(e.key);
+        if (e.key === 'ArrowUp' || e.key === ' ' || e.key === 'Space' || e.key === 'w') jump();
+      }, { passive: false });
+
+      window.addEventListener('keyup', e => keys.delete(e.key));
+      window.addEventListener('blur', () => keys.clear());
+
+      document.querySelectorAll('[data-key]').forEach(btn => {
+        const k = btn.dataset.key;
+        const down = e => { e.preventDefault(); keys.add(k); if (k === 'ArrowUp' || k === 'Space') jump(); };
+        const up = e => { e.preventDefault(); keys.delete(k); };
+        btn.addEventListener('pointerdown', down);
+        btn.addEventListener('pointerup', up);
+        btn.addEventListener('pointercancel', up);
+        btn.addEventListener('pointerleave', up);
+      });
+
+      world = buildLevel(0);
+      resetPlayer();
+      renderIdle();
+
+    })();
+  </script>
+</body>
+
+</html>
