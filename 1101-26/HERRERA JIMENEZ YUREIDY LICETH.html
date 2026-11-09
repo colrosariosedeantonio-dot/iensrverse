@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="theme-color" content="#17162d">
+    <title>Pixel Quest: Misión Matemática</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #17162d;
+            --panel: #242342;
+            --line: #49466d;
+            --pink: #ff8ac7;
+            --cyan: #73e6e1;
+            --gold: #ffd36d;
+            --text: #fff8ff
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            background: radial-gradient(ellipse at top, #30274d, #17162d 68%);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, sans-serif
+        }
+
+        body {
+            padding: 14px;
+            display: flex;
+            justify-content: center
+        }
+
+        .app {
+            width: min(100%, 760px);
+            display: flex;
+            flex-direction: column;
+            gap: 12px
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        h1 {
+            font-size: clamp(21px, 5vw, 30px);
+            margin: 0;
+            letter-spacing: .3px
+        }
+
+        h1 span {
+            color: var(--pink)
+        }
+
+        .sub {
+            font-size: 12px;
+            color: #c5bfdc;
+            margin-top: 3px
+        }
+
+        .pill {
+            border: 1px solid var(--line);
+            background: #242342;
+            border-radius: 999px;
+            padding: 7px 11px;
+            font-size: 12px;
+            font-weight: 800
+        }
+
+        .hud {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px
+        }
+
+        .hud>div {
+            background: linear-gradient(145deg, #292748, #211f3b);
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            padding: 8px;
+            text-align: center;
+            min-width: 0
+        }
+
+        .hud b {
+            display: block;
+            color: var(--gold);
+            font-size: 19px
+        }
+
+        .hud small {
+            font-size: 10px;
+            color: #c5bfdc
+        }
+
+        .gameframe {
+            background: #100f20;
+            border: 2px solid #555078;
+            border-radius: 17px;
+            padding: 7px;
+            box-shadow: 0 12px 30px #09081788;
+            position: relative
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            aspect-ratio: 4/3;
+            image-rendering: pixelated;
+            border-radius: 9px;
+            touch-action: none
+        }
+
+        .status {
+            min-height: 40px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #242342;
+            font-size: 13px;
+            text-align: center;
+            color: #e8e2fa
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: center
+        }
+
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 48px);
+            grid-template-rows: repeat(2, 45px);
+            gap: 5px;
+            justify-content: center
+        }
+
+        .dpad button,
+        .action {
+            border: 1px solid #625b88;
+            background: linear-gradient(145deg, #39365f, #272542);
+            color: white;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: 900;
+            touch-action: none;
+            user-select: none
+        }
+
+        .dpad button:active,
+        .action:active {
+            background: #66518d;
+            transform: scale(.96)
+        }
+
+        .dpad .up {
+            grid-column: 2
+        }
+
+        .dpad .left {
+            grid-column: 1;
+            grid-row: 2
+        }
+
+        .dpad .down {
+            grid-column: 2;
+            grid-row: 2
+        }
+
+        .dpad .right {
+            grid-column: 3;
+            grid-row: 2
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px
+        }
+
+        .action {
+            font-size: 12px;
+            padding: 12px 10px;
+            min-height: 43px
+        }
+
+        .action.primary {
+            background: linear-gradient(120deg, #b54f99, #7956bb);
+            border-color: #d78bd0
+        }
+
+        .help {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #c5bfdc;
+            background: #211f3b;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 11px
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: #090817d9;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 5
+        }
+
+        .overlay.show {
+            display: flex
+        }
+
+        .dialog {
+            width: min(100%, 390px);
+            background: linear-gradient(145deg, #30294e, #211f3b);
+            border: 1px solid #71658f;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 70px #0009
+        }
+
+        .dialog h2 {
+            margin: 0 0 8px;
+            color: var(--gold)
+        }
+
+        .dialog p {
+            font-size: 14px;
+            line-height: 1.45;
+            color: #e4dff2
+        }
+
+        .problem {
+            font-size: 30px;
+            font-weight: 900;
+            text-align: center;
+            color: var(--cyan);
+            padding: 13px
+        }
+
+        .answer {
+            width: 100%;
+            font-size: 22px;
+            text-align: center;
+            padding: 12px;
+            border-radius: 11px;
+            border: 1px solid #71658f;
+            background: #15142a;
+            color: white;
+            outline: none
+        }
+
+        .dialogbuttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px
+        }
+
+        .dialogbuttons button {
+            flex: 1
+        }
+
+        .hidden {
+            display: none !important
+        }
+
+        @media(max-width:430px) {
+            body {
+                padding: 10px
+            }
+
+            .hud b {
+                font-size: 17px
+            }
+
+            .dpad {
+                grid-template-columns: repeat(3, 43px);
+                grid-template-rows: repeat(2, 41px)
+            }
+
+            .controls {
+                gap: 7px
+            }
+
+            .action {
+                padding: 10px 6px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="app">
+        <header>
+            <div>
+                <h1>⚔️ PIXEL <span>QUEST</span></h1>
+                <div class="sub">MISIÓN MATEMÁTICA · AVENTURA EN 10 NIVELES</div>
+            </div>
+            <div class="pill" id="world">MUNDO 1 / 10</div>
+        </header>
+        <section class="hud">
+            <div><b id="level">1</b><small>NIVEL</small></div>
+            <div><b id="lives">♥♥♥</b><small>ENERGÍA</small></div>
+            <div><b id="keys">0 / 1</b><small>SELLOS</small></div>
+            <div><b id="enemies">1</b><small>OPONENTES</small></div>
+        </section>
+        <div class="gameframe"><canvas id="game" width="640" height="480" aria-label="Tablero de Pixel Quest"></canvas>
+        </div>
+        <div class="status" id="status" aria-live="polite">¡Encuentra el portal! Resuelve el reto matemático para
+            abrirlo.</div>
+        <section class="controls">
+            <div class="dpad" aria-label="Controles táctiles">
+                <button class="up" data-dir="up" aria-label="Arriba">▲</button>
+                <button class="left" data-dir="left" aria-label="Izquierda">◀</button>
+                <button class="down" data-dir="down" aria-label="Abajo">▼</button>
+                <button class="right" data-dir="right" aria-label="Derecha">▶</button>
+            </div>
+            <div class="actions">
+                <button class="action primary" id="interact">∑ Resolver</button>
+                <button class="action" id="restart">↻ Reiniciar</button>
+                <button class="action" id="pause">Ⅱ Pausa</button>
+                <button class="action" id="sound">🔊 Sonido</button>
+            </div>
+        </section>
+        <div class="help"><b>Cómo jugar:</b> muévete con las flechas del teclado o la cruceta. Llega al portal violeta,
+            pulsa <b>∑ Resolver</b> y responde la operación. ¡Evita a los oponentes! Si te atrapan, pierdes energía.
+            Completa los 10 niveles para ganar.</div>
+    </main>
+    <div class="overlay show" id="startOverlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+        <div class="dialog">
+            <h2 id="startTitle">⚔️ Pixel Quest</h2>
+            <p>Usa las flechas o la cruceta para moverte. Evita a los oponentes, llega a la puerta violeta y resuelve la
+                operación; después, alcanza el portal para avanzar.</p>
+            <button class="action primary" id="startGame" type="button" style="width:100%">▶ Iniciar juego</button>
+        </div>
+    </div>
+    <div class="overlay" id="mathModal" role="dialog" aria-modal="true" aria-labelledby="mathTitle">
+        <div class="dialog">
+            <h2 id="mathTitle">🧠 Puerta matemática</h2>
+            <p id="mathDesc">Resuelve la operación para activar el portal.</p>
+            <div class="problem" id="problem">8 + 7 = ?</div>
+            <input class="answer" id="answer" type="number" inputmode="numeric" autocomplete="off"
+                placeholder="Tu respuesta">
+            <div class="dialogbuttons"><button class="action" id="cancelMath">Volver</button><button
+                    class="action primary" id="check">Comprobar</button></div>
+            <p id="feedback" aria-live="polite"></p>
+        </div>
+    </div>
+    <div class="overlay" id="messageModal" role="dialog" aria-modal="true">
+        <div class="dialog" style="text-align:center">
+            <div style="font-size:42px" id="resultIcon">🏆</div>
+            <h2 id="resultTitle">¡Nivel superado!</h2>
+            <p id="resultText">¡Muy bien!</p><button class="action primary" id="continue" style="width:100%">Continuar
+                →</button>
+        </div>
+    </div>
+    <script>
+        (() => {
+            'use strict';
+            const canvas = document.getElementById('game'), ctx = canvas.getContext('2d');
+            const $ = id => document.getElementById(id);
+            const W = 640, H = 480, C = 40, COLS = 16, ROWS = 12;
+            const levels = [
+                { q: '8 + 7', a: 15, desc: 'Suma básica', enemies: 1, speed: 620 },
+                { q: '20 − 6', a: 14, desc: 'Resta', enemies: 2, speed: 570 },
+                { q: '4 × 6', a: 24, desc: 'Multiplicación', enemies: 2, speed: 520 },
+                { q: '45 ÷ 5', a: 9, desc: 'División exacta', enemies: 3, speed: 490 },
+                { q: '(8 × 3) + 4', a: 28, desc: 'Operaciones combinadas', enemies: 3, speed: 460 },
+                { q: '7² − 9', a: 40, desc: 'Potencias', enemies: 3, speed: 430 },
+                { q: '¾ de 32', a: 24, desc: 'Fracciones', enemies: 4, speed: 410 },
+                { q: '(36 ÷ 4) × 7', a: 63, desc: 'Operaciones combinadas', enemies: 4, speed: 390 },
+                { q: '√144 + 19', a: 31, desc: 'Raíces cuadradas', enemies: 4, speed: 365 },
+                { q: '(15 × 6) − (48 ÷ 4)', a: 78, desc: 'Desafío final', enemies: 5, speed: 340 }
+            ];
+            let started = false, level = 0, lives = 3, unlocked = 1, seal = false, paused = false, gameOver = false, won = false, sound = true, enemyStartDelayUntil = 0;
+            let player = { x: 1, y: 1, step: 0, dir: 'down', moving: false, lastMove: 0, invuln: 0 };
+            let enemies = [], walls = new Set(), gate = { x: 8, y: 6 }, exit = { x: 14, y: 10 }, lastEnemy = 0, raf = 0, lastFrame = 0, moveHeld = null, moveInterval = null, audio = null;
+            const key = (x, y) => x + ',' + y;
+            const inside = (x, y) => x >= 0 && y >= 0 && x < COLS && y < ROWS;
+            function tone(f = 440, d = .08) { if (!sound) return; try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); let o = audio.createOscillator(), g = audio.createGain(); o.frequency.value = f; g.gain.setValueAtTime(.05, audio.currentTime); g.gain.exponentialRampToValueAtTime(.001, audio.currentTime + d); o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + d) } catch (e) { } }
+            function makeWalls() {
+                walls.clear();
+                // Marco exterior y pequeñas columnas de cobertura; el corredor central siempre permanece transitable.
+                for (let x = 0; x < COLS; x++) { walls.add(key(x, 0)); walls.add(key(x, ROWS - 1)) }
+                for (let y = 0; y < ROWS; y++) { walls.add(key(0, y)); walls.add(key(COLS - 1, y)) }
+                const patterns = [
+                    [[4, 2], [4, 3], [4, 4], [11, 7], [11, 8]],
+                    [[3, 2], [3, 3], [6, 2], [6, 3], [10, 7], [10, 8], [13, 5]],
+                    [[2, 4], [3, 4], [5, 2], [5, 3], [10, 8], [11, 8], [13, 4], [13, 5]],
+                    [[3, 2], [3, 3], [3, 4], [6, 8], [7, 8], [11, 2], [11, 3], [13, 7]],
+                    [[2, 3], [3, 3], [5, 2], [5, 3], [10, 8], [11, 8], [12, 5], [12, 6]],
+                    [[3, 2], [3, 3], [3, 4], [6, 2], [6, 3], [10, 7], [10, 8], [13, 4], [13, 5]],
+                    [[2, 5], [3, 5], [5, 2], [5, 3], [7, 8], [8, 8], [11, 3], [12, 3], [13, 7]],
+                    [[3, 2], [3, 3], [6, 2], [6, 3], [6, 4], [10, 7], [10, 8], [12, 5], [13, 5]],
+                    [[2, 3], [3, 3], [5, 7], [6, 7], [8, 2], [8, 3], [11, 8], [12, 8], [13, 4]],
+                    [[2, 2], [2, 3], [5, 2], [5, 3], [5, 4], [9, 7], [10, 7], [12, 3], [12, 4], [13, 8]]
+                ];
+                (patterns[level] || []).forEach(([x, y]) => walls.add(key(x, y)));
+                // La barrera horizontal fuerza a resolver la puerta para alcanzar el portal final.
+                for (let x = 1; x < COLS - 1; x++)if (x !== gate.x) walls.add(key(x, gate.y));
+            }
+            function spawnEnemies() {
+                enemies = [];
+                const count = levels[level].enemies;
+                const preferredSpots = [[12, 2], [12, 9], [3, 9], [7, 3], [3, 2]];
+                const canSpawn = (x, y) => !walls.has(key(x, y)) && !(x === exit.x && y === exit.y) &&
+                    Math.abs(x - player.x) + Math.abs(y - player.y) >= 6 &&
+                    enemies.every(enemy => Math.abs(x - enemy.x) + Math.abs(y - enemy.y) >= 4);
+                for (let i = 0; i < count; i++) {
+                    let spot = preferredSpots.find(([x, y]) => canSpawn(x, y));
+                    if (!spot) {
+                        for (let y = 1; y < ROWS - 1 && !spot; y++) {
+                            for (let x = 1; x < COLS - 1; x++) {
+                                if (canSpawn(x, y)) { spot = [x, y]; break }
+                            }
+                        }
+                    }
+                    if (!spot) break;
+                    const [x, y] = spot;
+                    enemies.push({ x, y, dir: i % 2 ? 1 : -1, phase: i * 4 });
+                }
+            }
+            function startLevel(n) {
+                level = n; seal = false; paused = false; gameOver = false; won = false; lives = 3;
+                player = { x: 1, y: 1, step: 0, dir: 'down', moving: false, lastMove: 0, invuln: 0 };
+                gate = { x: 8, y: 6 }; exit = { x: 14, y: 10 }; makeWalls(); spawnEnemies(); lastEnemy = performance.now(); enemyStartDelayUntil = lastEnemy + 1800;
+                $('mathModal').classList.remove('show'); $('messageModal').classList.remove('show');
+                $('status').textContent = '¡Encuentra la puerta matemática y llega al portal!'; updateHud();
+            }
+            function updateHud() { $('level').textContent = level + 1; $('world').textContent = 'MUNDO ' + (level + 1) + ' / 10'; $('lives').textContent = '♥'.repeat(lives) + '♡'.repeat(3 - lives); $('keys').textContent = (seal ? '1' : '0') + ' / 1'; $('enemies').textContent = enemies.length }
+            function walkable(x, y) { if (!inside(x, y) || walls.has(key(x, y))) return false; if (x === gate.x && y === gate.y && !seal) return false; return true }
+            function attempt(dx, dy) {
+                if (!started || paused || gameOver || won || $('mathModal').classList.contains('show') || $('messageModal').classList.contains('show')) return;
+                const nx = player.x + dx, ny = player.y + dy;
+                player.dir = dx < 0 ? 'left' : dx > 0 ? 'right' : dy < 0 ? 'up' : 'down';
+                if (nx === gate.x && ny === gate.y && !seal) { openMath(); return }
+                if (!walkable(nx, ny)) return;
+                player.x = nx; player.y = ny; player.step++; player.moving = true; player.lastMove = performance.now(); tone(210, .025);
+                if (player.x === exit.x && player.y === exit.y && seal) finishLevel();
+            }
+            function openMath() {
+                $('problem').textContent = levels[level].q + ' = ?'; $('mathDesc').textContent = 'Sello ' + (level + 1) + ' de 10 · ' + levels[level].desc + '. Resuelve para abrir el paso.'; $('answer').value = ''; $('feedback').textContent = ''; $('mathModal').classList.add('show'); setTimeout(() => $('answer').focus(), 100)
+            }
+            function checkAnswer() {
+                const val = $('answer').value.trim();
+                if (val === '') { $('feedback').textContent = 'Escribe un resultado primero.'; return }
+                if (Number(val) === levels[level].a) { seal = true; $('mathModal').classList.remove('show'); $('status').textContent = '¡Correcto! La barrera desapareció. ¡Llega al portal!'; tone(780, .2); updateHud(); draw() }
+                else { $('feedback').textContent = 'Casi… inténtalo otra vez. ¡Tú puedes!'; tone(160, .12); $('answer').select() }
+            }
+            function enemyTick() {
+                if (paused || gameOver || won || $('mathModal').classList.contains('show') || $('messageModal').classList.contains('show')) return;
+                for (const e of enemies) {
+                    // Patrulla con persecución suave: se mueve un paso hacia el jugador ocasionalmente.
+                    let dx = 0, dy = 0;
+                    if (Math.random() < .52) {
+                        if (Math.abs(player.x - e.x) > Math.abs(player.y - e.y)) dx = Math.sign(player.x - e.x); else dy = Math.sign(player.y - e.y);
+                    } else { if (Math.random() < .5) dx = e.dir; else dy = Math.random() < .5 ? 1 : -1 }
+                    let nx = e.x + dx, ny = e.y + dy;
+                    if (!walkable(nx, ny) || (nx === gate.x && ny === gate.y)) { dx = -dx; dy = -dy; nx = e.x + dx; ny = e.y + dy }
+                    if (walkable(nx, ny) && !(nx === gate.x && ny === gate.y)) { e.x = nx; e.y = ny }
+                    if (e.x === player.x && e.y === player.y) hitPlayer();
+                }
+                updateHud();
+            }
+            function hitPlayer() {
+                if (performance.now() < player.invuln) return;
+                lives--; player.invuln = performance.now() + 1500; tone(120, .22);
+                if (lives <= 0) { gameOver = true; $('resultIcon').textContent = '💫'; $('resultTitle').textContent = '¡Inténtalo otra vez!'; $('resultText').textContent = 'Los oponentes te alcanzaron. Reinicia el nivel para volver a intentarlo.'; $('continue').textContent = 'Reintentar'; $('messageModal').classList.add('show') }
+                else { $('status').textContent = '¡Te alcanzaron! Pierdes una energía. Te quedan ' + lives + '.'; player.x = seal ? 9 : 1; player.y = seal ? 7 : 1 }
+                updateHud();
+            }
+            function finishLevel() {
+                won = true; unlocked = Math.max(unlocked, Math.min(10, level + 2)); tone(660, .15); setTimeout(() => tone(900, .2), 140);
+                $('resultIcon').textContent = '🏆'; $('resultTitle').textContent = level === 9 ? '¡MISIÓN COMPLETADA!' : '¡Nivel superado!';
+                $('resultText').textContent = level === 9 ? '¡Has vencido los 10 niveles y demostrado tu poder matemático!' : 'Has abierto el portal y superado el nivel ' + (level + 1) + '. El siguiente será más difícil.';
+                $('continue').textContent = level === 9 ? 'Volver al inicio' : 'Siguiente nivel →'; $('messageModal').classList.add('show'); $('status').textContent = '¡Portal alcanzado! ¡Excelente trabajo!'; updateHud()
+            }
+            function drawTile(x, y) {
+                const px = x * C, py = y * C;
+                ctx.fillStyle = (x + y) % 2 ? '#252342' : '#292647'; ctx.fillRect(px, py, C, C);
+                ctx.fillStyle = '#393457'; ctx.fillRect(px + 3, py + 3, 2, 2);
+                if (walls.has(key(x, y))) { ctx.fillStyle = '#51466e'; ctx.fillRect(px, py, C, C); ctx.fillStyle = '#76658d'; ctx.fillRect(px + 3, py + 3, C - 6, 5); ctx.fillStyle = '#39324f'; ctx.fillRect(px + 3, py + 10, C - 6, C - 13); ctx.fillStyle = '#9580a6'; ctx.fillRect(px + 7, py + 14, 4, 4) }
+            }
+            function drawGate() {
+                const x = gate.x * C, y = gate.y * C;
+                if (!seal) { ctx.fillStyle = '#a947b8'; ctx.fillRect(x + 3, y + 2, C - 6, C - 4); ctx.fillStyle = '#f6a4ed'; ctx.fillRect(x + 8, y + 7, C - 16, C - 14); ctx.fillStyle = '#6b397f'; ctx.fillRect(x + 14, y + 15, 12, 17); ctx.fillStyle = '#fff1a8'; ctx.fillRect(x + 18, y + 19, 4, 4) }
+                else { ctx.fillStyle = '#3bba9f'; ctx.fillRect(x + 4, y + 4, C - 8, C - 8); ctx.fillStyle = '#a4fff0'; ctx.fillRect(x + 10, y + 10, C - 20, C - 20) }
+            }
+            function drawExit() {
+                const x = exit.x * C, y = exit.y * C; ctx.fillStyle = '#493a83'; ctx.fillRect(x + 3, y + 3, C - 6, C - 6); ctx.fillStyle = '#b9a0ff'; ctx.fillRect(x + 8, y + 5, C - 16, C - 10); ctx.fillStyle = '#fff1bd'; ctx.fillRect(x + 15, y + 10, 10, 20); ctx.fillStyle = '#fff'; ctx.fillRect(x + 18, y + 14, 3, 3)
+            }
+            function drawPlayer() {
+                // Dos SVG inline autocontenidos: reposo y paso alternado. Se rasterizan a canvas sin archivos externos.
+                if (!spriteIdle || !spriteWalk) return;
+                const frame = (player.moving && Math.floor(player.step / 1) % 2 === 1) ? spriteWalk : spriteIdle;
+                if (player.moving && performance.now() - player.lastMove > 140) player.moving = false;
+                const img = frame; ctx.imageSmoothingEnabled = false;
+                if (performance.now() < player.invuln && Math.floor(performance.now() / 100) % 2 === 0) return;
+                ctx.drawImage(img, player.x * C + 3, player.y * C + 1, C - 6, C - 2);
+            }
+            function drawEnemy(e, i) {
+                const x = e.x * C, y = e.y * C;
+                ctx.fillStyle = '#17152b'; ctx.fillRect(x + 8, y + 29, 24, 5);
+                ctx.fillStyle = i % 2 ? '#e56b83' : '#ed795c'; ctx.fillRect(x + 9, y + 10, 22, 21); ctx.fillStyle = '#ffb3a5'; ctx.fillRect(x + 12, y + 5, 16, 12); ctx.fillStyle = '#251b39'; ctx.fillRect(x + 15, y + 10, 4, 5); ctx.fillRect(x + 24, y + 10, 4, 5); ctx.fillStyle = '#fff'; ctx.fillRect(x + 16, y + 11, 2, 2); ctx.fillRect(x + 25, y + 11, 2, 2); ctx.fillStyle = '#583354'; ctx.fillRect(x + 11, y + 30, 7, 6); ctx.fillRect(x + 24, y + 30, 7, 6);
+            }
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+                for (let y = 0; y < ROWS; y++)for (let x = 0; x < COLS; x++)drawTile(x, y);
+                drawGate(); drawExit();
+                enemies.forEach(drawEnemy); drawPlayer();
+                // Subtle vignette and edge frame
+                const g = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, 450); g.addColorStop(0, '#00000000'); g.addColorStop(1, '#09081755'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+            }
+            const svgBase = (legs) => `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="36" viewBox="0 0 32 36" shape-rendering="crispEdges">
+<rect x="7" y="3" width="18" height="7" fill="#583b83"/><rect x="5" y="8" width="22" height="13" fill="#f0bd91"/>
+<rect x="8" y="5" width="16" height="4" fill="#392d68"/><rect x="5" y="2" width="22" height="6" fill="#5d438f"/><rect x="3" y="7" width="5" height="9" fill="#5d438f"/><rect x="24" y="7" width="5" height="9" fill="#5d438f"/>
+<rect x="9" y="12" width="4" height="3" fill="#30244e"/><rect x="20" y="12" width="4" height="3" fill="#30244e"/><rect x="14" y="17" width="5" height="2" fill="#bd6d78"/>
+<rect x="7" y="21" width="18" height="9" fill="#61c9c0"/><rect x="3" y="22" width="5" height="9" fill="#f0bd91"/><rect x="24" y="22" width="5" height="9" fill="#f0bd91"/>
+${legs}
+<rect x="6" y="34" width="9" height="2" fill="#33264d"/><rect x="19" y="34" width="9" height="2" fill="#33264d"/>
+<rect x="13" y="22" width="6" height="5" fill="#ffe08a"/>
+</svg>`;
+            function loadSvg(svg) { return new Promise(resolve => { const im = new Image(); im.onload = () => resolve(im); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) }) }
+            let spriteIdle, spriteWalk;
+            Promise.all([
+                loadSvg(svgBase('<rect x="7" y="29" width="7" height="5" fill="#f0bd91"/><rect x="18" y="29" width="7" height="5" fill="#f0bd91"/>')),
+                loadSvg(svgBase('<rect x="6" y="29" width="9" height="5" fill="#f0bd91"/><rect x="19" y="28" width="8" height="5" fill="#f0bd91"/><rect x="3" y="33" width="10" height="3" fill="#33264d"/><rect x="21" y="32" width="9" height="3" fill="#33264d"/>'))
+            ]).then(([a, b]) => { spriteIdle = a; spriteWalk = b; draw() });
+            function loop(t) {
+                if (started && !paused && !gameOver && !won) {
+                    if (t >= enemyStartDelayUntil && t - lastEnemy > levels[level].speed) { enemyTick(); lastEnemy = t }
+                }
+                draw();
+                raf = requestAnimationFrame(loop)
+            }
+            function setDirection(dir) {
+                const map = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }; const [dx, dy] = map[dir]; attempt(dx, dy)
+            }
+            document.addEventListener('keydown', e => {
+                if (!started) return;
+                const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
+                if (map[e.key]) { e.preventDefault(); if (!e.repeat) setDirection(map[e.key]) }
+                if (e.key === 'Enter' || e.key === ' ') { if ($('mathModal').classList.contains('show')) checkAnswer(); else if (player.x === gate.x && Math.abs(player.y - gate.y) === 1) openMath() }
+                if (e.key === 'Escape') { $('mathModal').classList.remove('show') }
+            });
+            document.querySelectorAll('[data-dir]').forEach(btn => {
+                const dir = btn.dataset.dir;
+                btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.setPointerCapture(e.pointerId); setDirection(dir); moveHeld = dir; clearInterval(moveInterval); moveInterval = setInterval(() => { if (moveHeld) setDirection(moveHeld) }, 155) });
+                const stop = () => { moveHeld = null; clearInterval(moveInterval) };
+                btn.addEventListener('pointerup', stop); btn.addEventListener('pointercancel', stop); btn.addEventListener('lostpointercapture', stop);
+            });
+            $('interact').addEventListener('click', () => { if (seal) { $('status').textContent = 'El sello ya está activo. ¡Busca el portal!'; return } if (Math.abs(player.x - gate.x) + Math.abs(player.y - gate.y) <= 1) openMath(); else $('status').textContent = 'Acércate a la puerta violeta para resolver el reto.' });
+            $('check').addEventListener('click', checkAnswer); $('answer').addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer() });
+            $('cancelMath').addEventListener('click', () => $('mathModal').classList.remove('show'));
+            $('restart').addEventListener('click', () => startLevel(level));
+            $('pause').addEventListener('click', () => { paused = !paused; $('pause').textContent = paused ? '▶ Seguir' : 'Ⅱ Pausa'; $('status').textContent = paused ? 'Juego en pausa.' : '¡Continúa la aventura!' });
+            $('sound').addEventListener('click', () => { sound = !sound; $('sound').textContent = sound ? '🔊 Sonido' : '🔇 Silencio'; if (sound) tone(600) });
+            $('continue').addEventListener('click', () => { if (gameOver) { startLevel(level) } else if (level === 9) { startLevel(0) } else startLevel(level + 1) });
+            function resize() { const maxW = Math.min(760, window.innerWidth - 28); canvas.style.width = maxW + 'px'; canvas.style.height = (maxW * 3 / 4) + 'px'; }
+            window.addEventListener('resize', resize); resize(); startLevel(0); raf = requestAnimationFrame(loop);
+            $('startGame').addEventListener('click', () => { $('startOverlay').classList.remove('show'); started = true; startLevel(0) });
+        })();
+    </script>
+</body>
+
+</html>

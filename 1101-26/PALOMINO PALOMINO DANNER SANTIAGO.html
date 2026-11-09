@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bio Quest: Ciencias Naturales</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #0b251a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #ui-header {
+            width: 100%;
+            max-width: 650px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: #113826;
+            border-bottom: 3px solid #1f6f44;
+        }
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        .hud-item {
+            font-size: 0.9rem;
+            color: #a3e2c9;
+        }
+        #science-question {
+            background: #2a7e52;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+            line-height: 1.3;
+            box-shadow: 0 0 10px rgba(42, 126, 82, 0.5);
+            font-weight: bold;
+        }
+        #options-indicator {
+            font-size: 0.85rem;
+            background: #194d33;
+            padding: 4px;
+            border-radius: 4px;
+            text-align: center;
+            color: #cbd5e1;
+        }
+        #canvas-container {
+            width: 100%;
+            max-width: 650px;
+            aspect-ratio: 4 / 3;
+            position: relative;
+            background: #164e33;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        /* Controles Táctiles (Cruceta) */
+        #controls {
+            width: 100%;
+            max-width: 650px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            padding: 12px;
+            background: #113826;
+        }
+        .btn-ctrl {
+            background: #1f6f44;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.4rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 0;
+            cursor: pointer;
+            box-shadow: 0 4px #13492c;
+            touch-action: manipulation;
+        }
+        .btn-ctrl:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 #13492c;
+            background: #2a7e52;
+        }
+        #btn-up { grid-column: 2; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 3; }
+
+        /* Pantallas Emergentes Overlay */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 37, 26, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            z-index: 10;
+        }
+        .overlay h2 {
+            font-size: 2rem;
+            color: #56ffaa;
+            margin-bottom: 15px;
+        }
+        .overlay p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            max-width: 80%;
+        }
+        .btn-main {
+            background: #00ff77;
+            color: #0b251a;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 5px #00b353;
+        }
+        .btn-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px #00b353;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Encabezado HUD -->
+    <div id="ui-header">
+        <div class="hud-row">
+            <div class="hud-item" id="hud-level">NIVEL: 1/6</div>
+            <div class="hud-item" id="hud-topic">TEMA: Cuerpo Humano</div>
+            <div class="hud-item" id="hud-lives">VIDAS: ❤️❤️❤️</div>
+        </div>
+        <div id="science-question">Cargando desafío biológico...</div>
+        <div id="options-indicator">Opciones en pantalla</div>
+    </div>
+
+    <!-- Contenedor del Juego -->
+    <div id="canvas-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <!-- Pantalla de Inicio / Fin -->
+        <div id="game-overlay" class="overlay">
+            <h2 id="overlay-title">BIO QUEST</h2>
+            <p id="overlay-desc">¡Explora las Ciencias Naturales! Lee la pregunta del HUD superior, esquiva los virus oponentes y recoge la burbuja de la letra (A, B o C) correcta para desbloquear la meta.</p>
+            <button id="btn-action" class="btn-main">EMPEZAR</button>
+        </div>
+    </div>
+
+    <!-- Controles en Pantalla para Celular -->
+    <div id="controls">
+        <button class="btn-ctrl" id="btn-up">▲</button>
+        <button class="btn-ctrl" id="btn-left">◀</button>
+        <button class="btn-ctrl" id="btn-right">▶</button>
+        <button class="btn-ctrl" id="btn-down">▼</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI Elementos
+        const hudLevel = document.getElementById('hud-level');
+        const hudTopic = document.getElementById('hud-topic');
+        const hudLives = document.getElementById('hud-lives');
+        const scienceQuestion = document.getElementById('science-question');
+        const optionsIndicator = document.getElementById('options-indicator');
+        const overlay = document.getElementById('game-overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const btnAction = document.getElementById('btn-action');
+
+        // Estado del Juego
+        let currentLevel = 1;
+        const maxLevels = 6;
+        let lives = 3;
+        let gameState = 'START'; 
+        let questionSolved = false;
+
+        // Entidades
+        let player = { 
+            x: 50, 
+            y: 300, 
+            size: 36, 
+            speed: 5.5,
+            isMoving: false,
+            animTimer: 0,
+            currentFrame: 0
+        };
+        let goal = { x: 740, y: 260, width: 40, height: 80 };
+        let enemies = [];
+        let answers = [];
+        let currentQuestionData = {};
+
+        let keys = {};
+        let touchDirections = { up: false, down: false, left: false, right: false };
+
+        // Banco de Preguntas de Ciencias Naturales por Niveles
+        const scienceBank = {
+            1: {
+                topic: "Cuerpo Humano",
+                enemies: 3, speedMin: 2, speedMax: 4,
+                questions: [
+                    { q: "¿Qué órgano bombea la sangre por todo el cuerpo?", a: "A) Pulmón", b: "B) Corazón", c: "C) Hígado", correct: "B" },
+                    { q: "¿Qué sistema nos permite respirar y obtener oxígeno?", a: "A) Respiratorio", b: "B) Digestivo", c: "C) Óseo", correct: "A" }
+                ]
+            },
+            2: {
+                topic: "Las Plantas",
+                enemies: 5, speedMin: 3, speedMax: 5,
+                questions: [
+                    { q: "¿Cómo se llama el proceso por el cual las plantas fabrican su alimento?", a: "A) Respiración", b: "B) Germinación", c: "C) Fotosíntesis", correct: "C" },
+                    { q: "¿Qué pigmento verde absorbe la luz del sol en las hojas?", a: "A) Clorofila", b: "B) Sangre", c: "C) Caroteno", correct: "A" }
+                ]
+            },
+            3: {
+                topic: "Ecosistemas",
+                enemies: 6, speedMin: 3.5, speedMax: 6,
+                questions: [
+                    { q: "Los seres vivos que fabrican su propio alimento son los...", a: "A) Productores", b: "B) Consumidores", c: "C) Descomponedores", correct: "A" },
+                    { q: "¿Qué tipo de ser vivo se alimenta exclusivamente de plantas?", a: "A) Herbívoro", b: "B) Carnívoro", c: "C) Omnívoro", correct: "B" }
+                ]
+            },
+            4: {
+                topic: "Materia y Agua",
+                enemies: 8, speedMin: 4, speedMax: 7,
+                questions: [
+                    { q: "¿En qué estado se encuentra el agua cuando se convierte en hielo?", a: "A) Gaseoso", b: "B) Líquido", c: "C) Sólido", correct: "C" },
+                    { q: "¿Cómo se llama el cambio de líquido a gas mediante el calor?", a: "A) Evaporación", b: "B) Condensación", c: "C) Fusión", correct: "A" }
+                ]
+            },
+            5: {
+                topic: "El Universo",
+                enemies: 10, speedMin: 4.5, speedMax: 8,
+                questions: [
+                    { q: "¿Cuál es la estrella central de nuestro sistema planetario?", a: "A) La Luna", b: "B) El Sol", c: "C) Júpiter", correct: "B" },
+                    { q: "¿Qué movimiento de la Tierra dura 24 horas y produce el día y la noche?", a: "A) Traslación", b: "B) Nutación", c: "C) Rotación", correct: "C" }
+                ]
+            },
+            6: {
+                topic: "Microbiología y Células",
+                enemies: 13, speedMin: 5, speedMax: 9.5,
+                questions: [
+                    { q: "¿Cuál es la unidad más pequeña y estructural de todos los seres vivos?", a: "A) El átomo", b: "B) La célula", c: "C) El tejido", correct: "B" },
+                    { q: "¿Qué parte de la célula eucariota contiene el material genético (ADN)?", a: "A) El núcleo", b: "B) El citoplasma", c: "C) La membrana", correct: "A" }
+                ]
+            }
+        };
+
+        // --- SPRITES SVG INLINE ---
+        const svgFrame1 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+            <path d="M4 2h8v1H4zm-1 1h10v3H3zm0 3h10v2H3z" fill="#a2d2ff"/>
+            <path d="M5 4h6v1H5z" fill="#00ffaa"/>
+            <path d="M7 0h2v2H7z" fill="#2a7e52"/>
+            <path d="M2 8h12v1H2zm1 1h10v3H3z" fill="#3b7a57"/>
+            <path d="M7 9h2v2H7z" fill="#00ffaa"/>
+            <path d="M1 9h1v2H1zm13 0h1v2h-1z" fill="#a2d2ff"/>
+            <path d="M4 12h2v4H4zm6 0h2v4h-2z" fill="#1b4332"/>
+        </svg>`;
+
+        const svgFrame2 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+            <path d="M4 3h8v1H4zm-1 1h10v3H3zm0 3h10v2H3z" fill="#a2d2ff"/>
+            <path d="M5 5h6v1H5z" fill="#00ffaa"/>
+            <path d="M7 1h2v2H7z" fill="#2a7e52"/>
+            <path d="M2 9h12v1H2zm1 1h10v3H3z" fill="#3b7a57"/>
+            <path d="M7 10h2v2H7z" fill="#00ffaa"/>
+            <path d="M1 10h1v2H1zm13 0h1v2h-1z" fill="#a2d2ff"/>
+            <path d="M3 13h2v3H3zm7 1h2v2h-2z" fill="#1b4332"/>
+        </svg>`;
+
+        const spriteIdling = new Image();
+        spriteIdling.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFrame1);
+        const spriteWalking = new Image();
+        spriteWalking.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFrame2);
+
+        function generateTrivia(level) {
+            const data = scienceBank[level];
+            hudTopic.innerText = `TEMA: ${data.topic}`;
+            
+            const randomIndex = Math.floor(Math.random() * data.questions.length);
+            currentQuestionData = data.questions[randomIndex];
+
+            scienceQuestion.innerText = currentQuestionData.q;
+            optionsIndicator.innerText = `${currentQuestionData.a}  |  ${currentQuestionData.b}  |  ${currentQuestionData.c}`;
+
+            answers = [];
+            const labels = ["A", "B", "C"];
+            const positions = [{x: 230, y: 180}, {x: 410, y: 440}, {x: 580, y: 220}];
+
+            labels.forEach((label, idx) => {
+                answers.push({
+                    x: positions[idx].x,
+                    y: positions[idx].y,
+                    label: label,
+                    isCorrect: label === currentQuestionData.correct,
+                    radius: 26
+                });
+            });
+        }
+
+        function initLevel(level) {
+            questionSolved = false;
+            player.x = 40;
+            player.y = 280;
+            player.isMoving = false;
+            
+            hudLevel.innerText = `NIVEL: ${level}/${maxLevels}`;
+            updateLivesHUD();
+            generateTrivia(level);
+
+            enemies = [];
+            const config = scienceBank[level];
+            for (let i = 0; i < config.enemies; i++) {
+                enemies.push({
+                    x: Math.random() * (canvas.width - 320) + 160,
+                    y: Math.random() * (canvas.height - 60),
+                    width: 22,
+                    height: 22,
+                    speedY: (Math.random() > 0.5 ? 1 : -1) * (Math.random() * (config.speedMax - config.speedMin) + config.speedMin)
+                });
+            }
+        }
+
+        function updateLivesHUD() {
+            hudLives.innerText = "VIDAS: " + "❤️".repeat(lives);
+        }
+
+        window.addEventListener('keydown', (e) => { keys[e.code] = true; });
+        window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+        setupTouchButton('btn-up', 'up');
+        setupTouchButton('btn-down', 'down');
+        setupTouchButton('btn-left', 'left');
+        setupTouchButton('btn-right', 'right');
+
+        function setupTouchButton(id, dir) {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); touchDirections[dir] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); touchDirections[dir] = false; });
+        }
+
+        btnAction.addEventListener('click', () => {
+            if (gameState === 'START' || gameState === 'GAME_OVER' || gameState === 'WIN') {
+                lives = 3;
+                currentLevel = 1;
+                initLevel(currentLevel);
+                gameState = 'PLAYING';
+                overlay.classList.add('hidden');
+            } else if (gameState === 'LEVEL_CLEAR') {
+                currentLevel++;
+                initLevel(currentLevel);
+                gameState = 'PLAYING';
+                overlay.classList.add('hidden');
+            }
+        });
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            let movingNow = false;
+
+            if (keys['ArrowUp'] || keys['KeyW'] || touchDirections.up) { player.y -= player.speed; movingNow = true; }
+            if (keys['ArrowDown'] || keys['KeyS'] || touchDirections.down) { player.y += player.speed; movingNow = true; }
+            if (keys['ArrowLeft'] || keys['KeyA'] || touchDirections.left) { player.x -= player.speed; movingNow = true; }
+            if (keys['ArrowRight'] || keys['KeyD'] || touchDirections.right) { player.x += player.speed; movingNow = true; }
+
+            player.isMoving = movingNow;
+
+            if (player.isMoving) {
+                player.animTimer++;
+                if (player.animTimer > 10) {
+                    player.currentFrame = player.currentFrame === 0 ? 1 : 0;
+                    player.animTimer = 0;
+                }
+            } else {
+                player.currentFrame = 0;
+                player.animTimer = 0;
+            }
+
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
+            if (player.y + player.size > canvas.height) player.y = canvas.height - player.size;
+
+            enemies.forEach(enemy => {
+                enemy.y += enemy.speedY;
+                if (enemy.y < 0 || enemy.y + enemy.height > canvas.height) {
+                    enemy.speedY *= -1;
+                }
+
+                if (player.x < enemy.x + enemy.width &&
+                    player.x + player.size > enemy.x &&
+                    player.y < enemy.y + enemy.height &&
+                    player.y + player.size > enemy.y) {
+                    lives--;
+                    updateLivesHUD();
+                    player.x = 40; 
+                    player.y = 280;
+                    if (lives <= 0) {
+                        gameState = 'GAME_OVER';
+                        triggerOverlay('FIN DEL VIAJE', 'Los virus te han superado. ¡Repasa tus apuntes de ciencias y vuelve!');
+                    }
+                }
+            });
+
+            answers.forEach((ans, index) => {
+                let pCenterX = player.x + player.size / 2;
+                let pCenterY = player.y + player.size / 2;
+                let dist = Math.hypot(pCenterX - ans.x, pCenterY - ans.y);
+
+                if (dist < ans.radius + player.size / 2) {
+                    if (ans.isCorrect) {
+                        questionSolved = true;
+                        scienceQuestion.innerText = "¡RESPUESTA CORRECTA! ¡CORRE A LA META!";
+                        answers = []; 
+                    } else {
+                        lives--;
+                        updateLivesHUD();
+                        answers.splice(index, 1); 
+                        if (lives <= 0) {
+                            gameState = 'GAME_OVER';
+                            triggerOverlay('FIN DEL JUEGO', 'Esa respuesta no era correcta y te has quedado sin energía.');
+                        }
+                    }
+                }
+            });
+
+            if (player.x < goal.x + goal.width &&
+                player.x + player.size > goal.x &&
+                player.y < goal.y + goal.height &&
+                player.y + player.size > goal.y) {
+                
+                if (questionSolved) {
+                    if (currentLevel >= maxLevels) {
+                        gameState = 'WIN';
+                        triggerOverlay('¡MAESTRO CIENTÍFICO!', '¡Excelente! Has resuelto todas las trivias de Ciencias Naturales y dominado los 6 niveles.');
+                    } else {
+                        gameState = 'LEVEL_CLEAR';
+                        triggerOverlay(`¡NIVEL ${currentLevel} SUPERADO!`, `¡Gran conocimiento de las ciencias! Avanza a la siguiente unidad biológica.`);
+                    }
+                } else {
+                    player.x -= 40;
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = '#1a5c3d';
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+            for(let j=0; j<canvas.height; j+=50) { ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(canvas.width,j); ctx.stroke(); }
+
+            answers.forEach(ans => {
+                ctx.beginPath();
+                ctx.arc(ans.x, ans.y, ans.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#113826';
+                ctx.fill();
+                ctx.strokeStyle = '#00ffaa';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 22px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(ans.label, ans.x, ans.y);
+            });
+
+            ctx.fillStyle = questionSolved ? '#00ff77' : '#475569';
+            ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+            ctx.fillStyle = '#0b251a';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(questionSolved ? '➔' : '🔒', goal.x + goal.width/2, goal.y + goal.height/2);
+
+            ctx.fillStyle = '#ff5757';
+            enemies.forEach(enemy => {
+                ctx.beginPath();
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            });
+
+            ctx.imageSmoothingEnabled = false;
+            let activeSprite = player.currentFrame === 0 ? spriteIdling : spriteWalking;
+            ctx.drawImage(activeSprite, player.x, player.y, player.size, player.size);
+        }
+
+        function triggerOverlay(title, desc) {
+            overlayTitle.innerText = title;
+            overlayDesc.innerText = desc;
+            btnAction.innerText = (gameState === 'LEVEL_CLEAR') ? 'SIGUIENTE ÁREA' : 'VOLVER A INTENTAR';
+            overlay.classList.remove('hidden');
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>

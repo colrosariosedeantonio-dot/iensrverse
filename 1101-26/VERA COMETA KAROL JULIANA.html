@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BioEscape: El Viaje Fúngico</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #12121c;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 10px;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #level-title {
+            text-align: center;
+            font-size: 16px;
+            color: #4af6c3;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        canvas {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: #181824;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            border: 3px solid #2c2c3e;
+            display: block;
+        }
+        /* Controles Táctiles Móviles */
+        #controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            width: 180px;
+            height: 180px;
+            margin: 10px auto 0 auto;
+        }
+        .btn-dir {
+            background: #2a2a3e;
+            border: 2px solid #3e3e5c;
+            border-radius: 12px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #1e1e2d;
+        }
+        .btn-dir:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #1e1e2d;
+            background: #3a3a54;
+        }
+        #btn-up { grid-column: 2; grid-row: 1; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 3; }
+
+        /* Modal Interactivo de Trivia */
+        #trivia-modal {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            border-radius: 12px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 10;
+            border: 3px solid #4af6c3;
+            text-align: center;
+        }
+        #trivia-modal h3 {
+            color: #4af6c3;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        #question-text {
+            font-size: 15px;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        .option-btn {
+            width: 100%;
+            background: #222232;
+            border: 2px solid #444460;
+            color: white;
+            padding: 12px;
+            margin: 6px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .option-btn:hover {
+            background: #2d2d44;
+            border-color: #4af6c3;
+        }
+        
+        /* Pantallas de Fin de Juego / Victoria */
+        #overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            border-radius: 12px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9;
+        }
+        #overlay h2 { font-size: 28px; margin-bottom: 15px; color: #ff4a4a; }
+        #overlay.win h2 { color: #4af6c3; }
+        #overlay button {
+            background: #4af6c3;
+            color: #12121c;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="hud">
+            <div id="hud-level">Nivel: 1/8</div>
+            <div id="hud-score">Esporas: 0/1</div>
+            <div id="hud-lives">Vidas: ❤️❤️❤️</div>
+        </div>
+        <div id="level-title">Sopa Primordial</div>
+        
+        <div style="position: relative; width: 100%;">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            
+            <!-- Modal de Trivia -->
+            <div id="trivia-modal">
+                <h3>🧪 TRIVIA BIOLÓGICA 🧪</h3>
+                <p id="question-text">¿Pregunta?</p>
+                <button class="option-btn" onclick="checkAnswer(0)">A</button>
+                <button class="option-btn" onclick="checkAnswer(1)">B</button>
+                <button class="option-btn" onclick="checkAnswer(2)">C</button>
+            </div>
+
+            <!-- Pantalla Estado Final -->
+            <div id="overlay">
+                <h2 id="overlay-title">GAME OVER</h2>
+                <p id="overlay-desc">Fuiste consumido por los virus.</p>
+                <button onclick="restartGame()">Jugar de Nuevo</button>
+            </div>
+        </div>
+
+        <div id="controls">
+            <div class="btn-dir" id="btn-up">▲</div>
+            <div class="btn-dir" id="btn-left">◀</div>
+            <div class="btn-dir" id="btn-right">▶</div>
+            <div class="btn-dir" id="btn-down">▼</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        ctx.imageSmoothingEnabled = false;
+
+        // --- SPRITES VECTORIALES EN LÍNEA (SVG Puros en Base64) ---
+        // Frame 1: Hongo Quieto / Frente
+        const svgIdle = `data:image/svg+xml;base64,${btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+                <!-- Sombrero Rojo -->
+                <path d="M4 2h8v1H4zM2 3h12v1H2zM1 4h14v3H1zM0 7h16v2H0z" fill="#e63946"/>
+                <!-- Manchas Blancas -->
+                <path d="M4 4h2v1H4zM10 4h2v1H10zM2 6h2v1H2zM12 6h2v1H12zM7 7h2v1H7z" fill="#ffffff"/>
+                <!-- Tallo/Cuerpo Blanco -->
+                <path d="M5 9h6v5H5z" fill="#f1faee"/>
+                <!-- Sombra Tallo -->
+                <path d="M9 9h2v5H9z" fill="#e6e8e6"/>
+                <!-- Ojos -->
+                <path d="M6 11h1v1H6zM9 11h1v1H9z" fill="#1d3557"/>
+                <!-- Base / Micelio inferior -->
+                <path d="M4 14h8v1H4z" fill="#f1faee"/>
+            </svg>
+        `)}`;
+
+        // Frame 2: Hongo Caminando (Pies/Micelio alternados)
+        const svgWalk = `data:image/svg+xml;base64,${btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+                <!-- Sombrero Rojo -->
+                <path d="M4 2h8v1H4zM2 3h12v1H2zM1 4h14v3H1zM0 7h16v2H0z" fill="#e63946"/>
+                <!-- Manchas Blancas -->
+                <path d="M4 4h2v1H4zM10 4h2v1H10zM2 6h2v1H2zM12 6h2v1H12zM7 7h2v1H7z" fill="#ffffff"/>
+                <!-- Tallo inclinado -->
+                <path d="M5 9h6v4H5z" fill="#f1faee"/>
+                <path d="M9 9h2v4H9z" fill="#e6e8e6"/>
+                <!-- Ojos con movimiento animado -->
+                <path d="M5 11h1v1H5zM8 11h1v1H8z" fill="#1d3557"/>
+                <!-- Micelio en movimiento (pies alternados) -->
+                <path d="M3 13h3v2H3zM10 13h3v2H10z" fill="#f1faee"/>
+            </svg>
+        `)}`;
+
+        const imgIdle = new Image(); imgIdle.src = svgIdle;
+        const imgWalk = new Image(); imgWalk.src = svgWalk;
+
+        // --- CONFIGURACIÓN DE NIVELES Y BANCO DE PREGUNTAS ---
+        const levels = [
+            {
+                name: "Sopa Primordial",
+                enemyCount: 3, enemySpeed: 1.5, enemyType: "Coacervado", color: "#3a6073",
+                q: "¿Qué estructuras moleculares precursoras de la vida celular fueron propuestas por Oparin?",
+                a: ["Coacervados", "Priones", "Mitocondrias"], correct: 0
+            },
+            {
+                name: "Invasión Viral",
+                enemyCount: 5, enemySpeed: 2.0, enemyType: "Bacteriófago", color: "#5c2575",
+                q: "¿Qué tipo de microorganismo celular parasita exclusivamente a las bacterias?",
+                a: ["Un hongo micelial", "Un bacteriófago (virus)", "Un protozoo"], correct: 1
+            },
+            {
+                name: "El Reino Procariota",
+                enemyCount: 6, enemySpeed: 2.3, enemyType: "Bacteria", color: "#1f402b",
+                q: "¿Cuál de las siguientes estructuras estructurales define a una célula procariota?",
+                a: ["Carecer de núcleo definido", "Tener mitocondrias gigantes", "Poseer membrana nuclear"], correct: 0
+            },
+            {
+                name: "Centrales Energéticas",
+                enemyCount: 7, enemySpeed: 2.6, enemyType: "Radical Libre", color: "#7a5c1d",
+                q: "I¿En qué organelo celular se produce la mayor cantidad de ATP mediante respiración celular?",
+                a: ["Lisosoma", "Aparato de Golgi", "Mitocomdria"], correct: 2
+            },
+            {
+                name: "Sistema Inmune",
+                enemyCount: 5, enemySpeed: 3.0, enemyType: "Macrófago", color: "#7a1d2e",
+                q: "¿Cómo se llama el proceso por el cual los macrófagos engullen patógenos?",
+                a: ["Fagocitosis", "Mitosis", "Osmosis inversa"], correct: 0
+            },
+            {
+                name: "Mutación Genética",
+                enemyCount: 8, enemySpeed: 3.2, enemyType: "Mutágeno", color: "#451e5e",
+                q: "¿Cuál es la biomolécula portadora de la información genética en los seres vivos?",
+                a: ["ARN de transferencia", "ADN (Ácido Desoxirribonucleico)", "Polipéptido"], correct: 1
+            },
+            {
+                name: "Torrente Sanguíneo",
+                enemyCount: 9, enemySpeed: 3.5, enemyType: "Plaqueta", color: "#541414",
+                q: "¿Qué proteína es la encargada de transportar oxígeno en los glóbulos rojos?",
+                a: ["Hemoglobina", "Insulina", "Queratina"], correct: 0
+            },
+            {
+                name: "Homeostasis Global",
+                enemyCount: 12, enemySpeed: 4.0, enemyType: "Toxina Terminal", color: "#1c3540",
+                q: "¿Cómo se denomina al estado de equilibrio dinámico interno de un organismo vivo?",
+                a: ["Metástasis", "Homeostasis", "Catabolismo celular"], correct: 1
+            }
+        ];
+
+        let currentLevelIndex = 0;
+        let lives = 3;
+        let score = 0; 
+        let targetScore = 1;
+        let gameOver = false;
+        let gameActive = true;
+        let triviaActive = false;
+
+        let player = { x: 50, y: 180, size: 28, speed: 4, vx: 0, vy: 0, frame: 0, animTimer: 0 };
+        let enemies = [];
+        let spore = { x: 0, y: 0, size: 16, active: true };
+        let goal = { x: 350, y: 170, size: 35, open: false };
+
+        let keys = {};
+
+        function initLevel() {
+            const lvl = levels[currentLevelIndex];
+            document.getElementById("hud-level").innerText = `Nivel: ${currentLevelIndex + 1}/8`;
+            document.getElementById("level-title").innerText = lvl.name;
+            document.getElementById("hud-score").innerText = `Esporas: 0/${targetScore}`;
+            
+            player.x = 30;
+            player.y = canvas.height / 2 - player.size / 2;
+            player.vx = 0;
+            player.vy = 0;
+            
+            goal.x = canvas.width - 50;
+            goal.y = canvas.height / 2 - goal.size / 2;
+            goal.open = false;
+            score = 0;
+
+            spore.x = 150 + Math.random() * 100;
+            spore.y = 50 + Math.random() * 300;
+            spore.active = true;
+
+            enemies = [];
+            for(let i=0; i < lvl.enemyCount; i++) {
+                enemies.push({
+                    x: 100 + Math.random() * 180,
+                    y: Math.random() * (canvas.height - 20),
+                    size: 16 + Math.random() * 8,
+                    vy: (Math.random() > 0.5 ? 1 : -1) * lvl.enemySpeed,
+                    vx: (Math.random() > 0.5 ? 0.5 : -0.5) * (lvl.enemySpeed * 0.3)
+                });
+            }
+            gameActive = true;
+            triviaActive = false;
+            document.getElementById("trivia-modal").style.display = "none";
+        }
+
+        window.addEventListener("keydown", e => { keys[e.key.toLowerCase()] = true; });
+        window.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+
+        function bindTouchBtn(id, vx, vy) {
+            const btn = document.getElementById(id);
+            btn.addEventListener("touchstart", (e) => { e.preventDefault(); player.vx = vx * player.speed; player.vy = vy * player.speed; });
+            btn.addEventListener("touchend", (e) => { e.preventDefault(); player.vx = 0; player.vy = 0; });
+        }
+        bindTouchBtn("btn-up", 0, -1);
+        bindTouchBtn("btn-down", 0, 1);
+        bindTouchBtn("btn-left", -1, 0);
+        bindTouchBtn("btn-right", 1, 0);
+
+        function update() {
+            if (!gameActive || triviaActive || gameOver) return;
+
+            if (keys["arrowup"] || keys["w"]) player.vy = -player.speed;
+            else if (keys["arrowdown"] || keys["s"]) player.vy = player.speed;
+            else if (!navigator.maxTouchPoints) player.vy = 0;
+
+            if (keys["arrowleft"] || keys["a"]) player.vx = -player.speed;
+            else if (keys["arrowright"] || keys["d"]) player.vx = player.speed;
+            else if (!navigator.maxTouchPoints) player.vx = 0;
+
+            player.x += player.vx;
+            player.y += player.vy;
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
+            if (player.y < 0) player.y = 0;
+            if (player.y + player.size > canvas.height) player.y = canvas.height - player.size;
+
+            if (player.vx !== 0 || player.vy !== 0) {
+                player.animTimer++;
+                if (player.animTimer > 8) {
+                    player.frame = player.frame === 0 ? 1 : 0;
+                    player.animTimer = 0;
+                }
+            } else {
+                player.frame = 0;
+            }
+
+            enemies.forEach(enemy => {
+                enemy.y += enemy.vy;
+                enemy.x += enemy.vx;
+
+                if (enemy.y < 0 || enemy.y + enemy.size > canvas.height) enemy.vy *= -1;
+                if (enemy.x < 80 || enemy.x > 280) enemy.vx *= -1;
+
+                if (checkCollision(player, enemy)) {
+                    handlePlayerHit();
+                }
+            });
+
+            if (spore.active && checkCollision(player, spore)) {
+                spore.active = false;
+                triggerTrivia();
+            }
+
+            if (goal.open && checkCollision(player, goal)) {
+                nextLevel();
+            }
+        }
+
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.size &&
+                   rect1.x + rect1.size > rect2.x &&
+                   rect1.y < rect2.y + rect2.size &&
+                   rect1.y + rect1.size > rect2.y;
+        }
+
+        function handlePlayerHit() {
+            lives--;
+            updateLivesHUD();
+            if (lives <= 0) {
+                endGame(false, "Tu micelio celular se desintegró por completo.");
+            } else {
+                player.x = 20;
+                player.y = canvas.height / 2 - player.size / 2;
+            }
+        }
+
+        function updateLivesHUD() {
+            document.getElementById("hud-lives").innerText = "Vidas: " + "❤️".repeat(lives);
+        }
+
+        function triggerTrivia() {
+            triviaActive = true;
+            player.vx = 0; player.vy = 0;
+            const lvl = levels[currentLevelIndex];
+            
+            document.getElementById("question-text").innerText = lvl.q;
+            const buttons = document.querySelectorAll(".option-btn");
+            buttons.forEach((btn, index) => {
+                btn.innerText = lvl.a[index];
+                btn.style.background = "#222232";
+                btn.style.borderColor = "#444460";
+            });
+            document.getElementById("trivia-modal").style.display = "flex";
+        }
+
+        function checkAnswer(selectedIndex) {
+            const lvl = levels[currentLevelIndex];
+            const buttons = document.querySelectorAll(".option-btn");
+            
+            if (selectedIndex === lvl.correct) {
+                buttons[selectedIndex].style.background = "#1b4d3e";
+                buttons[selectedIndex].style.borderColor = "#4af6c3";
+                setTimeout(() => {
+                    score = 1;
+                    document.getElementById("hud-score").innerText = `Esporas: 1/1`;
+                    goal.open = true;
+                    triviaActive = false;
+                    document.getElementById("trivia-modal").style.display = "none";
+                }, 800);
+            } else {
+                buttons[selectedIndex].style.background = "#541414";
+                buttons[selectedIndex].style.borderColor = "#ff4a4a";
+                lives--;
+                updateLivesHUD();
+                setTimeout(() => {
+                    triviaActive = false;
+                    document.getElementById("trivia-modal").style.display = "none";
+                    if (lives <= 0) {
+                        endGame(false, "Respuesta incorrecta. Tu organismo no sobrevivió a la mutación.");
+                    } else {
+                        spore.x = 100 + Math.random() * 200;
+                        spore.y = 50 + Math.random() * 300;
+                        spore.active = true;
+                    }
+                }, 1000);
+            }
+        }
+
+        function nextLevel() {
+            currentLevelIndex++;
+            if (currentLevelIndex >= levels.length) {
+                endGame(true, "¡Has superado la evolución celular manteniendo la Homeostasis!");
+            } else {
+                initLevel();
+            }
+        }
+
+        function endGame(isWin, desc) {
+            gameActive = false;
+            const overlay = document.getElementById("overlay");
+            overlay.style.display = "flex";
+            if (isWin) {
+                overlay.classList.add("win");
+                document.getElementById("overlay-title").innerText = "🏆 ¡VICTORIA BIOLÓGICA! 🏆";
+            } else {
+                overlay.classList.remove("win");
+                document.getElementById("overlay-title").innerText = "FIN DEL VIAJE";
+            }
+            document.getElementById("overlay-desc").innerText = desc;
+        }
+
+        function restartGame() {
+            currentLevelIndex = 0;
+            lives = 3;
+            updateLivesHUD();
+            document.getElementById("overlay").style.display = "none";
+            initLevel();
+        }
+
+        function render() {
+            ctx.fillStyle = levels[currentLevelIndex].color;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+            ctx.lineWidth = 2;
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            if (goal.open) {
+                ctx.fillStyle = "#4af6c3";
+                ctx.shadowColor = "#4af6c3";
+                ctx.shadowBlur = 15;
+            } else {
+                ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+                ctx.shadowBlur = 0;
+            }
+            ctx.fillRect(goal.x, goal.y, goal.size, goal.size);
+            ctx.shadowBlur = 0; 
+
+            ctx.strokeStyle = "#12121c";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(goal.x + 4, goal.y + 4, goal.size - 8, goal.size - 8);
+
+            if (spore.active) {
+                ctx.fillStyle = "#ffb703";
+                ctx.beginPath();
+                ctx.arc(spore.x + spore.size/2, spore.y + spore.size/2, spore.size/2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#ffffff";
+                ctx.beginPath();
+                ctx.arc(spore.x + spore.size/2 - 2, spore.y + spore.size/2 - 2, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = "#ff4a4a";
+            enemies.forEach(enemy => {
+                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+                ctx.fillStyle = "#000000";
+                ctx.fillRect(enemy.x + enemy.size/2 - 2, enemy.y + enemy.size/2 - 2, 4, 4);
+                ctx.fillStyle = "#ff4a4a";
+            });
+
+            const activeSprite = player.frame === 0 ? imgIdle : imgWalk;
+            if (activeSprite.complete) {
+                ctx.drawImage(activeSprite, player.x, player.y, player.size, player.size);
+            } else {
+                ctx.fillStyle = "#e63946";
+                ctx.fillRect(player.x, player.y, player.size, player.size);
+            }
+        }
+
+        function loop() {
+            update();
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        initLevel();
+        loop();
+    </script>
+</body>
+</html>
