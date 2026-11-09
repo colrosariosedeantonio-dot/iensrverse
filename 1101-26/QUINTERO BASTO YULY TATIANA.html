@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Math Quest: 10 Niveles</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #121214;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 100%;
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+            background-color: #1a1a1e;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #26262b;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 2px solid #3f3f46;
+            z-index: 10;
+        }
+        .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .stat-val {
+            color: #38bdf8;
+        }
+        #canvas-wrapper {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            background-color: #18181b;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        /* Pantallas superpuestas */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(24, 24, 27, 0.85);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            z-index: 20;
+        }
+        .hidden {
+            display: none !important;
+        }
+        h1, h2 {
+            margin-bottom: 15px;
+            color: #f43f5e;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        p {
+            margin-bottom: 20px;
+            font-size: 16px;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+        .math-box {
+            background-color: #27272a;
+            border: 2px solid #f43f5e;
+            border-radius: 8px;
+            padding: 15px 30px;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #3f3f46;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .btn-primary {
+            background-color: #f43f5e;
+        }
+        .btn-primary:hover {
+            background-color: #e11d48;
+        }
+        .btn-option {
+            background-color: #2563eb;
+        }
+        .btn-option:hover {
+            background-color: #1d4ed8;
+        }
+        /* Controles táctiles móviles */
+        #controls-container {
+            display: none;
+            background-color: #26262b;
+            padding: 15px;
+            justify-content: center;
+            align-items: center;
+            border-top: 2px solid #3f3f46;
+            z-index: 10;
+        }
+        .dpad {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+        .dpad-btn {
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            background-color: #3f3f46;
+            border: 2px solid #52525b;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .dpad-btn:active {
+            background-color: #f43f5e;
+            border-color: #fda4af;
+        }
+        #btn-up    { top: 0; left: 47px; }
+        #btn-down  { bottom: 0; left: 47px; }
+        #btn-left  { top: 47px; left: 0; }
+        #btn-right { top: 47px; right: 0; }
+
+        @media (max-width: 768px) {
+            #controls-container {
+                display: flex;
+            }
+            p { font-size: 14px; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- HUD Superior -->
+        <div id="hud">
+            <div class="hud-item">Nivel: <span id="lbl-level" class="stat-val">1/10</span></div>
+            <div class="hud-item">Vidas: <span id="lbl-lives" class="stat-val">3</span></div>
+            <div class="hud-item">Llaves: <span id="lbl-keys" class="stat-val">0/1</span></div>
+        </div>
+
+        <!-- Área de Renderizado -->
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- Pantalla de Inicio -->
+            <div id="screen-start" class="overlay">
+                <h1>MATH QUEST</h1>
+                <p>Supera los 10 niveles matemáticos esquivando oponentes, recoge la llave respondiendo correctamente el acertijo matemático y llega al portal de meta.</p>
+                <button class="btn-primary" id="btn-start-game">JUGAR</button>
+            </div>
+
+            <!-- Portal de Acertijo Matemático -->
+            <div id="screen-math" class="overlay hidden">
+                <h2>¿DESBLOQUEAR LLAVE?</h2>
+                <p>Resuelve la ecuación matemática para poder recoger la llave del nivel:</p>
+                <div class="math-box" id="math-question">5 + 3 = ?</div>
+                <div class="options-grid" id="math-options">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <!-- Pantalla de Transición o Victoria -->
+            <div id="screen-msg" class="overlay hidden">
+                <h2 id="msg-title">¡Nivel Completado!</h2>
+                <p id="msg-desc">Prepárate para el siguiente reto matemáticos.</p>
+                <button class="btn-primary" id="btn-msg-next">CONTINUAR</button>
+            </div>
+        </div>
+
+        <!-- Controles Táctiles en Pantalla -->
+        <div id="controls-container">
+            <div class="dpad">
+                <div class="dpad-btn" id="btn-up">▲</div>
+                <div class="dpad-btn" id="btn-left">◀</div>
+                <div class="dpad-btn" id="btn-right">▶</div>
+                <div class="dpad-btn" id="btn-down">▼</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Definición de SVGs Inline para Personaje y Elementos en Pixel Art -->
+    <div style="display:none;">
+        <!-- Jugador: Frame Quieto / Frente -->
+        <svg id="svg-player-idle" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
+            <!-- Pelo / Casco -->
+            <path d="M4 1h8v1H4zm-1 1h10v2H3z" fill="#1e293b"/>
+            <!-- Piel -->
+            <path d="M3 4h10v4H3z" fill="#fbcfe8"/>
+            <!-- Ojos -->
+            <rect x="5" y="5" width="2" height="2" fill="#0f172a"/>
+            <rect x="9" y="5" width="2" height="2" fill="#0f172a"/>
+            <!-- Ropa -->
+            <path d="M3 8h10v5H3z" fill="#f43f5e"/>
+            <!-- Brazos -->
+            <rect x="2" y="9" width="1" height="3" fill="#fbcfe8"/>
+            <rect x="13" y="9" width="1" height="3" fill="#fbcfe8"/>
+            <!-- Piernas Estáticas -->
+            <rect x="4" y="13" width="3" height="3" fill="#1e293b"/>
+            <rect x="9" y="13" width="3" height="3" fill="#1e293b"/>
+        </svg>
+
+        <!-- Jugador: Frame Caminando -->
+        <svg id="svg-player-walk" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
+            <path d="M4 1h8v1H4zm-1 1h10v2H3z" fill="#1e293b"/>
+            <path d="M3 4h10v4H3z" fill="#fbcfe8"/>
+            <rect x="5" y="5" width="2" height="2" fill="#0f172a"/>
+            <rect x="9" y="5" width="2" height="2" fill="#0f172a"/>
+            <path d="M3 8h10v5H3z" fill="#f43f5e"/>
+            <!-- Brazos balanceándose -->
+            <rect x="2" y="8" width="1" height="3" fill="#fbcfe8"/>
+            <rect x="13" y="10" width="1" height="3" fill="#fbcfe8"/>
+            <!-- Piernas Alternadas (Ciclo Caminata) -->
+            <rect x="3" y="13" width="3" height="2" fill="#1e293b"/>
+            <rect x="10" y="13" width="3" height="3" fill="#1e293b"/>
+        </svg>
+
+        <!-- Oponente Pixel Art -->
+        <svg id="svg-enemy" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
+            <path d="M2 2h12v12H2z" fill="#9333ea"/>
+            <rect x="4" y="5" width="2" height="2" fill="#ffff00"/>
+            <rect x="10" y="5" width="2" height="2" fill="#ffff00"/>
+            <path d="M4 10h8v1H4z" fill="#000000"/>
+        </svg>
+
+        <!-- Llave / Desafío Matemático -->
+        <svg id="svg-key" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
+            <path d="M6 3h4v4H6zm4 2h4v2h-4zm0 3h2v2h-2zm2 2h2v2h-2z" fill="#fbbf24"/>
+        </svg>
+
+        <!-- Meta / Portal -->
+        <svg id="svg-portal" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
+            <path d="M2 1h12v14H2z" fill="#06b6d4"/>
+            <path d="M4 3h8v10H4z" fill="#0891b2"/>
+            <path d="M6 5h4v6H6z" fill="#0ed5f4"/>
+        </svg>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Referencias de SVGs cargados a imágenes en memoria para usar en Canvas de inmediato
+        const assets = {};
+        function loadSVGAssets() {
+            const ids = ['svg-player-idle', 'svg-player-walk', 'svg-enemy', 'svg-key', 'svg-portal'];
+            ids.forEach(id => {
+                const svgEl = document.getElementById(id);
+                const svgString = new XMLSerializer().serializeToString(svgEl);
+                const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+                const url = URL.createObjectURL(svgBlob);
+                const img = new Image();
+                img.src = url;
+                assets[id] = img;
+            });
+        }
+        loadSVGAssets();
+
+        // Estado del Juego
+        let gameState = {
+            level: 1,
+            maxLevels: 10,
+            lives: 3,
+            hasKey: false,
+            score: 0,
+            currentMathAnswer: null,
+            playing: false,
+            keysPressed: {},
+            animationFrame: 0
+        };
+
+        // Dimensiones virtuales del mapa del juego
+        const virtualWidth = 800;
+        const virtualHeight = 500;
+
+        // Entidades
+        let player = {
+            x: 50,
+            y: 220,
+            width: 32,
+            height: 32,
+            speed: 5,
+            isMoving: false
+        };
+
+        let enemies = [];
+        let mathKey = { x: 400, y: 220, width: 30, height: 30, active: true };
+        let portal = { x: 720, y: 210, width: 45, height: 60 };
+
+        // Ajuste de resolución responsiva de canvas
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        setTimeout(resizeCanvas, 100);
+
+        // Generador de problemas matemáticos según nivel de dificultad
+        function generateMathProblem(level) {
+            let num1, num2, operation, questionText, correctAnswer;
+            
+            if (level <= 2) {
+                // Sumas simples
+                num1 = Math.floor(Math.random() * 10) + 1;
+                num2 = Math.floor(Math.random() * 10) + 1;
+                questionText = `${num1} + ${num2} = ?`;
+                correctAnswer = num1 + num2;
+            } else if (level <= 4) {
+                // Restas y multiplicaciones bajas
+                num1 = Math.floor(Math.random() * 15) + 5;
+                num2 = Math.floor(Math.random() * num1);
+                questionText = `${num1} - ${num2} = ?`;
+                correctAnswer = num1 - num2;
+            } else if (level <= 6) {
+                // Multiplicaciones intermedias
+                num1 = Math.floor(Math.random() * 8) + 2;
+                num2 = Math.floor(Math.random() * 9) + 2;
+                questionText = `${num1} × ${num2} = ?`;
+                correctAnswer = num1 * num2;
+            } else if (level <= 8) {
+                // Ecuaciones algebraicas simples básicas
+                num1 = Math.floor(Math.random() * 5) + 2; // x
+                num2 = Math.floor(Math.random() * 10) + 1;
+                let result = num1 * 4 + num2;
+                questionText = `Si 4x + ${num2} = ${result}, x = ?`;
+                correctAnswer = num1;
+            } else {
+                // Desafíos aritméticos avanzados combinados
+                num1 = Math.floor(Math.random() * 20) + 10;
+                num2 = Math.floor(Math.random() * 10) + 2;
+                let num3 = Math.floor(Math.random() * 5) + 1;
+                questionText = `(${num1} + ${num2}) - ${num3} = ?`;
+                correctAnswer = (num1 + num2) - num3;
+            }
+
+            // Generar 4 opciones únicas
+            let options = [correctAnswer];
+            while (options.length < 4) {
+                let wrong = correctAnswer + (Math.floor(Math.random() * 7) - 3);
+                if (wrong !== correctAnswer && wrong >= 0 && !options.includes(wrong)) {
+                    options.push(wrong);
+                } else if (!options.includes(wrong + 5)) {
+                    options.push(correctAnswer + options.length + 2);
+                }
+            }
+            // Mezclar opciones
+            options.sort(() => Math.random() - 0.5);
+
+            return { questionText, correctAnswer, options };
+        }
+
+        // Inicialización y configuración del Nivel
+        function initLevel() {
+            gameState.hasKey = false;
+            mathKey.active = true;
+            player.x = 40;
+            player.y = virtualHeight / 2 - player.height / 2;
+            
+            // Actualizar HUD técnico
+            document.getElementById('lbl-level').innerText = `${gameState.level}/${gameState.maxLevels}`;
+            document.getElementById('lbl-lives').innerText = gameState.lives;
+            document.getElementById('lbl-keys').innerText = `0/1`;
+
+            // Construcción de oponentes según la progresión del nivel
+            enemies = [];
+            let enemyCount = 2 + gameState.level; // Sube la cantidad linealmente
+            let speedMultiplier = 1 + (gameState.level * 0.15); // Aumenta la velocidad base
+
+            for (let i = 0; i < enemyCount; i++) {
+                enemies.push({
+                    x: 150 + (i * (500 / enemyCount)),
+                    y: Math.random() * (virtualHeight - 80) + 40,
+                    width: 30,
+                    height: 30,
+                    speedY: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 2) * speedMultiplier
+                });
+            }
+        }
+
+        // Mostrar Modal Matemático al tocar la llave
+        function triggerMathChallenge() {
+            gameState.playing = false;
+            const problem = generateMathProblem(gameState.level);
+            gameState.currentMathAnswer = problem.correctAnswer;
+
+            document.getElementById('math-question').innerText = problem.questionText;
+            const optionsGrid = document.getElementById('math-options');
+            optionsGrid.innerHTML = '';
+
+            problem.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-option';
+                btn.innerText = opt;
+                btn.onclick = () => selectMathAnswer(opt);
+                optionsGrid.appendChild(btn);
+            });
+
+            document.getElementById('screen-math').classList.remove('hidden');
+        }
+
+        function selectMathAnswer(selected) {
+            document.getElementById('screen-math').classList.add('hidden');
+            if (selected === gameState.currentMathAnswer) {
+                gameState.hasKey = true;
+                mathKey.active = false;
+                document.getElementById('lbl-keys').innerText = `1/1`;
+                gameState.playing = true;
+                gameLoop();
+            } else {
+                // Penalización por fallo matemático
+                gameState.lives--;
+                document.getElementById('lbl-lives').innerText = gameState.lives;
+                if (gameState.lives <= 0) {
+                    showEndGameScreen(false);
+                } else {
+                    alert("¡Incorrecto! Pierdes una vida. Inténtalo de nuevo.");
+                    gameState.playing = true;
+                    gameLoop();
+                }
+            }
+        }
+
+        function showEndGameScreen(isVictory) {
+            gameState.playing = false;
+            const screen = document.getElementById('screen-msg');
+            const title = document.getElementById('msg-title');
+            const desc = document.getElementById('msg-desc');
+            const btn = document.getElementById('btn-msg-next');
+
+            if (isVictory) {
+                title.innerText = "¡VICTORIA TOTAL!";
+                desc.innerText = "Has superado con éxito los 10 niveles y dominado las matemáticas del reino.";
+                btn.innerText = "REINICIAR";
+                btn.onclick = () => { window.location.reload(); };
+            } else {
+                title.innerText = "FIN DEL JUEGO";
+                desc.innerText = `Te has quedado sin vidas en el Nivel ${gameState.level}. ¡Sigue practicando tus matemáticas!`;
+                btn.innerText = "REINTENTAR";
+                btn.onclick = () => {
+                    gameState.level = 1;
+                    gameState.lives = 3;
+                    initLevel();
+                    screen.classList.add('hidden');
+                    gameState.playing = true;
+                    gameLoop();
+                };
+            }
+            screen.classList.remove('hidden');
+        }
+
+        function showNextLevelScreen() {
+            gameState.playing = false;
+            const screen = document.getElementById('screen-msg');
+            const title = document.getElementById('msg-title');
+            const desc = document.getElementById('msg-desc');
+            const btn = document.getElementById('btn-msg-next');
+
+            title.innerText = `¡Nivel ${gameState.level} Completado!`;
+            desc.innerText = `Listos para avanzar al nivel ${gameState.level + 1}. Mayor dificultad matemática y física te espera.`;
+            btn.innerText = "AVANZAR";
+            btn.onclick = () => {
+                gameState.level++;
+                initLevel();
+                screen.classList.add('hidden');
+                gameState.playing = true;
+                gameLoop();
+            };
+            screen.classList.remove('hidden');
+        }
+
+        // Manejo de Colisiones entre AABB rectángulos
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        // Inputs del Teclado y D-Pad móvil
+        const keys = gameState.keysPressed;
+        window.addEventListener('keydown', e => { keys[e.key] = true; });
+        window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+        // Configuración de botones táctiles
+        function setupMobileControls() {
+            const setupButton = (id, keyName) => {
+                const btn = document.getElementById(id);
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+            };
+            setupButton('btn-up', 'ArrowUp');
+            setupButton('btn-down', 'ArrowDown');
+            setupButton('btn-left', 'ArrowLeft');
+            setupButton('btn-right', 'ArrowRight');
+        }
+        setupMobileControls();
+
+        // Actualización Lógica de Entidades
+        function update() {
+            player.isMoving = false;
+
+            if (keys['ArrowUp'] || keys['w']) { player.y -= player.speed; player.isMoving = true; }
+            if (keys['ArrowDown'] || keys['s']) { player.y += player.speed; player.isMoving = true; }
+            if (keys['ArrowLeft'] || keys['a']) { player.x -= player.speed; player.isMoving = true; }
+            if (keys['ArrowRight'] || keys['d']) { player.x += player.speed; player.isMoving = true; }
+
+            // Límites del mapa virtual
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x + player.width > virtualWidth) player.x = virtualWidth - player.width;
+            if (player.y + player.height > virtualHeight) player.y = virtualHeight - player.height;
+
+            // Movimiento de oponentes
+            enemies.forEach(enemy => {
+                enemy.y += enemy.speedY;
+                // Rebotar en bordes superior e inferior
+                if (enemy.y < 0 || enemy.y + enemy.height > virtualHeight) {
+                    enemy.speedY *= -1;
+                }
+
+                // Detección de daño con el jugador
+                if (checkCollision(player, enemy)) {
+                    gameState.lives--;
+                    document.getElementById('lbl-lives').innerText = gameState.lives;
+                    player.x = 40; // Reset posición de seguridad inicial
+                    player.y = virtualHeight / 2 - player.height / 2;
+                    if (gameState.lives <= 0) {
+                        showEndGameScreen(false);
+                    }
+                }
+            });
+
+            // Recoger llave matemática
+            if (mathKey.active && checkCollision(player, mathKey)) {
+                triggerMathChallenge();
+            }
+
+            // Llegar a la meta / Portal
+            if (checkCollision(player, portal)) {
+                if (gameState.hasKey) {
+                    if (gameState.level >= gameState.maxLevels) {
+                        showEndGameScreen(true);
+                    } else {
+                        showNextLevelScreen();
+                    }
+                } else {
+                    // Feedback visual o alerta si intenta cruzar sin llave
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '16px sans-serif';
+                    ctx.fillText("¡Necesitas resolver el reto matemático primero!", player.x - 50, player.y - 10);
+                }
+            }
+
+            gameState.animationFrame++;
+        }
+
+        // Renderizado Completo escalado dinámicamente al Canvas responsivo
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Guardar contexto para aplicar escalado responsivo proporcional
+            ctx.save();
+            const scaleX = canvas.width / virtualWidth;
+            const scaleY = canvas.height / virtualHeight;
+            ctx.scale(scaleX, scaleY);
+
+            // Dibujar Portal de Meta
+            if (assets['svg-portal']) {
+                ctx.drawImage(assets['svg-portal'], portal.x, portal.y, portal.width, portal.height);
+            }
+
+            // Dibujar Llave matemática si está activa
+            if (mathKey.active && assets['svg-key']) {
+                ctx.drawImage(assets['svg-key'], mathKey.x, mathKey.y, mathKey.width, mathKey.height);
+            }
+
+            // Dibujar Oponentes animados
+            if (assets['svg-enemy']) {
+                enemies.forEach(enemy => {
+                    ctx.drawImage(assets['svg-enemy'], enemy.x, enemy.y, enemy.width, enemy.height);
+                });
+            }
+
+            // Dibujar Jugador / Alternación dinámica de fotogramas SVG (Idle vs Walk) según ciclo de animación
+            let currentPlayerSprite = assets['svg-player-idle'];
+            if (player.isMoving && Math.floor(gameState.animationFrame / 10) % 2 === 0) {
+                currentPlayerSprite = assets['svg-player-walk'];
+            }
+
+            if (currentPlayerSprite) {
+                ctx.drawImage(currentPlayerSprite, player.x, player.y, player.width, player.height);
+            }
+
+            ctx.restore();
+        }
+
+        // Bucle principal de ejecución
+        function gameLoop() {
+            if (!gameState.playing) return;
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Activadores iniciales de juego
+        document.getElementById('btn-start-game').onclick = () => {
+            document.getElementById('screen-start').classList.add('hidden');
+            gameState.playing = true;
+            initLevel();
+            gameLoop();
+        };
+    </script>
+</body>
+</html>

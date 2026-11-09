@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Block Blast Matemático - Ana Sofía 11-1</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #0f172a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 850px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background-color: #1e293b;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+            z-index: 10;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            transition: opacity 0.3s ease;
+        }
+        .screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Start Screen */
+        h1 {
+            font-size: 2.5rem;
+            color: #38bdf8;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+            font-weight: 800;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            margin-bottom: 40px;
+        }
+        .credits {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 40px;
+            width: 100%;
+        }
+        .credits p {
+            font-size: 1.1rem;
+            color: #cbd5e1;
+            margin-bottom: 5px;
+        }
+        .credits .name {
+            font-size: 1.5rem;
+            color: #f43f5e;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+        }
+        .credits .grade {
+            font-size: 1.3rem;
+            color: #10b981;
+            font-weight: 600;
+        }
+        .btn {
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        /* HUD Header */
+        #hud {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0f172a;
+            border-bottom: 2px solid #334155;
+        }
+        .score-box {
+            display: flex;
+            flex-direction: column;
+        }
+        .score-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #f8fafc;
+        }
+        #math-alert-indicator {
+            background-color: #ef4444;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: none;
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse {
+            from { opacity: 0.6; }
+            to { opacity: 1; }
+        }
+
+        /* Game Workspace */
+        #game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            position: relative;
+        }
+        
+        /* Canvas Viewport */
+        #canvas-container {
+            width: 100%;
+            aspect-ratio: 1 / 1.45;
+            position: relative;
+            background-color: #111827;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.5);
+            border: 2px solid #334155;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none; /* Prevents mobile scrolling while playing */
+        }
+
+        /* Math Modal Overlay */
+        #math-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: opacity 0.3s ease;
+        }
+        #math-overlay.hidden {
+            display: none;
+        }
+        .math-box {
+            background: #1e293b;
+            border: 3px solid #3b82f6;
+            border-radius: 20px;
+            padding: 25px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        .math-title {
+            color: #38bdf8;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .math-question {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+        }
+        .math-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .option-btn {
+            background: #334155;
+            color: white;
+            border: 2px solid #475569;
+            padding: 15px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .option-btn:active {
+            transform: scale(0.97);
+        }
+        .option-btn.correct-flash {
+            background-color: #10b981 !important;
+            border-color: #34d399 !important;
+        }
+        .option-btn.wrong-flash {
+            background-color: #ef4444 !important;
+            border-color: #f87171 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- HUD Header -->
+        <div id="hud">
+            <div class="score-box">
+                <span class="score-label">Puntaje</span>
+                <span id="score" class="score-value">0</span>
+            </div>
+            <div id="math-alert-indicator">¡MÁTEMÁTICAS TRABADAS!</div>
+            <div class="score-box" style="text-align: right;">
+                <span class="score-label">Mejor</span>
+                <span id="high-score" class="score-value">0</span>
+            </div>
+        </div>
+
+        <!-- Game Area Workspace -->
+        <div id="game-area">
+            <div id="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+                
+                <!-- Math Lockout Overlay -->
+                <div id="math-overlay" class="hidden">
+                    <div class="math-box">
+                        <div class="math-title">¡Desbloquea las Fichas!</div>
+                        <div id="math-question" class="math-question">7 × 8</div>
+                        <div class="math-options">
+                            <button class="option-btn" onclick="checkAnswer(0)">?</button>
+                            <button class="option-btn" onclick="checkAnswer(1)">?</button>
+                            <button class="option-btn" onclick="checkAnswer(2)">?</button>
+                            <button class="option-btn" onclick="checkAnswer(3)">?</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen">
+            <h1>BLOCK BLAST</h1>
+            <p class="subtitle">Edición Matemática</p>
+            
+            <div class="credits">
+                <p>Presentado por:</p>
+                <p class="name">Ana Sofía</p>
+                <p style="margin-top: 10px; font-size: 0.9rem; color: #64748b;">Curso:</p>
+                <p class="grade">Grado 11-1</p>
+            </div>
+
+            <button class="btn" onclick="startGame()">JUGAR AHORA</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen hidden">
+            <h1 style="color: #ef4444; text-shadow: 0 0 20px rgba(239, 68, 68, 0.4);">FIN DEL JUEGO</h1>
+            <p class="subtitle">Te quedaste sin movimientos o vidas</p>
+            
+            <div class="credits" style="margin-bottom: 25px;">
+                <p>Puntuación Final:</p>
+                <p id="final-score" style="font-size: 3rem; font-weight: 800; color: #f59e0b;">0</p>
+            </div>
+
+            <button class="btn" onclick="restartGame()">VOLVER A INTENTAR</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // State variables
+        let score = 0;
+        let highScore = localStorage.getItem('block_blast_math_hi') || 0;
+        document.getElementById('high-score').innerText = highScore;
+
+        let grid = [];
+        const ROWS = 8;
+        const COLS = 8;
+
+        let previews = []; // Active 3 selectable pieces
+        let mathLocked = false;
+        let currentCorrectAnswer = 0;
+
+        // Interaction State
+        let draggedPieceIdx = -1; 
+        let isDragging = false;
+        let dragX = 0; // Current mouse/pointer X
+        let dragY = 0; // Current mouse/pointer Y
+        let dragOffsetX = 0; // Offset relative to piece center/origin
+        let dragOffsetY = 0;
+
+        // Layout Metrics (calculated dynamically on resize)
+        let cellSide = 0;
+        let gridLeft = 0;
+        let gridTop = 0;
+        let previewPositions = [];
+
+        // Definition of Block Blast Shapes (Coordinates of filled cells inside a localized 3x3 or 4x4 matrix)
+        const SHAPES = [
+            { cells: [[0,0]], color: '#ef4444' }, // 1x1
+            { cells: [[0,0], [0,1]], color: '#3b82f6' }, // 1x2 vertical
+            { cells: [[0,0], [1,0]], color: '#3b82f6' }, // 2x1 horizontal
+            { cells: [[0,0], [0,1], [0,2]], color: '#10b981' }, // 1x3 vertical
+            { cells: [[0,0], [1,0], [2,0]], color: '#10b981' }, // 3x1 horizontal
+            { cells: [[0,0], [0,1], [1,0], [1,1]], color: '#f59e0b' }, // 2x2 Square
+            { cells: [[0,0], [0,1], [0,2], [0,3]], color: '#8b5cf6' }, // 1x4 vertical
+            { cells: [[0,0], [1,0], [2,0], [3,0]], color: '#8b5cf6' }, // 4x1 horizontal
+            // L-Shapes
+            { cells: [[0,0], [0,1], [1,1]], color: '#ec4899' }, 
+            { cells: [[1,0], [0,0], [0,1]], color: '#ec4899' },
+            { cells: [[0,0], [1,0], [1,1]], color: '#06b6d4' },
+            { cells: [[0,0], [0,1], [1,0]], color: '#06b6d4' }
+        ];
+
+        // Initialization
+        function initGrid() {
+            grid = [];
+            for (let r = 0; r < ROWS; r++) {
+                grid.push(new Array(COLS).fill(null));
+            }
+        }
+
+        function resizeCanvas() {
+            // Base resolution 480x700
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            // Recalculate dimensions based on active space
+            cellSide = Math.floor((canvas.width * 0.9) / COLS);
+            gridLeft = (canvas.width - (cellSide * COLS)) / 2;
+            gridTop = 25; 
+
+            // Preview shelves coordinates (3 slots evenly spread across bottom area)
+            const previewRegionTop = gridTop + (cellSide * ROWS) + 35;
+            const slotWidth = canvas.width / 3;
+            previewPositions = [];
+            for(let i = 0; i < 3; i++) {
+                previewPositions.push({
+                    x: slotWidth * i + slotWidth / 2,
+                    y: previewRegionTop + 50
+                });
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game Flow Controls
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            initGrid();
+            score = 0;
+            document.getElementById('score').innerText = score;
+            generateNewPreviews();
+            resizeCanvas();
+            triggerMathQuestion(); // Ask immediate math question to unfreeze pieces at start
+            requestAnimationFrame(gameLoop);
+        }
+
+        function restartGame() {
+            document.getElementById('game-over-screen').classList.add('hidden');
+            startGame();
+        }
+
+        function generateNewPreviews() {
+            previews = [];
+            for (let i = 0; i < 3; i++) {
+                const randomTemplate = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+                previews.push({
+                    cells: JSON.parse(JSON.stringify(randomTemplate.cells)),
+                    color: randomTemplate.color,
+                    placed: false
+                });
+            }
+        }
+
+        // Math Feature Integration
+        function triggerMathQuestion() {
+            mathLocked = true;
+            document.getElementById('math-alert-indicator').style.display = 'block';
+            
+            // Generate a multiplication problem
+            const num1 = Math.floor(Math.random() * 8) + 2; // 2 to 9
+            const num2 = Math.floor(Math.random() * 8) + 2; // 2 to 9
+            const correctAnswer = num1 * num2;
+            currentCorrectAnswer = correctAnswer;
+
+            document.getElementById('math-question').innerText = `${num1} × ${num2}`;
+
+            // Generate options
+            let options = new Set();
+            options.add(correctAnswer);
+            while(options.size < 4) {
+                const variance = (Math.floor(Math.random() * 3) + 1) * (Math.random() < 0.5 ? 1 : -1);
+                const wrong = correctAnswer + variance;
+                if (wrong > 0 && wrong !== correctAnswer) {
+                    options.add(wrong);
+                }
+            }
+
+            // Shuffle option list
+            const optionsArray = Array.from(options).sort(() => Math.random() - 0.5);
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach((btn, idx) => {
+                btn.innerText = optionsArray[idx];
+                btn.className = 'option-btn'; // reset flashes
+                btn.disabled = false;
+            });
+
+            document.getElementById('math-overlay').classList.remove('hidden');
+        }
+
+        function checkAnswer(btnIndex) {
+            const buttons = document.querySelectorAll('.option-btn');
+            const selectedVal = parseInt(buttons[btnIndex].innerText);
+
+            if (selectedVal === currentCorrectAnswer) {
+                buttons[btnIndex].classList.add('correct-flash');
+                setTimeout(() => {
+                    document.getElementById('math-overlay').classList.add('hidden');
+                    document.getElementById('math-alert-indicator').style.display = 'none';
+                    mathLocked = false;
+                }, 400);
+            } else {
+                buttons[btnIndex].classList.add('wrong-flash');
+                // Give a short penalty or keep trying until correct
+                buttons[btnIndex].disabled = true;
+            }
+        }
+
+        // Render Utilities
+        function drawGrid() {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const x = gridLeft + c * cellSide;
+                    const y = gridTop + r * cellSide;
+                    
+                    // Background placeholder cells
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(x, y, cellSide - 3, cellSide - 3);
+                    ctx.strokeStyle = '#334155';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x, y, cellSide - 3, cellSide - 3);
+
+                    // If cell contains a fixed block
+                    if (grid[r][c]) {
+                        drawBlockUnit(x, y, cellSide - 3, grid[r][c]);
+                    }
+                }
+            }
+        }
+
+        function drawBlockUnit(x, y, size, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, size, size);
+
+            // Shading overlay to give high quality 3D block blast effect
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+            ctx.fillRect(x, y, size, size * 0.15); // Top light highlight
+            ctx.fillRect(x, y, size * 0.15, size); // Left light highlight
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.fillRect(x, y + size * 0.85, size, size * 0.15); // Bottom shadow
+            ctx.fillRect(x + size * 0.85, y, size * 0.15, size); // Right shadow
+        }
+
+        function drawPreviews() {
+            previews.forEach((piece, idx) => {
+                if (piece.placed) return;
+
+                // Do not draw item in original deck position if it's currently actively tracked by touch/drag
+                if (isDragging && draggedPieceIdx === idx) return;
+
+                const pos = previewPositions[idx];
+                
+                // Scale down items in shelves so they fit nicely
+                const previewCellSide = cellSide * 0.65;
+                const boundingBox = getPieceBounds(piece.cells);
+                
+                const pieceW = (boundingBox.maxC - boundingBox.minC + 1) * previewCellSide;
+                const pieceH = (boundingBox.maxR - boundingBox.minR + 1) * previewCellSide;
+
+                // Center the piece inside the given shelf position coordinate
+                const startX = pos.x - pieceW / 2;
+                const startY = pos.y - pieceH / 2;
+
+                piece.cells.forEach(([r, c]) => {
+                    const blockX = startX + (c - boundingBox.minC) * previewCellSide;
+                    const blockY = startY + (r - boundingBox.minR) * previewCellSide;
+                    drawBlockUnit(blockX, blockY, previewCellSide - 2, mathLocked ? '#475569' : piece.color);
+                });
+            });
+        }
+
+        function drawDraggedPiece() {
+            if (!isDragging || draggedPieceIdx === -1) return;
+            const piece = previews[draggedPieceIdx];
+            
+            // Dragged piece scales back to true real match grid scale sizes for alignment previewing
+            const boundingBox = getPieceBounds(piece.cells);
+
+            // Align dragging offset point properly
+            piece.cells.forEach(([r, c]) => {
+                const blockX = dragX + dragOffsetX + c * cellSide;
+                const blockY = dragY + dragOffsetY + r * cellSide;
+                drawBlockUnit(blockX, blockY, cellSide - 3, piece.color);
+            });
+        }
+
+        function getPieceBounds(cells) {
+            let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+            cells.forEach(([r, c]) => {
+                if (r < minR) minR = r;
+                if (r > maxR) maxR = r;
+                if (c < minC) minC = c;
+                if (c > maxC) maxC = c;
+            });
+            return { minR, maxR, minC, maxC };
+        }
+
+        // Logic & Match Validation
+        function checkLineClears() {
+            let fullRows = [];
+            let fullCols = [];
+
+            // Check rows
+            for (let r = 0; r < ROWS; r++) {
+                if (grid[r].every(cell => cell !== null)) {
+                    fullRows.push(r);
+                }
+            }
+
+            // Check cols
+            for (let c = 0; c < COLS; c++) {
+                let colFull = true;
+                for (let r = 0; r < ROWS; r++) {
+                    if (grid[r][c] === null) {
+                        colFull = false;
+                        break;
+                    }
+                }
+                if (colFull) {
+                    fullCols.push(c);
+                }
+            }
+
+            // Execute clears and count score
+            let clearedCount = fullRows.length + fullCols.length;
+            if (clearedCount > 0) {
+                fullRows.forEach(r => grid[r].fill(null));
+                fullCols.forEach(c => {
+                    for (let r = 0; r < ROWS; r++) {
+                        grid[r][c] = null;
+                    }
+                });
+
+                // Increase score exponentially per combo cleared
+                score += clearedCount * 100 + (clearedCount - 1) * 50;
+                document.getElementById('score').innerText = score;
+
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('block_blast_math_hi', highScore);
+                    document.getElementById('high-score').innerText = highScore;
+                }
+
+                // Trigger a brand new math challenge on successful combo clears
+                triggerMathQuestion();
+            }
+        }
+
+        function checkGameOver() {
+            // Check if any available active unplaced piece fits ANYWHERE inside the grid space
+            let activePieces = previews.filter(p => !p.placed);
+            if (activePieces.length === 0) return false; 
+
+            for (let piece of activePieces) {
+                let fitsAnywhere = false;
+                
+                // Scan every coordinate target row and col anchor position
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        if (canPlacePiece(piece.cells, r, c)) {
+                            fitsAnywhere = true;
+                            break;
+                        }
+                    }
+                    if (fitsAnywhere) break;
+                }
+                
+                if (fitsAnywhere) {
+                    return false; // Found a valid placeable move option! Game continues
+                }
+            }
+            return true; // No pieces fit anywhere! 
+        }
+
+        function canPlacePiece(cells, startRow, startCol) {
+            for (let [r, c] of cells) {
+                const targetR = startRow + r;
+                const targetC = startCol + c;
+                
+                if (targetR < 0 || targetR >= ROWS || targetC < 0 || targetC >= COLS) {
+                    return false;
+                }
+                if (grid[targetR][targetC] !== null) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Pointer/Input Handlers (Unified Touch & Mouse Mechanics)
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function handlePointerDown(e) {
+            if (mathLocked) return;
+            const pos = getPointerPos(e);
+
+            // Check if a piece shelf option was clicked
+            previews.forEach((piece, idx) => {
+                if (piece.placed) return;
+
+                const centerPos = previewPositions[idx];
+                const bounds = getPieceBounds(piece.cells);
+                const previewCellSide = cellSide * 0.65;
+                const pieceW = (bounds.maxC - bounds.minC + 1) * previewCellSide;
+                const pieceH = (bounds.maxR - bounds.minR + 1) * previewCellSide;
+
+                // Simple collision check box around item deck slot area
+                if (pos.x >= centerPos.x - pieceW/2 - 20 && pos.x <= centerPos.x + pieceW/2 + 20 &&
+                    pos.y >= centerPos.y - pieceH/2 - 20 && pos.y <= centerPos.y + pieceH/2 + 20) {
+                    
+                    draggedPieceIdx = idx;
+                    isDragging = true;
+                    dragX = pos.x;
+                    dragY = pos.y;
+
+                    // Offset so it smoothly positions over the finger/pointer nicely centered
+                    dragOffsetX = - (pieceW / 2) * (cellSide / previewCellSide);
+                    dragOffsetY = - (pieceH / 2) * (cellSide / previewCellSide) - 40; // shift slightly up to see under thumbs
+                }
+            });
+        }
+
+        function handlePointerMove(e) {
+            if (!isDragging) return;
+            const pos = getPointerPos(e);
+            dragX = pos.x;
+            dragY = pos.y;
+        }
+
+        function handlePointerUp(e) {
+            if (!isDragging || draggedPieceIdx === -1) return;
+
+            const piece = previews[draggedPieceIdx];
+            
+            // Calculate where the upper left corner of the block structure is relative to grid coordinates
+            const pieceGridLeftX = dragX + dragOffsetX;
+            const pieceGridTopY = dragY + dragOffsetY;
+
+            // Map target coordinates to actual cell matrices rows and columns snaps
+            const targetCol = Math.round((pieceGridLeftX - gridLeft) / cellSide);
+            const targetRow = Math.round((pieceGridTopY - gridTop) / cellSide);
+
+            if (canPlacePiece(piece.cells, targetRow, targetCol)) {
+                // Place into board array permanently
+                piece.cells.forEach(([r, c]) => {
+                    grid[targetRow + r][targetCol + c] = piece.color;
+                });
+                
+                piece.placed = true;
+                score += piece.cells.length * 10;
+                document.getElementById('score').innerText = score;
+
+                // Validate combo lines and clear boards
+                checkLineClears();
+
+                // If all 3 shelf elements are cleared, trigger immediate fresh batch reload
+                if (previews.every(p => p.placed)) {
+                    generateNewPreviews();
+                }
+
+                // Check active state failure criteria
+                if (checkGameOver()) {
+                    document.getElementById('final-score').innerText = score;
+                    document.getElementById('game-over-screen').classList.remove('hidden');
+                }
+            }
+
+            // Clear drag states completely
+            isDragging = false;
+            draggedPieceIdx = -1;
+        }
+
+        // Event hooks
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+
+        canvas.addEventListener('touchstart', (e) => { handlePointerDown(e); e.preventDefault(); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { handlePointerMove(e); e.preventDefault(); }, {passive: false});
+        window.addEventListener('touchend', handlePointerUp);
+
+        // Core Game Tick Engine Loop
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawGrid();
+            drawPreviews();
+            drawDraggedPiece();
+
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>

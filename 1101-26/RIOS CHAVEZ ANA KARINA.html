@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mundo Matemático - ¡5 Niveles de Diversión!</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+        .game-container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #ff6f61;
+            margin-top: 0;
+            font-size: 2.2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .screen {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .level-btn {
+            display: block;
+            width: 80%;
+            margin: 15px auto;
+            background-color: #2196f3;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+        }
+        .level-btn:hover {
+            background-color: #0b7dda;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            background-color: #f1f1f1;
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        .question-box {
+            font-size: 2.5rem;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #3f51b5;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .option-btn {
+            background-color: #ff9800;
+            margin: 0;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+        }
+        .option-btn:hover {
+            background-color: #e68a00;
+        }
+        .feedback {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-top: 15px;
+            height: 30px;
+        }
+        .correct { color: #4caf50; }
+        .incorrect { color: #f44336; }
+        .final-score {
+            font-size: 1.5rem;
+            margin: 20px 0;
+        }
+        .badge {
+            font-size: 4rem;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <!-- Pantalla de Inicio -->
+    <div id="start-screen" class="screen active">
+        <h1>✨ Mundo Matemático ✨</h1>
+        <p style="font-size: 1.1rem; color: #666;">¡Pon a prueba tu mente superando los 5 niveles de desafíos!</p>
+        <button onclick="showLevels()">¡Jugar Ahora!</button>
+    </div>
+
+    <!-- Pantalla de Niveles -->
+    <div id="levels-screen" class="screen">
+        <h1>Selecciona un Nivel</h1>
+        <button class="level-btn" onclick="startGame(1)">🟢 Nivel 1: Conteo (★)</button>
+        <button class="level-btn" onclick="startGame(2)">🔵 Nivel 2: Sumas Fáciles (★★)</button>
+        <button class="level-btn" onclick="startGame(3)">🟡 Nivel 3: Restas Divertidas (★★★)</button>
+        <button class="level-btn" onclick="startGame(4)">🟠 Nivel 4: Multiplicación (★★★★)</button>
+        <button class="level-btn" onclick="startGame(5)">🔴 Nivel 5: SuperDesafío (★★★★★)</button>
+        <button onclick="goHome()" style="background-color: #777; box-shadow: none; font-size: 1rem; padding: 10px 20px;">Volver</button>
+    </div>
+
+    <!-- Pantalla de Juego -->
+    <div id="game-screen" class="screen">
+        <div class="stats">
+            <span id="level-title">Nivel 1</span>
+            <span>Ronda: <span id="current-round">1</span>/5</span>
+            <span>Puntos: <span id="score">0</span></span>
+        </div>
+        <div class="question-box" id="question">¿?</div>
+        <div class="options-grid" id="options">
+            <!-- Los botones se generarán con JavaScript -->
+        </div>
+        <div class="feedback" id="feedback"></div>
+    </div>
+
+    <!-- Pantalla de Fin de Juego -->
+    <div id="end-screen" class="screen">
+        <h1>¡Nivel Completado!</h1>
+        <div class="badge" id="end-badge">🏆</div>
+        <div class="final-score">Lograste <span id="final-points">0</span> de 5 puntos.</div>
+        <div id="end-message" style="margin-bottom: 20px; font-weight: bold; color: #555;"></div>
+        <button onclick="showLevels()">Jugar Otro Nivel</button>
+        <button onclick="goHome()" style="background-color: #777; box-shadow: none;">Inicio</button>
+    </div>
+</div>
+
+<script>
+    let currentLevel = 1;
+    let currentRound = 1;
+    let score = 0;
+    let correctAnswer = 0;
+    
+    const screens = {
+        start: document.getElementById('start-screen'),
+        levels: document.getElementById('levels-screen'),
+        game: document.getElementById('game-screen'),
+        end: document.getElementById('end-screen')
+    };
+
+    function changeScreen(screenName) {
+        Object.values(screens).forEach(s => s.classList.remove('active'));
+        screens[screenName].classList.add('active');
+    }
+
+    function showLevels() { changeScreen('levels'); }
+    function goHome() { changeScreen('start'); }
+
+    function startGame(level) {
+        currentLevel = level;
+        currentRound = 1;
+        score = 0;
+        
+        const titles = {
+            1: "🟢 Conteo",
+            2: "🔵 Sumas",
+            3: "🟡 Restas",
+            4: "🟠 Multiplicación",
+            5: "🔴 SuperDesafío"
+        };
+        document.getElementById('level-title').innerText = titles[level];
+        document.getElementById('score').innerText = score;
+        
+        changeScreen('game');
+        generateQuestion();
+    }
+
+    function generateQuestion() {
+        document.getElementById('current-round').innerText = currentRound;
+        document.getElementById('feedback').innerText = "";
+        
+        let num1, num2, questionText;
+        let options = [];
+
+        if (currentLevel === 1) {
+            // Nivel 1: Conteo / Identificación visual (representada con emojis)
+            num1 = Math.floor(Math.random() * 8) + 2;
+            const emojis = ["🍎", "⭐️", "🎈", "🐱", "🚗"];
+            const chosenEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+            questionText = chosenEmoji.repeat(num1);
+            correctAnswer = num1;
+        } else if (currentLevel === 2) {
+            // Nivel 2: Sumas hasta 20
+            num1 = Math.floor(Math.random() * 10) + 1;
+            num2 = Math.floor(Math.random() * 10) + 1;
+            questionText = `${num1} + ${num2} = ?`;
+            correctAnswer = num1 + num2;
+        } else if (currentLevel === 3) {
+            // Nivel 3: Restas sin negativos
+            num1 = Math.floor(Math.random() * 12) + 6;
+            num2 = Math.floor(Math.random() * num1);
+            questionText = `${num1} - ${num2} = ?`;
+            correctAnswer = num1 - num2;
+        } else if (currentLevel === 4) {
+            // Nivel 4: Multiplicación básica (tablas del 2 al 9)
+            num1 = Math.floor(Math.random() * 8) + 2;
+            num2 = Math.floor(Math.random() * 9) + 1;
+            questionText = `${num1} × ${num2} = ?`;
+            correctAnswer = num1 * num2;
+        } else if (currentLevel === 5) {
+            // Nivel 5: Operaciones combinadas de tres números
+            num1 = Math.floor(Math.random() * 10) + 5;
+            num2 = Math.floor(Math.random() * 5) + 1;
+            let num3 = Math.floor(Math.random() * 4) + 1;
+            questionText = `${num1} + ${num2} - ${num3} = ?`;
+            correctAnswer = num1 + num2 - num3;
+        }
+
+        document.getElementById('question').innerHTML = questionText;
+
+        // Generar opciones falsas únicas
+        options.push(correctAnswer);
+        while (options.length < 4) {
+            let offset = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 4) + 1);
+            let fake = correctAnswer + offset;
+            if (fake >= 0 && !options.includes(fake)) {
+                options.push(fake);
+            }
+        }
+
+        // Barajar opciones
+        options.sort(() => Math.random() - 0.5);
+
+        // Renderizar botones
+        const optionsGrid = document.getElementById('options');
+        optionsGrid.innerHTML = "";
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = "option-btn";
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(opt, btn);
+            optionsGrid.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selected, button) {
+        // Deshabilitar temporalmente los botones para evitar doble clic
+        const buttons = document.querySelectorAll('.option-btn');
+        buttons.forEach(b => b.disabled = true);
+
+        const feedbackEl = document.getElementById('feedback');
+        
+        if (selected === correctAnswer) {
+            score++;
+            document.getElementById('score').innerText = score;
+            feedbackEl.innerText = "¡Correcto! 🎉";
+            feedbackEl.className = "feedback correct";
+            button.style.backgroundColor = "#4caf50";
+        } else {
+            feedbackEl.innerText = `Incorrecto 😢 Era ${correctAnswer}`;
+            feedbackEl.className = "feedback incorrect";
+            button.style.backgroundColor = "#f44336";
+        }
+
+        setTimeout(() => {
+            if (currentRound < 5) {
+                currentRound++;
+                generateQuestion();
+            } else {
+                showEndScreen();
+            }
+        }, 1500);
+    }
+
+    function showEndScreen() {
+        document.getElementById('final-points').innerText = score;
+        const badgeEl = document.getElementById('end-badge');
+        const msgEl = document.getElementById('end-message');
+
+        if (score === 5) {
+            badgeEl.innerText = "👑";
+            msgEl.innerText = "¡Increíble! Eres un maestro de las matemáticas.";
+        } else if (score >= 3) {
+            badgeEl.innerText = "🏆";
+            msgEl.innerText = "¡Muy bien hecho! Sigue practicando para la corona.";
+        } else {
+            badgeEl.innerText = "💪";
+            msgEl.innerText = "¡Buen intento! Vuelve a probar para mejorar tu puntuación.";
+        }
+
+        changeScreen('end');
+    }
+</script>
+
+</body>
+</html>
