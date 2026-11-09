@@ -211,7 +211,7 @@
                     <div class="text-xs text-gray-400 font-medium uppercase mt-1">Juegos Creados</div>
                 </div>
                 <div class="bg-brand-card/80 border border-brand-border p-4 rounded-xl text-center">
-                    <div class="font-orbitron text-3xl font-bold text-brand-blue text-glow-blue">8</div>
+                    <div class="font-orbitron text-3xl font-bold text-brand-blue text-glow-blue">5</div>
                     <div class="text-xs text-gray-400 font-medium uppercase mt-1">Materias / Áreas</div>
                 </div>
                 <div class="bg-brand-card/80 border border-brand-border p-4 rounded-xl text-center">
@@ -254,10 +254,6 @@
                 class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
                 <i class="fa-solid fa-calculator text-blue-400"></i> Matemáticas
             </button>
-            <button onclick="filterBySubject('tecnologia')"
-                class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
-                <i class="fa-solid fa-code text-green-400"></i> Tecnología e Informática
-            </button>
             <button onclick="filterBySubject('ciencias-naturales')"
                 class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
                 <i class="fa-solid fa-flask text-emerald-400"></i> Ciencias Naturales
@@ -269,10 +265,6 @@
             <button onclick="filterBySubject('sociales')"
                 class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
                 <i class="fa-solid fa-earth-americas text-amber-400"></i> Ciencias Sociales
-            </button>
-            <button onclick="filterBySubject('ed-fisica')"
-                class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
-                <i class="fa-solid fa-person-running text-red-400"></i> Edu. Física / Deporte
             </button>
             <button onclick="filterBySubject('ingles')"
                 class="subject-btn shrink-0 bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 font-orbitron text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
@@ -440,6 +432,66 @@
                 description: 'Supera niveles de acción y responde preguntas en inglés para avanzar en la misión.',
                 image: './1101-26/TALAIGUA HERNANDEZ JOSE DAVID.jpeg',
                 gamePath: './1101-26/TALAIGUA HERNANDEZ JOSE DAVID.html',
+                likes: 0
+            },
+            {
+                id: 'mat-5',
+                title: 'Pixel Quest: Misión Matemática',
+                author: 'Yureidy Liceth Herrera Jiménez (Grado 11-1)',
+                subject: 'matematicas',
+                subjectName: 'Matemáticas',
+                badgeColor: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
+                description: 'Supera 10 niveles, resuelve operaciones y esquiva oponentes en una aventura de pixel art.',
+                image: './1101-26/HERRERA JIMENEZ YUREIDY LICETH.jpeg',
+                gamePath: './1101-26/HERRERA JIMENEZ YUREIDY LICETH.html',
+                likes: 0
+            },
+            {
+                id: 'ing-4',
+                title: 'Juego de Inglés: Pixel Art',
+                author: 'Leidy Vanesa Saavedra Castillo (Grado 11-1)',
+                subject: 'ingles',
+                subjectName: 'Inglés',
+                badgeColor: 'text-cyan-400 border-cyan-400/30 bg-cyan-400/10',
+                description: 'Recorre seis niveles de pixel art y supera desafíos de inglés para avanzar.',
+                image: './1101-26/SAAVEDRA CASTILLO LEIDY VANESA.jpeg',
+                gamePath: './1101-26/SAAVEDRA CASTILLO LEIDY VANESA.html',
+                likes: 0
+            },
+            {
+                id: 'len-1',
+                title: 'Carrera del Saber',
+                author: 'Deiny Valentina Méndez Cruz (Grado 11-1)',
+                subject: 'lenguaje',
+                subjectName: 'Lenguaje y cultura general',
+                badgeColor: 'text-purple-400 border-purple-400/30 bg-purple-400/10',
+                description: 'Compite en una carrera de 10 niveles y responde preguntas de lengua y cultura general.',
+                image: './1101-26/MENDEZ CRUZ DEINY VALENTINA.jpeg',
+                gamePath: './1101-26/MENDEZ CRUZ DEINY VALENTINA.html',
+                likes: 0
+            },
+            {
+                id: 'nat-1',
+                title: 'Bio Quest: Ciencias Naturales',
+                author: 'Danner Santiago Palomino Palomino (Grado 11-1)',
+                subject: 'ciencias-naturales',
+                subjectName: 'Ciencias Naturales',
+                badgeColor: 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10',
+                description: 'Explora una aventura de pixel art con retos sobre ciencias naturales y biología.',
+                image: './1101-26/PALOMINO PALOMINO DANNER SANTIAGO.jpeg',
+                gamePath: './1101-26/PALOMINO PALOMINO DANNER SANTIAGO.html',
+                likes: 0
+            },
+            {
+                id: 'nat-2',
+                title: 'BioEscape: El Viaje Fúngico',
+                author: 'Karol Juliana Vera Cometa (Grado 11-1)',
+                subject: 'ciencias-naturales',
+                subjectName: 'Ciencias Naturales',
+                badgeColor: 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10',
+                description: 'Resuelve desafíos sobre el mundo de los hongos y encuentra la salida en esta aventura.',
+                image: './1101-26/VERA COMETA KAROL JULIANA.jpeg',
+                gamePath: './1101-26/VERA COMETA KAROL JULIANA.html',
                 likes: 0
             },
             {
