@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Haunted Cyber-Roulette</title>
+    <style>
+        /* Animación para el parpadeo de las luces de neón */
+        @keyframes neonFlicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                text-shadow: 0 0 8px #ff5500, 0 0 15px #ff5500, 0 0 30px #ff3300;
+            }
+            20%, 24%, 55% { text-shadow: none; }
+        }
+
+        /* Fondo estático: corredor maldito, luna roja y silueta amenazante */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #030102;
+            background-image:
+                linear-gradient(180deg, rgba(0,0,0,.22) 0%, rgba(4,0,3,.38) 38%, rgba(0,0,0,.96) 100%),
+                radial-gradient(ellipse at 51% 13%, rgba(115,0,10,.52) 0%, transparent 25%),
+                radial-gradient(circle at 84% 13%, rgba(255,24,20,.86) 0%, rgba(126,0,12,.42) 7%, transparent 17%),
+                radial-gradient(ellipse at 8% 54%, rgba(100,0,10,.35), transparent 28%),
+                repeating-linear-gradient(78deg, transparent 0 39px, rgba(0,0,0,.94) 40px 47px, transparent 48px 77px),
+                repeating-linear-gradient(102deg, transparent 0 94px, rgba(0,0,0,.83) 95px 104px, transparent 105px 150px),
+                linear-gradient(180deg, #18070b 0%, #10050a 45%, #020102 100%);
+            background-size: auto, auto, auto, auto, 360px 100%, 470px 100%, auto;
+            background-attachment: fixed;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #00ffcc;
+            overflow-x: hidden;
+            position: relative;
+            isolation: isolate;
+        }
+
+        /* Ojos rojos y sombra de una criatura detrás de la interfaz */
+        body::before {
+            content: '';
+            position: fixed;
+            z-index: -1;
+            pointer-events: none;
+            top: 1%; left: 50%; transform: translateX(-50%);
+            width: min(78vw, 430px); height: 330px;
+            opacity: .9;
+            background:
+                radial-gradient(ellipse at 42% 35%, #ff1b1b 0 2px, rgba(255,0,0,.55) 3px, transparent 13px),
+                radial-gradient(ellipse at 58% 35%, #ff1b1b 0 2px, rgba(255,0,0,.55) 3px, transparent 13px),
+                radial-gradient(ellipse at 50% 42%, rgba(0,0,0,.98) 0 18%, transparent 43%),
+                radial-gradient(ellipse at 50% 12%, rgba(0,0,0,.96) 0 24%, transparent 56%);
+            filter: drop-shadow(0 0 24px rgba(150,0,0,.35));
+        }
+
+        /* Telarañas decorativas góticas en las esquinas superiores */
+        .cobweb {
+            position: absolute;
+            top: 0;
+            width: 120px;
+            height: 120px;
+            opacity: 0.25;
+            pointer-events: none;
+            border-radius: 50%;
+            border: 2px dashed #6d101b;
+            box-shadow: 0 0 14px rgba(255, 0, 20, 0.25);
+        }
+        .cobweb.left { left: 0; transform: translate(-50%, -50%); }
+        .cobweb.right { right: 0; transform: translate(50%, -50%); }
+
+        h1 {
+            color: #ff321c;
+            animation: neonFlicker 4s infinite alternate;
+            text-shadow: 0 0 5px #ff2200, 0 0 18px rgba(255,0,0,.75), 2px 3px 0 #210006;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-size: 2.2rem;
+            text-align: center;
+        }
+
+        .status-panel {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .score, .lives {
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: rgba(3, 0, 3, 0.94);
+            border: 2px dashed #a21b20;
+            padding: 10px 22px;
+            border-radius: 6px;
+            box-shadow: 0 0 15px rgba(255, 85, 0, 0.2);
+        }
+
+        .score { color: #39ff14; text-shadow: 0 0 5px #39ff14; }
+        .lives { color: #ff0055; text-shadow: 0 0 5px #ff0055; letter-spacing: 2px; }
+
+        .roulette-container {
+            position: relative;
+            width: 450px;
+            height: 450px;
+            margin-bottom: 25px;
+        }
+
+        /* Marcador en forma de Murciélago Cibernético */
+        .bat-pointer {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 35px;
+            z-index: 10;
+            filter: drop-shadow(0 0 8px #ff0055);
+        }
+
+        /* Ojos brillantes del murciélago */
+        .bat-pointer::before, .bat-pointer::after {
+            content: '';
+            position: absolute;
+            top: 22px;
+            width: 4px;
+            height: 4px;
+            background-color: #ff0055;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #ff0055;
+        }
+        .bat-pointer::before { left: 25px; }
+        .bat-pointer::after { right: 25px; }
+
+        .wheel-wrapper {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 6px double #ff5500;
+            box-shadow: 0 0 35px rgba(255, 85, 0, 0.4), inset 0 0 30px #000;
+            overflow: hidden;
+            background: #08020f;
+            transition: transform 4s cubic-bezier(0.15, 0.85, 0.15, 1);
+        }
+
+        .wheel-text {
+            font-size: 9.5px;
+            font-weight: bold;
+            fill: #ffffff;
+            font-family: 'Courier New', monospace;
+            pointer-events: none;
+            letter-spacing: 0.5px;
+        }
+
+        .go-btn {
+            padding: 14px 55px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #110022;
+            background-color: #ff5500;
+            border: 2px solid #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 0 15px #ff5500;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .go-btn:hover:not(:disabled) { 
+            background-color: #ff7722;
+            box-shadow: 0 0 30px #ff7722, inset 0 0 10px #fff;
+            transform: scale(1.05);
+        }
+        
+        .go-btn:disabled {
+            background-color: #180c24;
+            color: #443355;
+            border-color: #332244;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .tip {
+            font-size: 0.85rem;
+            color: #9333ea;
+            margin-top: 10px;
+            margin-bottom: 25px;
+            text-shadow: 0 0 5px rgba(147, 51, 234, 0.4);
+        }
+
+        .result-box {
+            text-align: center;
+            background: rgba(2, 0, 4, 0.97);
+            border: 2px solid #00d8b0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 25px rgba(0, 255, 204, 0.18), inset 0 0 35px rgba(90,0,0,.22);
+            width: 100%;
+            max-width: 450px;
+            min-height: 165px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Remaches metálicos falsos en las esquinas de la caja de diálogo para darle un toque industrial/cyberpunk */
+        .result-box::before {
+            content: '• •';
+            position: absolute;
+            top: 5px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between;
+            color: #332244; font-size: 10px;
+        }
+
+        .result-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #9333ea;
+            margin-bottom: 12px;
+        }
+
+        .selected-phrase {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+            margin-bottom: 20px;
+        }
+
+        .options-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            padding: 11px 24px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            border: 2px solid #00ffcc;
+            background: transparent;
+            color: #00ffcc;
+            border-radius: 0px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 85px;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: rgba(0, 255, 204, 0.12);
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.5);
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.25;
+        }
+
+        .option-btn.correct {
+            background-color: rgba(57, 255, 20, 0.15) !important;
+            border-color: #39ff14 !important;
+            color: #39ff14 !important;
+            box-shadow: 0 0 20px #39ff14 !important;
+            text-shadow: 0 0 5px #39ff14;
+        }
+
+        .option-btn.wrong {
+            background-color: rgba(255, 0, 85, 0.15) !important;
+            border-color: #ff0055 !important;
+            color: #ff0055 !important;
+            box-shadow: 0 0 20px #ff0055 !important;
+            text-shadow: 0 0 5px #ff0055;
+        }
+
+        .feedback-message {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cobweb left"></div>
+    <div class="cobweb right"></div>
+
+    <h1>RUAN_DE_MORT: HAUNTED_SYS</h1>
+    
+    <div class="status-panel">
+        <div class="score">CONEXIONES: <span id="pts">00</span></div>
+        <div class="lives">ALMAS_REST: <span id="livesContainer">💀💀💀</span></div>
+    </div>
+
+    <div class="roulette-container">
+        <!-- SVG del Murciélago Selector -->
+        <svg class="bat-pointer" viewBox="0 0 60 30">
+            <path d="M0,5 Q15,0 20,15 Q25,5 30,15 Q35,5 40,15 Q45,0 60,5 Q50,20 30,30 Q10,20 0,5 Z" fill="#ff0055"/>
+        </svg>
+        <div class="wheel-wrapper" id="wheelWrapper"></div>
+    </div>
+
+    <button class="go-btn" id="goBtn">INICIAR CONJURACIÓN</button>
+    <div class="tip" id="inputTip">[ CLAVE DE ACCESO: ESPACIO ]</div>
+
+    <div class="result-box">
+        <div class="result-title">// NÚCLEO_DE_PREGUNTA</div>
+        <div class="selected-phrase" id="phraseDisplay">>>> TERMINAL EN ESPERA...</div>
+        <div class="options-container" id="optionsContainer"></div>
+        <div class="feedback-message" id="feedback"></div>
+    </div>
+    <script>
+        let activeQuestions = [
+            { text: "The ghost ___ scary", correct: "is" },
+            { text: "Zombies ___ walking", correct: "are" },
+            { text: "I ___ a vampire", correct: "am" },
+            { text: "It ___ a dark night", correct: "is" },
+            { text: "We ___ ready to run", correct: "are" },
+            { text: "You ___ my monster", correct: "are" },
+            { text: "The cat ___ glowing", correct: "is" },
+            { text: "Witches ___ flying", correct: "are" },
+            { text: "Spiders ___ creepy", correct: "are" },
+            { text: "Pumpkin ___ neon", correct: "is" }
+        ];
+
+        const backupQuestions = [
+            { text: "He ___ a cyborg wolf", correct: "is" },
+            { text: "Bats ___ digital", correct: "are" },
+            { text: "The slime ___ toxic", correct: "is" },
+            { text: "Monsters ___ nearby", correct: "are" },
+            { text: "I ___ trapped here", correct: "am" },
+            { text: "Skulls ___ laughing", correct: "are" },
+            { text: "The code ___ haunted", correct: "is" },
+            { text: "Phantoms ___ glitching", correct: "are" },
+            { text: "Aliens ___ landing", correct: "is" },
+            { text: "We ___ safe inside", correct: "are" }
+        ];
+
+        // Paleta de colores oscuros góticos: Negros absolutos, púrpuras bruja y grises cripta
+        const colors = [
+            "#0d0214", "#1a052e", "#000000", "#110022", 
+            "#250a3a", "#05010a", "#1b0033", "#12021c", 
+            "#1f0b2e", "#0a0015"
+        ];
+
+        const wheelWrapper = document.getElementById('wheelWrapper');
+        const goBtn = document.getElementById('goBtn');
+        const phraseDisplay = document.getElementById('phraseDisplay');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const feedbackDisplay = document.getElementById('feedback');
+        const ptsDisplay = document.getElementById('pts');
+        const livesDisplay = document.getElementById('livesContainer');
+        const inputTip = document.getElementById('inputTip');
+        
+        let currentRotation = 0;
+        let isSpinning = false;
+        let score = 0;
+        let lives = 3;
+        let currentQuestion = null;
+        let currentQuestionIndex = null;
+
+        function createVisualWheel() {
+            const numSectors = activeQuestions.length;
+            const anglePerSector = 360 / numSectors;
+            
+            let svgContent = `<svg viewBox="0 0 400 400" width="100%" height="100%">`;
+            
+            // Filtro SVG para hacer que los bordes de los sectores tengan un sombreado interno fantasmal
+            svgContent += `
+                <defs>
+                    <radialGradient id="shadowGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="60%" stop-color="transparent" />
+                        <stop offset="100%" stop-color="#ff5500" stop-opacity="0.35" />
+                    </radialGradient>
+                </defs>
+            `;
+            
+            activeQuestions.forEach((q, i) => {
+                const startAngle = i * anglePerSector;
+                const endAngle = startAngle + anglePerSector;
+                
+                const radStart = (Math.PI * (startAngle - 90)) / 180;
+                const radEnd = (Math.PI * (endAngle - 90)) / 180;
+                
+                const x1 = 200 + 200 * Math.cos(radStart);
+                const y1 = 200 + 200 * Math.sin(radStart);
+                const x2 = 200 + 200 * Math.cos(radEnd);
+                const y2 = 200 + 200 * Math.sin(radEnd);
+                
+                // Fondo del sector (oscuro gótico)
+                svgContent += `<path d="M 200,200 L ${x1},${y1} A 200,200 0 0,1 ${x2},${y2} Z" fill="${colors[i % colors.length]}" stroke="#ff5500" stroke-width="1.5"/>`;
+                
+                // Capa de resplandor de terror naranja sobre cada rebanada
+                svgContent += `<path d="M 200,200 L ${x1},${y1} A 200,200 0 0,1 ${x2},${y2} Z" fill="url(#shadowGlow)" pointer-events="none"/>`;
+                
+                const textAngle = startAngle + (anglePerSector / 2);
+                
+                // El texto ahora brilla sutilmente en blanco sobre las rebanadas oscuras
+                svgContent += `
+                    <g transform="rotate(${textAngle}, 200, 200)">
+                        <text x="200" y="55" class="wheel-text" text-anchor="middle" transform="rotate(90, 200, 55)">
+                            ${q.text}
+                        </text>
+                    </g>
+                `;
+            });
+            
+            // Ojo de buey central decorativo
+            svgContent += `<circle cx="200" cy="200" r="22" fill="#ff5500" stroke="#000" stroke-width="3"/>`;
+            svgContent += `<circle cx="200" cy="200" r="6" fill="#000"/>`;
+            svgContent += `</svg>`;
+            
+            wheelWrapper.innerHTML = svgContent;
+        }
+
+        createVisualWheel();
+
+        function updateLivesDisplay() {
+            livesDisplay.textContent = "💀".repeat(lives) + "❌".repeat(3 - lives);
+        }
+        updateLivesDisplay();
+
+
+        // Diseño sonoro de terror cinematográfico: drones, disonancia, ruido y golpes
+        // Todo se sintetiza localmente; no cambia el diseño ni la lógica de la ruleta.
+        let horrorAudio = null;
+        let hauntedMusicStarted = false;
+        function startHauntedMusic(ctx) {
+            if (hauntedMusicStarted || !ctx) return;
+            hauntedMusicStarted = true;
+            const now = ctx.currentTime;
+            const musicBus = ctx.createGain();
+            musicBus.gain.value = 0.78;
+            musicBus.connect(ctx.destination);
+
+            // Música ambiental continua: órgano oscuro, drones disonantes y pulsación lenta.
+            // Se inicia tras la primera interacción para respetar las reglas de audio del navegador.
+            [36.71, 38.89, 55, 73.42, 110].forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+                osc.type = i < 3 ? 'sawtooth' : 'triangle';
+                osc.frequency.value = freq;
+                osc.detune.value = i % 2 ? -8 : 7;
+                filter.type = 'lowpass';
+                filter.frequency.value = i < 3 ? 150 : 360;
+                filter.Q.value = 1.8;
+                gain.gain.value = [0.105, 0.085, 0.06, 0.035, 0.018][i];
+                osc.connect(filter); filter.connect(gain); gain.connect(musicBus);
+                osc.start();
+            });
+
+            // Oscilador lento para que el sonido respire como una presencia cercana.
+            const lfo = ctx.createOscillator();
+            const lfoGain = ctx.createGain();
+            const masterPulse = ctx.createGain();
+            masterPulse.gain.value = 0.72;
+            musicBus.disconnect();
+            musicBus.connect(masterPulse);
+            masterPulse.connect(ctx.destination);
+            lfo.type = 'sine'; lfo.frequency.value = 0.13;
+            lfoGain.gain.value = 0.22;
+            lfo.connect(lfoGain); lfoGain.connect(masterPulse.gain);
+            lfo.start();
+
+            // Ruido filtrado en bucle como viento, susurros y estática de fondo.
+            const length = ctx.sampleRate * 3;
+            const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * 0.7;
+            const wind = ctx.createBufferSource();
+            const windFilter = ctx.createBiquadFilter();
+            const windGain = ctx.createGain();
+            wind.buffer = buffer; wind.loop = true;
+            windFilter.type = 'bandpass'; windFilter.frequency.value = 420; windFilter.Q.value = 0.55;
+            windGain.gain.value = 0.075;
+            wind.connect(windFilter); windFilter.connect(windGain); windGain.connect(masterPulse);
+            wind.start(now);
+
+            // Silbido espectral muy tenue que cambia lentamente de tono.
+            const wail = ctx.createOscillator(), wailGain = ctx.createGain(), wailFilter = ctx.createBiquadFilter();
+            wail.type = 'sine';
+            wail.frequency.setValueAtTime(290, now);
+            wail.frequency.setValueAtTime(360, now + 4);
+            wail.frequency.setValueAtTime(245, now + 8);
+            wail.frequency.setValueAtTime(330, now + 12);
+            wail.frequency.setValueAtTime(290, now + 16);
+            wail.frequency.setValueAtTime(360, now + 20);
+            wail.frequency.setValueAtTime(245, now + 24);
+            wail.frequency.setValueAtTime(330, now + 28);
+            wailFilter.type = 'lowpass'; wailFilter.frequency.value = 520;
+            wailGain.gain.value = 0.032;
+            wail.connect(wailFilter); wailFilter.connect(wailGain); wailGain.connect(masterPulse);
+            wail.start();
+        }
+        // Voces susurradas del más allá. Usa las voces instaladas en el dispositivo.
+        let whisperTimer = null;
+        let lastWhisper = -1;
+        const backgroundWhispers = [
+            "No estás solo... te estamos mirando...",
+            "No debiste venir aquí...",
+            "Tu alma... nos pertenece...",
+            "Detrás de ti... hay alguien...",
+            "La ruleta ya eligió...",
+            "No puedes escapar...",
+            "Te escuchamos respirar...",
+            "Abre la puerta... ven con nosotros..."
+        ];
+        const buttonWhispers = [
+            "Te veo... mortal...",
+            "Tu turno... ha llegado...",
+            "No puedes huir...",
+            "La oscuridad te reclama...",
+            "Tu alma será nuestra...",
+            "Corre... mientras puedas...",
+            "Estamos dentro de tu mente...",
+            "Ya es demasiado tarde..."
+        ];
+        function speakFromBeyond(isButton = false) {
+            if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
+            // Evita acumular frases: cada susurro reemplaza al anterior.
+            window.speechSynthesis.cancel();
+            const list = isButton ? buttonWhispers : backgroundWhispers;
+            let idx;
+            do { idx = Math.floor(Math.random() * list.length); } while (idx === lastWhisper && list.length > 1);
+            lastWhisper = idx;
+            const voiceLine = new SpeechSynthesisUtterance(list[idx]);
+            voiceLine.lang = 'es-ES';
+            voiceLine.rate = isButton ? 0.72 : 0.62;
+            voiceLine.pitch = isButton ? 0.42 : 0.32;
+            voiceLine.volume = 1;
+            const voices = window.speechSynthesis.getVoices();
+            const spanishVoice = voices.find(v => /^es(-|_)/i.test(v.lang));
+            if (spanishVoice) voiceLine.voice = spanishVoice;
+            window.speechSynthesis.speak(voiceLine);
+        }
+        function startWhisperLoop() {
+            if (whisperTimer !== null) return;
+            // Primer susurro y luego apariciones irregulares mientras se juega.
+            speakFromBeyond(false);
+            whisperTimer = window.setInterval(() => {
+                if (!document.hidden && Math.random() > 0.22) speakFromBeyond(false);
+            }, 8500);
+        }
+
+        function audioContext() {
+            if (!horrorAudio) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (AC) horrorAudio = new AC();
+            }
+            if (horrorAudio && horrorAudio.state === 'suspended') horrorAudio.resume();
+            if (horrorAudio) startHauntedMusic(horrorAudio);
+            startWhisperLoop();
+            return horrorAudio;
+        }
+
+        function hauntedClick() {
+            const ctx = audioContext(); if (!ctx) return;
+            speakFromBeyond(true);
+            const now = ctx.currentTime;
+            // Golpe seco + cola metálica descendente
+            const master = ctx.createGain(); master.gain.value = 0.92; master.connect(ctx.destination);
+            const thud = ctx.createOscillator(), tg = ctx.createGain();
+            thud.type = 'sine'; thud.frequency.setValueAtTime(105, now);
+            thud.frequency.exponentialRampToValueAtTime(32, now + 0.19);
+            tg.gain.setValueAtTime(0.0001, now); tg.gain.exponentialRampToValueAtTime(0.78, now + 0.009);
+            tg.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+            thud.connect(tg); tg.connect(master); thud.start(now); thud.stop(now + 0.23);
+            const metal = ctx.createOscillator(), mg = ctx.createGain(), filter = ctx.createBiquadFilter();
+            metal.type = 'inharmonic';
+            metal.frequency.setValueAtTime(740, now); metal.frequency.exponentialRampToValueAtTime(96, now + 0.31);
+            filter.type = 'bandpass'; filter.frequency.value = 1150; filter.Q.value = 2.5;
+            mg.gain.setValueAtTime(0.0001, now); mg.gain.exponentialRampToValueAtTime(0.32, now + 0.004);
+            mg.gain.exponentialRampToValueAtTime(0.0001, now + 0.34);
+            metal.connect(filter); filter.connect(mg); mg.connect(master); metal.start(now); metal.stop(now + 0.35);
+            // Chillido agudo de entidad + ráfaga de estática para que cada botón dé un sobresalto.
+            const scream = ctx.createOscillator(), sg = ctx.createGain(), sf = ctx.createBiquadFilter();
+            scream.type = 'sawtooth'; scream.frequency.setValueAtTime(1450, now + 0.015);
+            scream.frequency.exponentialRampToValueAtTime(310, now + 0.28);
+            sf.type = 'bandpass'; sf.frequency.setValueAtTime(1900, now); sf.frequency.exponentialRampToValueAtTime(620, now + 0.28); sf.Q.value = 5.5;
+            sg.gain.setValueAtTime(0.0001, now); sg.gain.exponentialRampToValueAtTime(0.22, now + 0.025); sg.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+            scream.connect(sf); sf.connect(sg); sg.connect(master); scream.start(now + 0.01); scream.stop(now + 0.33);
+            const snapLen = Math.floor(ctx.sampleRate * 0.13), snapBuf = ctx.createBuffer(1, snapLen, ctx.sampleRate), snapData = snapBuf.getChannelData(0);
+            for (let i = 0; i < snapLen; i++) snapData[i] = (Math.random() * 2 - 1) * (1 - i / snapLen);
+            const snap = ctx.createBufferSource(), snapGain = ctx.createGain(), snapFilter = ctx.createBiquadFilter();
+            snap.buffer = snapBuf; snapFilter.type = 'highpass'; snapFilter.frequency.value = 1700;
+            snapGain.gain.setValueAtTime(0.0001, now); snapGain.gain.exponentialRampToValueAtTime(0.24, now + 0.004); snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
+            snap.connect(snapFilter); snapFilter.connect(snapGain); snapGain.connect(master); snap.start(now); snap.stop(now + 0.14);
+        }
+        function hauntedAnswer(correct) {
+            const ctx = audioContext(); if (!ctx) return;
+            const now = ctx.currentTime;
+            if (correct) {
+                // Acertar: destello espectral, breve pero misterioso
+                [523.25, 659.25, 783.99].forEach((f, i) => {
+                    const o = ctx.createOscillator(), g = ctx.createGain();
+                    o.type = 'sine'; o.frequency.setValueAtTime(f, now + i*0.075);
+                    g.gain.setValueAtTime(0.0001, now + i*0.075);
+                    g.gain.exponentialRampToValueAtTime(0.11, now + i*0.075 + 0.025);
+                    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.62);
+                    o.connect(g); g.connect(ctx.destination); o.start(now + i*0.075); o.stop(now + 0.64);
+                });
+                return;
+            }
+            // Error: rugido grave disonante con ruido áspero y caída de tono
+            const master = ctx.createGain(); master.gain.value = 0.72; master.connect(ctx.destination);
+            [47, 49.5, 73].forEach((f, i) => {
+                const o = ctx.createOscillator(), g = ctx.createGain(), filter = ctx.createBiquadFilter();
+                o.type = i === 2 ? 'sawtooth' : 'triangle';
+                o.frequency.setValueAtTime(f * 2.4, now); o.frequency.exponentialRampToValueAtTime(f, now + 0.85);
+                filter.type = 'lowpass'; filter.frequency.setValueAtTime(520, now); filter.frequency.exponentialRampToValueAtTime(110, now + 0.8);
+                g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(i === 2 ? 0.13 : 0.22, now + 0.035);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + 0.92);
+                o.connect(filter); filter.connect(g); g.connect(master); o.start(now); o.stop(now + 0.95);
+            });
+            const len = Math.floor(ctx.sampleRate * 0.55), buffer = ctx.createBuffer(1, len, ctx.sampleRate), data = buffer.getChannelData(0);
+            for (let i=0; i<len; i++) data[i] = (Math.random()*2-1) * (1-i/len);
+            const noise = ctx.createBufferSource(), ng = ctx.createGain(), nf = ctx.createBiquadFilter();
+            noise.buffer = buffer; nf.type = 'bandpass'; nf.frequency.value = 430; nf.Q.value = 0.7;
+            ng.gain.setValueAtTime(0.0001, now); ng.gain.exponentialRampToValueAtTime(0.2, now + 0.018);
+            ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+            noise.connect(nf); nf.connect(ng); ng.connect(master); noise.start(now); noise.stop(now + 0.56);
+        }
+        function hauntedSpin() {
+            const ctx = audioContext(); if (!ctx) return;
+            const now = ctx.currentTime;
+            const master = ctx.createGain(); master.gain.value = 0.88; master.connect(ctx.destination);
+            // Viento infernal grave y disonante que sube, se retuerce y cae al detenerse
+            [38, 39.2, 57, 76].forEach((f, i) => {
+                const o = ctx.createOscillator(), g = ctx.createGain(), filter = ctx.createBiquadFilter();
+                o.type = i === 3 ? 'sawtooth' : 'triangle';
+                o.frequency.setValueAtTime(f, now);
+                o.frequency.exponentialRampToValueAtTime(f * (i%2 ? 3.7 : 2.6), now + 1.35);
+                o.frequency.exponentialRampToValueAtTime(Math.max(24, f*0.72), now + 3.82);
+                o.detune.setValueAtTime(i%2 ? -13 : 11, now);
+                filter.type = 'lowpass'; filter.frequency.setValueAtTime(180, now);
+                filter.frequency.exponentialRampToValueAtTime(680, now + 1.4);
+                filter.frequency.exponentialRampToValueAtTime(95, now + 3.9);
+                g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(i===3 ? 0.075 : 0.19, now + 0.3);
+                g.gain.setValueAtTime(i===3 ? 0.055 : 0.14, now + 2.4);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + 4.05);
+                o.connect(filter); filter.connect(g); g.connect(master); o.start(now); o.stop(now + 4.08);
+            });
+            // Soplo de estática filtrada, como un susurro detrás del sonido
+            const nLen = Math.floor(ctx.sampleRate * 4), b = ctx.createBuffer(1, nLen, ctx.sampleRate), d = b.getChannelData(0);
+            for (let i=0; i<nLen; i++) d[i] = (Math.random()*2-1) * (0.35 + 0.65*Math.sin(Math.PI*i/nLen));
+            const ns = ctx.createBufferSource(), ng = ctx.createGain(), nf = ctx.createBiquadFilter();
+            ns.buffer = b; nf.type = 'bandpass'; nf.frequency.setValueAtTime(320, now); nf.frequency.linearRampToValueAtTime(1250, now+2.1); nf.frequency.exponentialRampToValueAtTime(170, now+3.95); nf.Q.value = 0.65;
+            ng.gain.setValueAtTime(0.0001, now); ng.gain.exponentialRampToValueAtTime(0.15, now+0.45); ng.gain.setValueAtTime(0.11, now+2.5); ng.gain.exponentialRampToValueAtTime(0.0001, now+4.0);
+            ns.connect(nf); nf.connect(ng); ng.connect(master); ns.start(now); ns.stop(now+4.02);
+            // Tictac metálico irregular que se ralentiza con la ruleta
+            let elapsed = 0, delay = 48;
+            function tick() {
+                if (elapsed >= 3900) return;
+                const t = ctx.currentTime;
+                const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+                o.type = 'square'; o.frequency.setValueAtTime(520 + Math.random()*900, t);
+                o.frequency.exponentialRampToValueAtTime(72 + Math.random()*45, t + 0.075);
+                f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 1.4;
+                g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.19, t+0.003); g.gain.exponentialRampToValueAtTime(0.0001, t+0.085);
+                o.connect(f); f.connect(g); g.connect(master); o.start(t); o.stop(t+0.09);
+                elapsed += delay; delay = Math.min(delay * 1.12, 390); setTimeout(tick, delay);
+            }
+            tick();
+            // Golpe de cierre al final del giro
+            const hitTime = now + 3.78;
+            const hit = ctx.createOscillator(), hg = ctx.createGain();
+            hit.type = 'sine'; hit.frequency.setValueAtTime(92, hitTime); hit.frequency.exponentialRampToValueAtTime(27, hitTime+0.28);
+            hg.gain.setValueAtTime(0.0001, hitTime); hg.gain.exponentialRampToValueAtTime(0.68, hitTime+0.012); hg.gain.exponentialRampToValueAtTime(0.0001, hitTime+0.42);
+            hit.connect(hg); hg.connect(master); hit.start(hitTime); hit.stop(hitTime+0.43);
+            const clang = ctx.createOscillator(), cg = ctx.createGain(), cf = ctx.createBiquadFilter();
+            clang.type = 'square'; clang.frequency.setValueAtTime(880, hitTime); clang.frequency.exponentialRampToValueAtTime(115, hitTime + 0.38);
+            cf.type = 'bandpass'; cf.frequency.setValueAtTime(1450, hitTime); cf.frequency.exponentialRampToValueAtTime(260, hitTime + 0.36); cf.Q.value = 2.8;
+            cg.gain.setValueAtTime(0.0001, hitTime); cg.gain.exponentialRampToValueAtTime(0.28, hitTime + 0.008); cg.gain.exponentialRampToValueAtTime(0.0001, hitTime + 0.48);
+            clang.connect(cf); cf.connect(cg); cg.connect(master); clang.start(hitTime); clang.stop(hitTime + 0.49);
+        }
+
+        function spinWheel() {
+            if (isSpinning || lives <= 0) return;
+            isSpinning = true;
+            speakFromBeyond(true);
+            hauntedSpin();
+
+            feedbackDisplay.textContent = "";
+            optionsContainer.innerHTML = "";
+            phraseDisplay.textContent = ">> INVOCANDO ENTIDAD...";
+            goBtn.disabled = true;
+
+            const minGiros = 5;
+            const maxGiros = 8;
+            const separationDeg = 360 / activeQuestions.length;
+            
+            currentQuestionIndex = Math.floor(Math.random() * activeQuestions.length);
+            currentQuestion = activeQuestions[currentQuestionIndex];
+            
+            const targetDeg = 360 - (currentQuestionIndex * separationDeg) - (separationDeg / 2);
+            const extraGiros = Math.floor(Math.random() * (maxGiros - minGiros + 1) + minGiros) * 360;
+            
+            currentRotation = currentRotation + extraGiros + (targetDeg - (currentRotation % 360));
+            wheelWrapper.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                phraseDisplay.textContent = currentQuestion.text;
+                generateOptionButtons();
+                isSpinning = false;
+            }, 4000);
+        }
+
+        function generateOptionButtons() {
+            optionsContainer.innerHTML = "";
+            const options = ["am", "is", "are"];
+
+            options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option;
+                btn.addEventListener('click', () => { hauntedClick(); checkAnswer(option, btn); });
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedOption, selectedButton) {
+            const allButtons = document.querySelectorAll('.option-btn');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            if (selectedOption === currentQuestion.correct) {
+                hauntedAnswer(true);
+                selectedButton.classList.add('correct');
+                feedbackDisplay.style.color = "#39ff14";
+                feedbackDisplay.style.textShadow = "0 0 8px #39ff14";
+                feedbackDisplay.textContent = "// MALEFICIO REPELIDO: +10 PTS";
+                score += 10;
+                ptsDisplay.textContent = score < 10 ? "0" + score : score;
+
+                if (backupQuestions.length > 0) {
+                    const newQuestion = backupQuestions.shift();
+                    activeQuestions[currentQuestionIndex] = newQuestion;
+                    createVisualWheel();
+                }
+                
+                goBtn.disabled = false;
+            } else {
+                hauntedAnswer(false);
+                selectedButton.classList.add('wrong');
+                feedbackDisplay.style.color = "#ff0055";
+                feedbackDisplay.style.textShadow = "0 0 8px #ff0055";
+                
+                lives--;
+                updateLivesDisplay();
+
+                allButtons.forEach(btn => {
+                    if (btn.textContent === currentQuestion.correct) {
+                        btn.classList.add('correct');
+                    }
+                });
+
+                if (lives <= 0) {
+                    feedbackDisplay.textContent = `[ ALMA ABSORBIDA - SCORE FINAL: ${score} ]`;
+                    phraseDisplay.textContent = "SISTEMA CAÍDO EN LA ETRETIDAD";
+                    goBtn.disabled = true;
+                    inputTip.textContent = "F5 / EXORCIZAR TERMINAL PARA VOLVER A JUGAR.";
+                } else {
+                    feedbackDisplay.textContent = `// ATAQUE: LA RESPUESTA ERA "${currentQuestion.correct}"`;
+                    goBtn.disabled = false;
+                }
+            }
+        }
+
+        goBtn.addEventListener('click', () => { hauntedClick(); spinWheel(); });
+
+        window.addEventListener('keydown', (event) => {
+            if (event.code === "Space") {
+                event.preventDefault();
+                spinWheel();
+            }
+        });
+    </script>
+</body>
+</html>

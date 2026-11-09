@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Super Laberinto Matemático Móvil</title>
+<style>
+  * { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  
+  body { 
+    font-family: 'Arial', sans-serif; 
+    background: linear-gradient(135deg, #1E1E2F, #2A2A40); 
+    color: #FFF;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8px;
+    overflow-x: hidden;
+  }
+  
+  h1 {
+    font-size: clamp(16px, 4vw, 22px);
+    margin-bottom: 5px;
+    text-align: center;
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 700px;
+    margin-bottom: 5px;
+    font-size: clamp(13px, 3.5vw, 16px);
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+  .nivel { color: #FFD700; }
+  .vidas { color: #FF5252; }
+
+  /* Contenedor del juego 100% adaptado a móviles sin recortes */
+  #game { 
+    width: 100%; 
+    max-width: 700px;
+    aspect-ratio: 7 / 5; /* Mantiene la proporción perfecta en cualquier pantalla */
+    background: #111425; 
+    border: 4px solid #4A4E69; 
+    position: relative; 
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border-radius: 8px;
+  }
+  
+  /* Paredes y elementos con posicionamiento porcentual dinámico */
+  .pared { 
+    background: linear-gradient(90deg, #3A3D52, #4A4E69); 
+    border: 1px solid #22223B;
+    position: absolute;
+    border-radius: 4px;
+  }
+  
+  #personaje { 
+    width: 4%; height: 5.33%; 
+    position: absolute; 
+    top: 6.6%; left: 5.7%;
+    z-index: 10;
+  }
+  .cuerpo {
+    width: 100%; height: 100%;
+    background: linear-gradient(to bottom, #00E676, #00A152);
+    border-radius: 50% 50% 45% 45%;
+    position: relative;
+    box-shadow: 0 0 8px #00E676;
+  }
+  .cara {
+    position: absolute; top: 15%; left: 15%;
+    width: 70%; height: 50%;
+    background: #FFF;
+    border-radius: 50%;
+  }
+  .ojo {
+    width: 20%; height: 30%;
+    background: #000;
+    border-radius: 50%;
+    position: absolute;
+    top: 25%;
+  }
+  .ojo.izq { left: 15%; }
+  .ojo.der { right: 15%; }
+
+  .enemigo {
+    width: 4%; height: 5.33%;
+    background: #FF1744;
+    border-radius: 50% 50% 20% 20%;
+    position: absolute;
+    z-index: 8;
+    box-shadow: 0 0 8px #FF1744;
+    animation: flotar 0.6s infinite alternate;
+  }
+  @keyframes flotar {
+    from { transform: translateY(0); }
+    to { transform: translateY(-3px); }
+  }
+
+  .proyectil {
+    width: 1.5%; height: 2%;
+    background: #00E5FF;
+    border-radius: 50%;
+    position: absolute;
+    z-index: 9;
+    box-shadow: 0 0 6px #00E5FF;
+  }
+  
+  #llave { 
+    font-size: clamp(16px, 3.5vw, 24px); 
+    position: absolute; 
+    filter: drop-shadow(0 0 6px gold);
+    animation: brillar 1.2s infinite alternate;
+  }
+  @keyframes brillar {
+    from { filter: drop-shadow(0 0 4px gold); }
+    to { filter: drop-shadow(0 0 12px gold) brightness(1.4); }
+  }
+  
+  #puerta { 
+    width: 5.7%; height: 13.3%; 
+    background: linear-gradient(to right, #8D6E63, #5D4037);
+    border: 2px solid #FFD700;
+    position: absolute; 
+    border-radius: 4px;
+  }
+  #puerta.abierta {
+    background: #00E676;
+    border-color: #FFF;
+  }
+
+  #mensaje { 
+    margin-top: 6px; 
+    font-size: clamp(11px, 2.8vw, 14px); 
+    font-weight: bold; 
+    color: #FFF; 
+    padding: 6px 10px; 
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px; 
+    text-align: center; 
+    width: 100%;
+    max-width: 700px;
+  }
+
+  /* Controles táctiles optimizados */
+  .controles-tactiles {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 700px;
+    margin-top: 8px;
+    padding: 0 5px;
+  }
+
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(3, 50px);
+    gap: 4px;
+  }
+
+  .btn-touch {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-up { grid-column: 2; grid-row: 1; }
+  .btn-left { grid-column: 1; grid-row: 2; }
+  .btn-right { grid-column: 3; grid-row: 2; }
+  .btn-down { grid-column: 2; grid-row: 3; }
+
+  .btn-disparo {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #FF1744, #D50000);
+    border: 3px solid #FFF;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  }
+
+  /* Modales */
+  #modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center;
+    z-index: 100; display: none;
+    padding: 15px;
+  }
+  #modal.mostrar { display: flex; }
+  .contenido-modal {
+    background: #22223B; padding: 25px; border-radius: 15px; text-align: center;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5); width: 100%; max-width: 360px; border: 2px solid #4A4E69;
+  }
+  .ecuacion { font-size: 26px; font-weight: bold; color: #00E5FF; margin: 15px 0; }
+  .respuesta { padding: 10px; font-size: 20px; width: 120px; text-align: center; border-radius: 8px; border: none; outline: none; }
+  .btn { padding: 10px 20px; font-size: 16px; margin-top: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+  .btn-ok { background: #00E676; color: #000; }
+  .error { color: #FF1744; margin-top: 10px; display: none; }
+</style>
+</head>
+<body>
+
+<h1>🎮 Super Laberinto Matemático</h1>
+
+<div class="hud">
+  <div class="nivel" id="etiqueta-nivel">Nivel 1 de 3</div>
+  <div class="vidas" id="etiqueta-vidas">❤️ Vidas: 3</div>
+</div>
+
+<div id="game">
+  <div id="contenedor-paredes"></div>
+  <div id="contenedor-enemigos"></div>
+  <div id="contenedor-proyectiles"></div>
+  
+  <div id="personaje">
+    <div class="cuerpo">
+      <div class="cara">
+        <div class="ojo izq"></div>
+        <div class="ojo der"></div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="llave">🔑</div>
+  <div id="puerta"></div>
+</div>
+
+<p id="mensaje">Usa los botones o flechas para moverte y disparar.</p>
+
+<div class="controles-tactiles">
+  <div class="dpad">
+    <button class="btn-touch btn-up" id="btn-up">⬆️</button>
+    <button class="btn-touch btn-left" id="btn-left">⬅️</button>
+    <button class="btn-touch btn-right" id="btn-right">➡️</button>
+    <button class="btn-touch btn-down" id="btn-down">⬇️</button>
+  </div>
+  <button class="btn-touch btn-disparo" id="btn-fire">🔥 DISPARAR</button>
+</div>
+
+<div id="modal">
+  <div class="contenido-modal">
+    <h2>🎓 Desafío de Salida</h2>
+    <div class="ecuacion" id="texto-ecuacion"></div>
+    <input type="number" class="respuesta" id="respuesta" placeholder="x = ?">
+    <br>
+    <button class="btn btn-ok" id="btn-verificar">Verificar</button>
+    <div class="error" id="mensaje-error">❌ Respuesta incorrecta</div>
+  </div>
+</div>
+
+<script>
+const game = document.getElementById('game');
+const personaje = document.getElementById('personaje');
+const llave = document.getElementById('llave');
+const puerta = document.getElementById('puerta');
+const mensaje = document.getElementById('mensaje');
+const modal = document.getElementById('modal');
+const textoEcuacion = document.getElementById('texto-ecuacion');
+const respuestaInput = document.getElementById('respuesta');
+const btnVerificar = document.getElementById('btn-verificar');
+const mensajeError = document.getElementById('mensaje-error');
+const etiquetaNivel = document.getElementById('etiqueta-nivel');
+const etiquetaVidas = document.getElementById('etiqueta-vidas');
+const contenedorParedes = document.getElementById('contenedor-paredes');
+const contenedorEnemigos = document.getElementById('contenedor-enemigos');
+const contenedorProyectiles = document.getElementById('contenedor-proyectiles');
+
+const ANCHO = 700, ALTO = 500;
+const TAM = 28; 
+const VEL = 5; 
+
+let x = 40, y = 40;
+let ultimaDir = { x: 1, y: 0 };
+let tieneLlave = false;
+let nivelActual = 1;
+let vidas = 3;
+let respuestaCorrecta = 0;
+let listaEnemigos = [];
+let listaProyectiles = [];
+
+const datosNiveles = [
+  {
+    paredes: [
+      {x:80, y:0, w:20, h:380}, {x:160, y:120, w:20, h:380},
+      {x:240, y:0, w:20, h:380}, {x:320, y:120, w:20, h:380},
+      {x:400, y:0, w:20, h:380}, {x:480, y:120, w:20, h:380},
+      {x:560, y:0, w:20, h:380}
+    ],
+    enemigos: [
+      {x:110, y:80, vx:0, vy:2.5},
+      {x:270, y:250, vx:0, vy:-2.5},
+      {x:430, y:150, vx:0, vy:3},
+      {x:600, y:300, vx:0, vy:-3}
+    ],
+    llavePos: {x: 640, y: 40},
+    puertaPos: {x: 640, y: 430},
+    ecuacion: () => {
+      const a = Math.floor(Math.random() * 9) + 2;
+      const b = Math.floor(Math.random() * 9) + 2;
+      return {texto: `${a} × ${b} = x`, valor: a * b};
+    }
+  },
+  {
+    paredes: [
+      {x:0, y:90, w:580, h:20}, {x:120, y:190, w:580, h:20},
+      {x:0, y:290, w:580, h:20}, {x:120, y:390, w:580, h:20}
+    ],
+    enemigos: [
+      {x:160, y:40, vx:4, vy:0},
+      {x:400, y:140, vx:-4, vy:0},
+      {x:240, y:240, vx:3.5, vy:0},
+      {x:480, y:340, vx:-3.5, vy:0}
+    ],
+    llavePos: {x: 40, y: 430},
+    puertaPos: {x: 640, y: 430},
+    ecuacion: () => {
+      const b = Math.floor(Math.random() * 12) + 5;
+      const xVal = Math.floor(Math.random() * 15) + 10;
+      return {texto: `x - ${b} = ${xVal - b}`, valor: xVal};
+    }
+  },
+  {
+    paredes: [
+      {x:100, y:80, w:500, h:20}, {x:100, y:400, w:500, h:20},
+      {x:100, y:80, w:20, h:340}, {x:580, y:80, w:20, h:340},
+      {x:200, y:180, w:300, h:20}, {x:200, y:300, w:300, h:20}
+    ],
+    enemigos: [
+      {x:140, y:120, vx:2.5, vy:2.5},
+      {x:520, y:120, vx:-2.5, vy:2.5},
+      {x:140, y:340, vx:2.5, vy:-2.5},
+      {x:520, y:340, vx:-2.5, vy:-2.5}
+    ],
+    llavePos: {x: 335, y: 230},
+    puertaPos: {x: 640, y: 30},
+    ecuacion: () => {
+      const a = Math.floor(Math.random() * 6) + 2;
+      const b = Math.floor(Math.random() * 8) + 4;
+      return {texto: `${a}x = ${a * b}`, valor: b};
+    }
+  }
+];
+
+let paredes = [];
+
+function cargarNivel(n) {
+  const datos = datosNiveles[n - 1];
+  etiquetaNivel.textContent = `Nivel ${n} de ${datosNiveles.length}`;
+  etiquetaVidas.textContent = `❤️ Vidas: ${vidas}`;
+  
+  x = 40; y = 40; tieneLlave = false;
+  personaje.style.left = (x / ANCHO * 100) + '%';
+  personaje.style.top = (y / ALTO * 100) + '%';
+  
+  contenedorParedes.innerHTML = '';
+  paredes = datos.paredes;
+  paredes.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'pared';
+    div.style.left = (p.x / ANCHO * 100) + '%';
+    div.style.top = (p.y / ALTO * 100) + '%';
+    div.style.width = (p.w / ANCHO * 100) + '%';
+    div.style.height = (p.h / ALTO * 100) + '%';
+    contenedorParedes.appendChild(div);
+  });
+  
+  contenedorEnemigos.innerHTML = '';
+  listaEnemigos = datos.enemigos.map(e => {
+    const div = document.createElement('div');
+    div.className = 'enemigo';
+    div.style.left = (e.x / ANCHO * 100) + '%';
+    div.style.top = (e.y / ALTO * 100) + '%';
+    contenedorEnemigos.appendChild(div);
+    return { ...e, el: div, width: TAM, height: TAM };
+  });
+
+  llave.style.display = 'block';
+  llave.style.left = (datos.llavePos.x / ANCHO * 100) + '%';
+  llave.style.top = (datos.llavePos.y / ALTO * 100) + '%';
+  
+  puerta.classList.remove('abierta');
+  puerta.style.left = (datos.puertaPos.x / ANCHO * 100) + '%';
+  puerta.style.top = (datos.puertaPos.y / ALTO * 100) + '%';
+  
+  mensaje.textContent = `Nivel ${n}: ¡Obtén la llave y evita a los enemigos!`;
+}
+
+function mover(dirX, dirY) {
+  let nx = x + dirX * VEL;
+  let ny = y + dirY * VEL;
+
+  if (dirX !== 0 || dirY !== 0) {
+    ultimaDir = { x: dirX, y: dirY };
+  }
+
+  if (nx >= 0 && nx <= ANCHO - TAM && ny >= 0 && ny <= ALTO - TAM) {
+    if (!verificarPared(nx, ny, TAM, TAM)) {
+      x = nx; y = ny;
+      personaje.style.left = (x / ANCHO * 100) + '%';
+      personaje.style.top = (y / ALTO * 100) + '%';
+    }
+  }
+  verificarInteracciones();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') mover(-1, 0);
+  if (e.key === 'ArrowRight') mover(1, 0);
+  if (e.key === 'ArrowUp') mover(0, -1);
+  if (e.key === 'ArrowDown') mover(0, 1);
+  if (e.code === 'Space') crearProyectil();
+});
+
+function vincularBoton(id, dirX, dirY) {
+  const btn = document.getElementById(id);
+  let intervalo = null;
+
+  const iniciar = (e) => {
+    e.preventDefault();
+    mover(dirX, dirY);
+    if (!intervalo) intervalo = setInterval(() => mover(dirX, dirY), 80);
+  };
+
+  const detener = (e) => {
+    e.preventDefault();
+    clearInterval(intervalo);
+    intervalo = null;
+  };
+
+  btn.addEventListener('touchstart', iniciar);
+  btn.addEventListener('touchend', detener);
+  btn.addEventListener('mousedown', iniciar);
+  btn.addEventListener('mouseup', detener);
+}
+
+vincularBoton('btn-up', 0, -1);
+vincularBoton('btn-down', 0, 1);
+vincularBoton('btn-left', -1, 0);
+vincularBoton('btn-right', 1, 0);
+
+const btnFire = document.getElementById('btn-fire');
+btnFire.addEventListener('touchstart', (e) => { e.preventDefault(); crearProyectil(); });
+btnFire.addEventListener('click', () => crearProyectil());
+
+function crearProyectil() {
+  const pEl = document.createElement('div');
+  pEl.className = 'proyectil';
+  const px = x + TAM / 2 - 6;
+  const py = y + TAM / 2 - 6;
+  pEl.style.left = (px / ANCHO * 100) + '%';
+  pEl.style.top = (py / ALTO * 100) + '%';
+  contenedorProyectiles.appendChild(pEl);
+
+  listaProyectiles.push({
+    x: px, y: py,
+    vx: ultimaDir.x * 10,
+    vy: ultimaDir.y * 10,
+    el: pEl, width: 12, height: 12
+  });
+}
+
+function verificarPared(px, py, w, h) {
+  return paredes.some(p => px < p.x + p.w && px + w > p.x && py < p.y + p.h && py + h > p.y);
+}
+
+function gameLoop() {
+  listaEnemigos.forEach(e => {
+    let nx = e.x + e.vx;
+    let ny = e.y + e.vy;
+
+    if (nx < 0 || nx > ANCHO - e.width || verificarPared(nx, e.y, e.width, e.height)) e.vx *= -1;
+    else e.x = nx;
+
+    if (ny < 0 || ny > ALTO - e.height || verificarPared(e.x, ny, e.width, e.height)) e.vy *= -1;
+    else e.y = ny;
+
+    e.el.style.left = (e.x / ANCHO * 100) + '%';
+    e.el.style.top = (e.y / ALTO * 100) + '%';
+
+    if (colision({x, y, width: TAM, height: TAM}, e)) recibirDano();
+  });
+
+  for (let i = listaProyectiles.length - 1; i >= 0; i--) {
+    let p = listaProyectiles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.el.style.left = (p.x / ANCHO * 100) + '%';
+    p.el.style.top = (p.y / ALTO * 100) + '%';
+
+    if (p.x < 0 || p.x > ANCHO || p.y < 0 || p.y > ALTO || verificarPared(p.x, p.y, p.width, p.height)) {
+      p.el.remove();
+      listaProyectiles.splice(i, 1);
+      continue;
+    }
+
+    for (let j = listaEnemigos.length - 1; j >= 0; j--) {
+      let e = listaEnemigos[j];
+      if (colision(p, e)) {
+        p.el.remove();
+        e.el.remove();
+        listaProyectiles.splice(i, 1);
+        listaEnemigos.splice(j, 1);
+        break;
+      }
+    }
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+function recibirDano() {
+  vidas--;
+  etiquetaVidas.textContent = `❤️ Vidas: ${vidas}`;
+  x = 40; y = 40;
+  personaje.style.left = (x / ANCHO * 100) + '%';
+  personaje.style.top = (y / ALTO * 100) + '%';
+
+  if (vidas <= 0) {
+    alert("❌ ¡Has perdido todas las vidas! Reiniciando nivel...");
+    vidas = 3;
+    cargarNivel(nivelActual);
+  }
+}
+
+function verificarInteracciones() {
+  const llaveBox = {
+    x: parseFloat(llave.style.left) / 100 * ANCHO,
+    y: parseFloat(llave.style.top) / 100 * ALTO,
+    width: 26, height: 26
+  };
+  if (!tieneLlave && colision({x, y, width: TAM, height: TAM}, llaveBox)) {
+    tieneLlave = true;
+    llave.style.display = 'none';
+    mensaje.textContent = '🔑 ¡Llave conseguida! Corre a la puerta.';
+  }
+
+  const puertaBox = {
+    x: parseFloat(puerta.style.left) / 100 * ANCHO,
+    y: parseFloat(puerta.style.top) / 100 * ALTO,
+    width: 40, height: 60
+  };
+  if (colision({x, y, width: TAM, height: TAM}, puertaBox)) {
+    if (tieneLlave) {
+      puerta.classList.add('abierta');
+      mostrarEcuacion();
+    } else {
+      mensaje.textContent = '🔒 ¡Necesitas la llave primero!';
+    }
+  }
+}
+
+function colision(a, b) {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function mostrarEcuacion() {
+  const datos = datosNiveles[nivelActual - 1].ecuacion();
+  textoEcuacion.textContent = datos.texto;
+  respuestaCorrecta = datos.valor;
+  respuestaInput.value = '';
+  mensajeError.style.display = 'none';
+  modal.classList.add('mostrar');
+  respuestaInput.focus();
+}
+
+btnVerificar.addEventListener('click', () => {
+  if (parseInt(respuestaInput.value) === respuestaCorrecta) {
+    modal.classList.remove('mostrar');
+    if (nivelActual < datosNiveles.length) {
+      nivelActual++;
+      cargarNivel(nivelActual);
+    } else {
+      mensaje.textContent = '🏆 ¡FELICIDADES! Has completado el juego.';
+    }
+  } else {
+    mensajeError.style.display = 'block';
+  }
+});
+
+respuestaInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') btnVerificar.click();
+});
+
+cargarNivel(1);
+requestAnimationFrame(gameLoop);
+</script>
+
+</body>
+</html>
