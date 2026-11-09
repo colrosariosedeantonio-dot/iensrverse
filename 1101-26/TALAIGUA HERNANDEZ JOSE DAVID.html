@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Shadow Protocol: English Quest</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #050811;
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #ui-header {
+            width: 100%;
+            max-width: 650px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #0d1326;
+            border: 2px solid #1f365d;
+            border-bottom: 4px solid #ff3333;
+            box-shadow: 0 4px 20px rgba(255,0,0,0.1);
+        }
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            letter-spacing: 1px;
+        }
+        .hud-item {
+            font-size: 1rem;
+            color: #6385ff;
+            text-shadow: 0 0 5px rgba(99,133,255,0.5);
+        }
+        #english-question {
+            background: #111a36;
+            border-left: 5px solid #ff3333;
+            padding: 10px;
+            font-size: 1.2rem;
+            text-align: left;
+            line-height: 1.3;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #00ffcc;
+            text-shadow: 0 0 8px rgba(0,255,204,0.4);
+        }
+        #canvas-container {
+            width: 100%;
+            max-width: 650px;
+            aspect-ratio: 4 / 3;
+            position: relative;
+            background: #0a0f1d;
+            border: 2px solid #1f365d;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #controls {
+            width: 100%;
+            max-width: 650px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            padding: 15px;
+            background: #0d1326;
+            border: 2px solid #1f365d;
+            border-top: none;
+        }
+        .btn-ctrl {
+            background: #162242;
+            border: 2px solid #253b73;
+            border-radius: 6px;
+            color: #6385ff;
+            font-size: 1.6rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 0;
+            cursor: pointer;
+            box-shadow: 0 4px #0b1121;
+            touch-action: manipulation;
+        }
+        .btn-ctrl:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #0b1121;
+            background: #ff3333;
+            color: #fff;
+            border-color: #ff9999;
+        }
+        #btn-up { grid-column: 2; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 3; }
+
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 8, 17, 0.96);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 25px;
+            z-index: 10;
+        }
+        .overlay h2 {
+            font-size: 2.5rem;
+            color: #ff3333;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(255,51,51,0.6);
+        }
+        .overlay p {
+            font-family: sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            max-width: 85%;
+            color: #a4b3d6;
+        }
+        .btn-main {
+            background: #ff3333;
+            color: #fff;
+            border: none;
+            padding: 14px 40px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 5px #b30000;
+        }
+        .btn-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px #b30000;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-header">
+        <div class="hud-row">
+            <div class="hud-item" id="hud-level">MISSION STAGE: 1/6</div>
+            <div class="hud-item" id="hud-topic">PROTOCOL: Verb To Be</div>
+            <div class="hud-item" id="hud-lives">HP UNITS: 🟥🟥🟥</div>
+        </div>
+        <div id="english-question">ANALYZING COMBAT DATA...</div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <div id="game-overlay" class="overlay">
+            <h2 id="overlay-title">SHADOW PROTOCOL</h2>
+            <p id="overlay-desc">Controla al Operativo Cyborg. Hackea el sistema recolectando los códigos de lenguaje correctos en inglés. Evita las minas centinelas rojas y evacúa en la cápsula táctica.</p>
+            <button id="btn-action" class="btn-main">DEPLOY INFANTRY</button>
+        </div>
+    </div>
+
+    <div id="controls">
+        <button class="btn-ctrl" id="btn-up">▲</button>
+        <button class="btn-ctrl" id="btn-left">◀</button>
+        <button class="btn-ctrl" id="btn-right">▶</button>
+        <button class="btn-ctrl" id="btn-down">▼</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudLevel = document.getElementById('hud-level');
+        const hudTopic = document.getElementById('hud-topic');
+        const hudLives = document.getElementById('hud-lives');
+        const englishQuestion = document.getElementById('english-question');
+        const overlay = document.getElementById('game-overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const btnAction = document.getElementById('btn-action');
+
+        let currentLevel = 1;
+        const maxLevels = 6;
+        let lives = 3;
+        let gameState = 'START'; 
+        let questionSolved = false;
+
+        let player = { 
+            x: 60, 
+            y: 280, 
+            size: 40, 
+            speed: 6.0,
+            isMoving: false,
+            animTimer: 0,
+            currentFrame: 0
+        };
+        let goal = { x: 730, y: 240, width: 50, height: 120 };
+        let enemies = [];
+        let answers = [];
+        let currentQuestionData = {};
+
+        let keys = {};
+        let touchDirections = { up: false, down: false, left: false, right: false };
+
+        const englishBank = {
+            1: {
+                topic: "Verb To Be", enemies: 4, speedMin: 2.5, speedMax: 4.5,
+                questions: { q: "Tactical Unit 'Alpha' ___ inbound to base.", options: ["am", "is", "are"], correct: "is" }
+            },
+            2: {
+                topic: "Target Codes", enemies: 6, speedMin: 3.5, speedMax: 5.5,
+                questions: { q: "Hostile spotted! Target identified as a feral ___ (Lobo).", options: ["Eagle", "Wolf", "Shark"], correct: "Wolf" }
+            },
+            3: {
+                topic: "Ownership Matrix", enemies: 7, speedMin: 4.0, speedMax: 6.5,
+                questions: { q: "The commander locked ___ weapons in the armory.", options: ["his", "hers", "its"], correct: "his" }
+            },
+            4: {
+                topic: "Drop Coordinates", enemies: 9, speedMin: 4.5, speedMax: 7.5,
+                questions: { q: "Payload dropped directly ___ the enemy bunker.", options: ["on", "under", "between"], correct: "on" }
+            },
+            5: {
+                topic: "Past Campaigns", enemies: 11, speedMin: 5.0, speedMax: 8.5,
+                questions: { q: "Intel reports they ___ the battlefield hours ago.", options: ["leave", "left", "leaved"], correct: "left" }
+            },
+            6: {
+                topic: "Final Engagement", enemies: 14, speedMin: 5.5, speedMax: 10.0,
+                questions: { q: "We must holding lines ___ reinforcement is critical.", options: ["but", "or", "because"], correct: "because" }
+            }
+        };
+
+        const svgFrame1 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+            <path d="M4 1h8v1H4zm-1 1h10v4H3zm0 4h10v2H3z" fill="#1b1e24"/>
+            <path d="M5 2h6v2H5z" fill="#2d323f"/>
+            <path d="M4 4h8v1H4z" fill="#ff0044"/>
+            <path d="M6 4h4v1H6z" fill="#ff6666"/>
+            <path d="M2 8h12v1H2zm1 1h10v3H3z" fill="#12141a"/>
+            <path d="M7 9h2v2H7z" fill="#ff0044"/>
+            <path d="M1 7h2v2H1zm13 0h2v2h-2z" fill="#3a4151"/>
+            <path d="M3 12h3v4H3zm7 0h3v4h-3z" fill="#090a0d"/>
+        </svg>`;
+
+        const svgFrame2 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+            <path d="M4 2h8v1H4zm-1 1h10v4H3zm0 4h10v2H3z" fill="#1b1e24"/>
+            <path d="M5 3h6v2H5z" fill="#2d323f"/>
+            <path d="M4 5h8v1H4z" fill="#ff0044"/>
+            <path d="M6 5h4v1H6z" fill="#ff6666"/>
+            <path d="M2 9h12v1H2zm1 1h10v3H3z" fill="#12141a"/>
+            <path d="M7 10h2v2H7z" fill="#ff0044"/>
+            <path d="M1 8h2v2H1zm13 0h2v2h-2z" fill="#3a4151"/>
+            <path d="M2 13h3v3H2zm8 1h3v2h-3z" fill="#090a0d"/>
+        </svg>`;
+
+        const svgGoalLocked = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 40" shape-rendering="crispEdges">
+            <path d="M2 0h16v40H2z" fill="#1c2333"/>
+            <path d="M4 2h12v36H4z" fill="#0b0e14"/>
+            <path d="M8 16h4v4H8z" fill="#475569"/>
+        </svg>`;
+
+        const svgGoalOpen = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 40" shape-rendering="crispEdges">
+            <path d="M2 0h16v40H2z" fill="#2d3d5a"/>
+            <path d="M8 8h4v2H8zm0 10h4v2H8zm0 10h4v2H8z" fill="#00ffcc"/>
+        </svg>`;
+
+        const spriteIdling = new Image(); spriteIdling.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFrame1);
+        const spriteWalking = new Image(); spriteWalking.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFrame2);
+        const imgGoalLocked = new Image(); imgGoalLocked.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgGoalLocked);
+        const imgGoalOpen = new Image(); imgGoalOpen.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgGoalOpen);
+
+        function generateTrivia(level) {
+            const data = englishBank[level];
+            hudTopic.innerText = `PROTOCOL: ${data.topic.toUpperCase()}`;
+            
+            currentQuestionData = data.questions; 
+            englishQuestion.innerText = `>> SYSTEM REQ: ${currentQuestionData.q}`;
+
+            let shuffledOptions = [...currentQuestionData.options].sort(() => Math.random() - 0.5);
+            answers = [];
+            const positions = [{x: 250, y: 150}, {x: 440, y: 430}, {x: 590, y: 220}];
+
+            shuffledOptions.forEach((option, idx) => {
+                answers.push({
+                    x: positions[idx].x, y: positions[idx].y,
+                    text: option.toUpperCase(), isCorrect: option === currentQuestionData.correct,
+                    width: 100, height: 45
+                });
+            });
+        }
+
+        function initLevel(level) {
+            questionSolved = false;
+            player.x = 60; player.y = 280; player.isMoving = false;
+            
+            hudLevel.innerText = `MISSION STAGE: ${level}/${maxLevels}`;
+            updateLivesHUD();
+            generateTrivia(level);
+
+            enemies = [];
+            const config = englishBank[level];
+            for (let i = 0; i < config.enemies; i++) {
+                enemies.push({
+                    x: Math.random() * (canvas.width - 340) + 180,
+                    y: Math.random() * (canvas.height - 60),
+                    width: 24, height: 24,
+                    speedY: (Math.random() > 0.5 ? 1 : -1) * (Math.random() * (config.speedMax - config.speedMin) + config.speedMin)
+                });
+            }
+        }
+
+        function updateLivesHUD() {
+            hudLives.innerText = "HP UNITS: " + "🟥".repeat(lives);
+        }
+
+        window.addEventListener('keydown', (e) => { keys[e.code] = true; });
+        window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+        setupTouchButton('btn-up', 'up');
+        setupTouchButton('btn-down', 'down');
+        setupTouchButton('btn-left', 'left');
+        setupTouchButton('btn-right', 'right');
+
+        function setupTouchButton(id, dir) {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); touchDirections[dir] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); touchDirections[dir] = false; });
+        }
+
+        btnAction.addEventListener('click', () => {
+            if (gameState === 'START' || gameState === 'GAME_OVER' || gameState === 'WIN') {
+                lives = 3; currentLevel = 1; initLevel(currentLevel);
+                gameState = 'PLAYING'; overlay.classList.add('hidden');
+            } else if (gameState === 'LEVEL_CLEAR') {
+                currentLevel++; initLevel(currentLevel);
+                gameState = 'PLAYING'; overlay.classList.add('hidden');
+            }
+        });
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+            let movingNow = false;
+
+            if (keys['ArrowUp'] || keys['KeyW'] || touchDirections.up) { player.y -= player.speed; movingNow = true; }
+            if (keys['ArrowDown'] || keys['KeyS'] || touchDirections.down) { player.y += player.speed; movingNow = true; }
+            if (keys['ArrowLeft'] || keys['KeyA'] || touchDirections.left) { player.x -= player.speed; movingNow = true; }
+            if (keys['ArrowRight'] || keys['KeyD'] || touchDirections.right) { player.x += player.speed; movingNow = true; }
+
+            player.isMoving = movingNow;
+
+            if (player.isMoving) {
+                player.animTimer++;
+                if (player.animTimer > 8) {
+                    player.currentFrame = player.currentFrame === 0 ? 1 : 0;
+                    player.animTimer = 0;
+                }
+            } else {
+                player.currentFrame = 0; player.animTimer = 0;
+            }
+
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
+            if (player.y + player.size > canvas.height) player.y = canvas.height - player.size;
+
+            enemies.forEach(enemy => {
+                enemy.y += enemy.speedY;
+                if (enemy.y < 0 || enemy.y + enemy.height > canvas.height) enemy.speedY *= -1;
+
+                if (player.x < enemy.x + enemy.width && player.x + player.size > enemy.x &&
+                    player.y < enemy.y + enemy.height && player.y + player.size > enemy.y) {
+                    lives--;
+                    updateLivesHUD();
+                    player.x = 60; player.y = 280;
+                    if (lives <= 0) {
+                        gameState = 'GAME_OVER';
+                        triggerOverlay('MISSION FAILED', 'CRITICAL FAILURE: Operative terminated by defensive matrix.');
+                    }
+                }
+            });
+
+            answers.forEach((ans, index) => {
+                if (player.x < ans.x + ans.width && player.x + player.size > ans.x &&
+                    player.y < ans.y + ans.height && player.y + player.size > ans.y) {
+                    
+                    if (ans.isCorrect) {
+                        questionSolved = true;
+                        englishQuestion.innerText = `>> CORE UNLOCKED: ${currentQuestionData.q.replace("___", ans.text)} [STABLE]`;
+                        answers = []; 
+                    } else {
+                        lives--;
+                        updateLivesHUD();
+                        answers.splice(index, 1); 
+                        if (lives <= 0) {
+                            gameState = 'GAME_OVER';
+                            triggerOverlay('DATA CORRUPTED', 'DECRYPT ERROR: Security matrix wiped your core data.');
+                        }
+                    }
+                }
+            });
+
+            if (player.x < goal.x + goal.width && player.x + player.size > goal.x &&
+                player.y < goal.y + goal.height && player.y + player.size > goal.y) {
+                
+                if (questionSolved) {
+                    if (currentLevel >= maxLevels) {
+                        gameState = 'WIN';
+                        triggerOverlay('CAMPAIGN VICTORY', 'All databanks secured successfully. You are an Elite Linguistic Operator.');
+                    } else {
+                        gameState = 'LEVEL_CLEAR';
+                        triggerOverlay(`STAGE ${currentLevel} COMPLETED`, 'Extracting operative to next tactical grid segment.');
+                    }
+                } else {
+                    player.x -= 45; 
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = '#111c33'; ctx.lineWidth = 1.5;
+            for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+            for(let j=0; j<canvas.height; j+=40) { ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(canvas.width,j); ctx.stroke(); }
+
+            answers.forEach(ans => {
+                ctx.fillStyle = '#0f1626'; ctx.strokeStyle = '#ff3333'; ctx.lineWidth = 2;
+                ctx.fillRect(ans.x, ans.y, ans.width, ans.height);
+                ctx.strokeRect(ans.x, ans.y, ans.width, ans.height);
+
+                ctx.fillStyle = '#ff6666'; ctx.font = 'bold 16px monospace';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(`[${ans.text}]`, ans.x + ans.width/2, ans.y + ans.height/2);
+            });
+
+            ctx.imageSmoothingEnabled = false;
+            let activeGoalImg = questionSolved ? imgGoalOpen : imgGoalLocked;
+            ctx.drawImage(activeGoalImg, goal.x, goal.y, goal.width, goal.height);
+
+            enemies.forEach(enemy => {
+                ctx.fillStyle = '#ff1a1a';
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                ctx.fillStyle = '#4a0000';
+                ctx.fillRect(enemy.x + 6, enemy.y + 6, enemy.width - 12, enemy.height - 12);
+            });
+
+            let activeSprite = player.currentFrame === 0 ? spriteIdling : spriteWalking;
+            ctx.drawImage(activeSprite, player.x, player.y, player.size, player.size);
+        }
+
+        function triggerOverlay(title, desc) {
+            overlayTitle.innerText = title; overlayDesc.innerText = desc;
+            btnAction.innerText = (gameState === 'LEVEL_CLEAR') ? 'NEXT SECTOR' : 'RE-DEPLOY';
+            overlay.classList.remove('hidden');
+        }
+
+        function loop() { update(); draw(); requestAnimationFrame(loop); }
+        loop();
+    </script>
+</body>
+</html>

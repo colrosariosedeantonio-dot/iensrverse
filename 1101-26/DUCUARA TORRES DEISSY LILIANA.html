@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Quest: El Desafío de los 10 Niveles</title>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            background-color: #1a1a1a; color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            min-height: 100vh; user-select: none;
+        }
+        #game-container {
+            text-align: center; background: #2a2a2a;
+            padding: 20px; border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.7);
+            border: 4px solid #444; max-width: 600px; width: 100%;
+        }
+        #start-screen {
+            background: #111; padding: 40px 20px;
+            border-radius: 6px; border: 3px dashed #4caf50;
+        }
+        .start-btn {
+            background: #4caf50; color: white; border: none;
+            padding: 15px 30px; font-size: 1.5rem; font-family: inherit;
+            cursor: pointer; border-radius: 4px; font-weight: bold;
+            box-shadow: 0 4px #2e7d32; margin-top: 20px;
+        }
+        .start-btn:active {
+            box-shadow: 0 2px #2e7d32; transform: translateY(2px);
+        }
+        #game-layout { display: none; }
+        h1, h2 { margin: 5px 0; text-transform: uppercase; }
+        #hud {
+            display: flex; justify-content: space-between; margin-bottom: 15px;
+            font-size: 1.2rem; background: #111; padding: 10px;
+            border-radius: 4px; border: 2px solid #555;
+        }
+        #math-question {
+            font-size: 1.5rem; color: #ffeb3b; margin: 10px 0;
+            background: #333; padding: 8px; border-radius: 4px;
+        }
+        canvas { background: #222; border: 4px solid #111; display: block; margin: 0 auto; image-rendering: pixelated; }
+        #controls { margin-top: 15px; display: grid; grid-template-columns: repeat(3, 60px); grid-gap: 10px; justify-content: center; }
+        .btn {
+            background: #555; color: white; border: 2px solid #fff; padding: 15px;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 4px; touch-action: manipulation;
+        }
+        .btn:active { background: #333; }
+        .up { grid-column: 2; } .left { grid-column: 1; } .down { grid-column: 2; } .right { grid-column: 3; }
+        #screen-msg { font-size: 1.2rem; color: #00ff00; margin-top: 10px; min-height: 24px; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Math Quest</h1>
+    
+    <div id="start-screen">
+        <h2>El Desafío de los 10 Niveles</h2>
+        <p style="color: #bbb; font-size: 0.95rem; margin: 15px 0;">
+            Guía al Pastor Alemán hacia los huesos con el resultado matemático correcto para desbloquear su plato de comida. ¡Evita a los monstruos con cuernos rojos!
+        </p>
+        <button class="start-btn" id="btn-start-game">EMPEZAR JUEGO</button>
+    </div>
+
+    <div id="game-layout">
+        <div id="hud">
+            <div>Nivel: <span id="level-val">1/10</span></div>
+            <div>Vidas: <span id="lives-val">❤❤❤</span></div>
+        </div>
+
+        <div id="math-question">Resuelve: <span id="question-text">Generando...</span></div>
+
+        <canvas id="gameCanvas" width="480" height="320"></canvas>
+
+        <div id="screen-msg">¡Consigue el huesito correcto!</div>
+
+        <div id="controls">
+            <button class="btn up" id="btn-up">↑</button>
+            <button class="btn left" id="btn-left">←</button>
+            <button class="btn down" id="btn-down">↓</button>
+            <button class="btn right" id="btn-right">→</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Cadenas de datos SVG vectoriales integrados puros
+    const imgGSDIdle = new Image();
+    imgGSDIdle.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" shape-rendering="crispEdges"><rect x="6" y="10" width="10" height="6" fill="%232b2b2b" /><rect x="7" y="11" width="8" height="5" fill="%23c27a3a" /><rect x="13" y="6" width="5" height="5" fill="%232b2b2b" /><rect x="14" y="7" width="4" height="4" fill="%23c27a3a" /><rect x="16" y="7" width="4" height="2" fill="%232b2b2b" /><rect x="15" y="4" width="1" height="3" fill="%232b2b2b" /><rect x="17" y="4" width="1" height="3" fill="%232b2b2b" /><rect x="15" y="7" width="1" height="1" fill="%23fff" /><rect x="7" y="16" width="2" height="4" fill="%23c27a3a" /><rect x="10" y="16" width="2" height="4" fill="%232b2b2b" /><rect x="13" y="16" width="2" height="4" fill="%23c27a3a" /><rect x="15" y="16" width="2" height="4" fill="%232b2b2b" /><rect x="4" y="9" width="2" height="5" fill="%232b2b2b" /></svg>';
+
+    const imgGSDWalk = new Image();
+    imgGSDWalk.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" shape-rendering="crispEdges"><rect x="6" y="9" width="10" height="6" fill="%232b2b2b" /><rect x="7" y="10" width="8" height="5" fill="%23c27a3a" /><rect x="13" y="5" width="5" height="5" fill="%232b2b2b" /><rect x="14" y="6" width="4" height="4" fill="%23c27a3a" /><rect x="16" y="6" width="4" height="2" fill="%232b2b2b" /><rect x="15" y="3" width="1" height="3" fill="%232b2b2b" /><rect x="17" y="3" width="1" height="3" fill="%232b2b2b" /><rect x="15" y="6" width="1" height="1" fill="%23fff" /><rect x="5" y="15" width="2" height="5" fill="%23c27a3a" /><rect x="9" y="15" width="2" height="5" fill="%232b2b2b" /><rect x="12" y="15" width="2" height="5" fill="%23c27a3a" /><rect x="16" y="15" width="2" height="5" fill="%232b2b2b" /><rect x="4" y="8" width="2" height="4" fill="%232b2b2b" /></svg>';
+
+    const imgMonster = new Image();
+    imgMonster.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" shape-rendering="crispEdges"><rect x="4" y="6" width="16" height="14" fill="%23d32f2f" /><rect x="6" y="3" width="2" height="3" fill="%23ffffff" /><rect x="16" y="3" width="2" height="3" fill="%23ffffff" /><rect x="6" y="9" width="3" height="3" fill="%23000000" /><rect x="15" y="9" width="3" height="3" fill="%23000000" /><rect x="8" y="15" width="8" height="2" fill="%23ffffff" /></svg>';
+
+    const imgBone = new Image();
+    imgBone.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" shape-rendering="crispEdges"><rect x="6" y="10" width="12" height="4" fill="%23e0e0e0" /><rect x="4" y="8" width="3" height="3" fill="%23ffffff" /><rect x="4" y="13" width="3" height="3" fill="%23ffffff" /><rect x="17" y="8" width="3" height="3" fill="%23ffffff" /><rect x="17" y="13" width="3" height="3" fill="%23ffffff" /></svg>';
+
+    const imgFoodBowl = new Image();
+    imgFoodBowl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" shape-rendering="crispEdges"><rect x="3" y="16" width="18" height="5" fill="%2378909c" /><rect x="4" y="13" width="16" height="3" fill="%23b0bec5" /><rect x="6" y="10" width="3" height="3" fill="%235d4037" /><rect x="10" y="8" width="4" height="5" fill="%234e342e" /><rect x="15" y="11" width="3" height="2" fill="%235d4037" /><rect x="8" y="12" width="8" height="2" fill="%234e342e" /></svg>';
+
+    let imagesLoaded = 0;
+    function checkLoaded() { imagesLoaded++; }
+    imgGSDIdle.onload = checkLoaded; imgGSDWalk.onload = checkLoaded;
+    imgMonster.onload = checkLoaded; imgBone.onload = checkLoaded; imgFoodBowl.onload = checkLoaded;
+
+    let audioCtx = null;
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        if (type === 'correct') {
+            osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.15);
+            gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now); osc.stop(now + 0.15);
+        } else if (type === 'hit') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(250, now); osc.frequency.linearRampToValueAtTime(60, now + 0.3);
+            gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'win') {
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(523, now); osc.frequency.setValueAtTime(659, now + 0.1); osc.frequency.setValueAtTime(783, now + 0.2);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+            osc.start(now); osc.stop(now + 0.4);
+        }
+    }
+
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'es-ES';
+            window.speechSynthesis.speak(u);
+        }
+    }
+
+    let currentLevel = 1, lives = 3, gameOver = false, correctAnswer = 0, currentQuestionText = "";
+    const player = { x: 30, y: 140, width: 32, height: 32, speed: 4, isMoving: false, facingLeft: false, frameToggle: false, frameTimer: 0 };
+    let monsters = [], bones = [], goal = { x: 420, y: 140, width: 36, height: 32, active: false };
+
+    const keys = {};
+    window.addEventListener('keydown', e => { keys[e.key] = true; });
+    window.addEventListener('keyup', e => { keys[e.key] = false; });
+    window.addEventListener('keydown', e => {
+        if(e.key==='w'||e.key==='W') keys['ArrowUp']=true; if(e.key==='s'||e.key==='S') keys['ArrowDown']=true;
+        if(e.key==='a'||e.key==='A') keys['ArrowLeft']=true; if(e.key==='d'||e.key==='D') keys['ArrowRight']=true;
+    });
+    window.addEventListener('keyup', e => {
+        if(e.key==='w'||e.key==='W') keys['ArrowUp']=false; if(e.key==='s'||e.key==='S') keys['ArrowDown']=false;
+        if(e.key==='a'||e.key==='A') keys['ArrowLeft']=false; if(e.key==='d'||e.key==='D') keys['ArrowRight']=false;
+    });
+
+    function setupMobileButton(id, keyStr) {
+        const btn = document.getElementById(id);
+        btn.addEventListener('mousedown', () => { keys[keyStr] = true; });
+        btn.addEventListener('mouseup', () => { keys[keyStr] = false; });
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyStr] = true; });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyStr] = false; });
+    }
+    setupMobileButton('btn-up', 'ArrowUp'); setupMobileButton('btn-down', 'ArrowDown');
+    setupMobileButton('btn-left', 'ArrowLeft'); setupMobileButton('btn-right', 'ArrowRight');
+
+    function generateMathProblem() {
+        let a = Math.floor(Math.random() * (4 * currentLevel)) + 2;
+        let b = Math.floor(Math.random() * (3 * currentLevel)) + 1;
+        let op = Math.random() > 0.5 ? '+' : '-';
+        if (op === '+') { correctAnswer = a + b; } 
+        else { if (a < b) { let t = a; a = b; b = t; } correctAnswer = a - b; }
+
+        currentQuestionText = a + (op === '+' ? ' más ' : ' menos ') + b;
+        document.getElementById('question-text').innerText = a + " " + op + " " + b;
+        
+        bones = [];
+        let answers = [correctAnswer, correctAnswer + Math.floor(Math.random()*3)+1, correctAnswer - Math.floor(Math.random()*3)-1];
+        answers = [...new Set(answers)].filter(n => n >= 0);
+        while(answers.length < 3) answers.push(correctAnswer + answers.length + 2);
+        answers.sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < 3; i++) {
+            bones.push({ x: 130 + i * 95, y: 40 + Math.random() * 200, width: 28, height: 28, value: answers[i], isCorrect: answers[i] === correctAnswer });
+        }
+
+        monsters = [];
+        let numMonsters = Math.min(2 + Math.floor(currentLevel / 2), 6);
+        let baseSpeed = 1.3 + (currentLevel * 0.32); // Patrullaje adaptativo: Aumenta la velocidad un ~25% por nivel acumulado
+
+        for (let i = 0; i < numMonsters; i++) {
+            monsters.push({ x: 160 + (i * 65) + Math.random()*20, y: 20 + Math.random()*240, width: 26, height: 26, speedY: (Math.random() > 0.5 ? 1 : -1) * baseSpeed });
+        }
+        goal.active = false;
+        document.getElementById('screen-msg').innerText = "¡Consigue el huesito correcto!";
+        document.getElementById('screen-msg').style.color = "#00ff00";
+        speak("Nivel " + currentLevel + ". Resuelve: ¿Cuánto es " + currentQuestionText + "?");
+    }
+
+    function initLevel() {
+        player.x = 30; player.y = 140;
+        document.getElementById('level-val').innerText = currentLevel + "/10";
+        let h = ""; for(let i=0; i<lives; i++) h += "❤";
+        document.getElementById('lives-val').innerText = h || "Ninguna";
+        generateMathProblem();
+    }
+
+    function update() {
+        if (gameOver) return;
+        player.isMoving = false;
+        if (keys['ArrowUp']) { player.y -= player.speed; player.isMoving = true; }
+        if (keys['ArrowDown']) { player.y += player.speed; player.isMoving = true; }
+        if (keys['ArrowLeft']) { player.x -= player.speed; player.isMoving = true; player.facingLeft = true; }
+        if (keys['ArrowRight']) { player.x += player.speed; player.isMoving = true; player.facingLeft = false; }
+
+        if (player.x < 0) player.x = 0;
+        if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+        if (player.y < 0) player.y = 0;
+        if (player.y > canvas.height - player.height) player.y = canvas.height - player.height;
+
+        if (player.isMoving) {
+            player.frameTimer++;
+            if (player.frameTimer > 8) { player.frameToggle = !player.frameToggle; player.frameTimer = 0; }
+        } else { player.frameToggle = false; }
+
+        monsters.forEach(m => {
+            m.y += m.speedY;
+            if (m.y < 0 || m.y > canvas.height - m.height) m.speedY *= -1;
+            if (checkCollision(player, m)) {
+                lives--; playSound('hit');
+                if (lives <= 0) {
+                    gameOver = true;
+                    document.getElementById('screen-msg').innerText = "¡Juego Terminado!";
+                    document.getElementById('screen-msg').style.color = "#ff3333";
+                    speak("Juego terminado. Te has quedado sin vidas.");
+                } else {
+                    speak("¡Ay!"); initLevel();
+                }
+            }
+        });
+
+        bones.forEach((bone, index) => {
+            if (checkCollision(player, bone)) {
+                if (bone.isCorrect) {
+                    playSound('correct'); goal.active = true; bones.splice(index, 1);
+                    document.getElementById('screen-msg').innerText = "¡Correcto! Ve al plato de comida.";
+                    document.getElementById('screen-msg').style.color = "#4caf50";
+                    speak("¡Excelente! Corre a tu plato de comida.");
+                } else {
+                    lives--; playSound('hit');
+                    if (lives <= 0) { gameOver = true; speak("Juego terminado."); } 
+                    else { speak("Incorrecto."); initLevel(); }
+                }
+            }
+        });
+
+        if (goal.active && checkCollision(player, goal)) {
+            playSound('win');
+            if (currentLevel >= 10) {
+                gameOver = true;
+                document.getElementById('screen-msg').innerText = "¡Felicidades! Completaste Math Quest.";
+                document.getElementById('screen-msg').style.color = "#00ff00";
+                speak("¡Felicidades! Completaste el juego.");
+            } else { currentLevel++; initLevel(); }
+        }
+    }
+
+    function checkCollision(r1, r2) {
+        return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (goal.active) { ctx.drawImage(imgFoodBowl, goal.x, goal.y, goal.width, goal.height); } 
+        else { ctx.save(); ctx.globalAlpha = 0.25; ctx.drawImage(imgFoodBowl, goal.x, goal.y, goal.width, goal.height); ctx.restore(); }
+
+        bones.forEach(b => {
+            ctx.drawImage(imgBone, b.x, b.y, b.width, b.height);
+            ctx.fillStyle = "#ffffff"; ctx.font = "bold 14px 'Courier New'"; ctx.textAlign = "center";
+            ctx.fillText(b.value, b.x + b.width / 2, b.y - 6);
+        });
+
+        monsters.forEach(m => { ctx.drawImage(imgMonster, m.x, m.y, m.width, m.height); });
+
+        ctx.save();
+        if (player.facingLeft) {
+            ctx.translate(player.x + player.width, player.y); ctx.scale(-1, 1);
+            ctx.drawImage(player.frameToggle ? imgGSDWalk : imgGSDIdle, 0, 0, player.width, player.height);
+        } else {
+            ctx.drawImage(player.frameToggle ? imgGSDWalk : imgGSDIdle, player.x, player.y, player.width, player.height);
+        }
+        ctx.restore();
+    }
+
+    function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+        initAudio();
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-layout').style.display = 'block';
+        initLevel();
+        gameLoop();
+    });
+</script>
+</body>
+</html>
