@@ -206,7 +206,7 @@
             <!-- Stats Bar -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mt-10">
                 <div class="bg-brand-card/80 border border-brand-border p-4 rounded-xl text-center">
-                    <div class="font-orbitron text-3xl font-bold text-brand-red text-glow-red" id="stat-total-games">12
+                    <div class="font-orbitron text-3xl font-bold text-brand-red text-glow-red" id="stat-total-games">0
                     </div>
                     <div class="text-xs text-gray-400 font-medium uppercase mt-1">Juegos Creados</div>
                 </div>
@@ -395,18 +395,6 @@
         // BASE DE DATOS DE JUEGOS PUBLICADOS (Rutas relativas a subcarpetas en GitHub Pages)
         const gamesData = [
             {
-                id: 'mat-1',
-                title: 'Misión Álgebra: El Reino de Chaparral',
-                author: 'Carlos Andrés Gómez (Grado 10-1)',
-                subject: 'matematicas',
-                subjectName: 'Matemáticas',
-                badgeColor: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
-                description: 'Supera plataformas 2D respondiendo ecuaciones matemáticas para desbloquear los puentes del río Saldanha.',
-                image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80',
-                folderPath: './juegos/matematicas/mision-algebra/',
-                likes: 42
-            },
-            {
                 id: 'mat-2',
                 title: 'Mico Tropical: Aventura Frutal & Matemática',
                 author: 'Valentina García Flórez (Grado 11-1)',
@@ -419,64 +407,76 @@
                 likes: 0
             },
             {
-                id: 'tec-1',
-                title: 'Cyber-Rosario: Invasion Bug',
-                author: 'Laura Sofia Molina (Grado 11-2)',
-                subject: 'tecnologia',
-                subjectName: 'Tecnología e Informática',
-                badgeColor: 'text-green-400 border-green-400/30 bg-green-400/10',
-                description: 'Juego tipo Shoot &apos;em up donde limpias los servidores del colegio de virus cibernéticos ejecutando código.',
-                image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=600&q=80',
-                folderPath: './juegos/tecnologia/cyber-rosario/',
-                likes: 68
-            },
-            {
-                id: 'nat-1',
-                title: 'BioGuardians: Parque Las Hermosas',
-                author: 'Equipo Ecológico (Grado 9-3)',
-                subject: 'ciencias-naturales',
-                subjectName: 'Ciencias Naturales',
-                badgeColor: 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10',
-                description: 'Un RPG 2D de recolección para proteger la fauna y flora nativa del Tolima clasificando ecosistemas.',
-                image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80',
-                folderPath: './juegos/ciencias-naturales/bioguardians/',
-                likes: 35
-            },
-            {
-                id: 'len-1',
-                title: 'Leyendas Tolimenses: La Ortografía Perdida',
-                author: 'Santiago Rojas (Grado 8-1)',
-                subject: 'lenguaje',
-                subjectName: 'Lenguaje y Literatura',
-                badgeColor: 'text-purple-400 border-purple-400/30 bg-purple-400/10',
-                description: 'Aventura gráfica de acertijos donde debes corregir textos clásicos para derrotar al Mohán.',
-                image: 'https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?auto=format&fit=crop&w=600&q=80',
-                folderPath: './juegos/lenguaje/leyendas-tolima/',
-                likes: 51
+                id: 'mat-4',
+                title: 'Math Quest: El Desafío de los 10 Niveles',
+                author: 'Deissy Liliana Ducuara Torres (Grado 11-1)',
+                subject: 'matematicas',
+                subjectName: 'Matemáticas',
+                badgeColor: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
+                description: 'Guía a un pastor alemán por 10 niveles y resuelve desafíos matemáticos para conseguir su comida.',
+                image: './1101-26/DUCUARA TORRES DEISSY LILIANA.jpeg',
+                gamePath: './1101-26/DUCUARA TORRES DEISSY LILIANA.html',
+                likes: 0
             },
             {
                 id: 'soc-1',
-                title: 'Ruta de la Independencia: Tolima 1819',
-                author: 'Mariana Silva (Grado 11-1)',
+                title: 'Aventura marina con Luna',
+                author: 'Luna Paola Padilla Sánchez (Grado 11-1)',
                 subject: 'sociales',
                 subjectName: 'Ciencias Sociales',
                 badgeColor: 'text-amber-400 border-amber-400/30 bg-amber-400/10',
-                description: 'Estrategia 2D por turnos reconstruyendo los hechos históricos y geográficos de nuestra región.',
-                image: 'https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?auto=format&fit=crop&w=600&q=80',
-                folderPath: './juegos/sociales/ruta-1819/',
-                likes: 29
+                description: 'Guía al tiburón por el océano, rescata personajes y responde preguntas tipo ICFES de Ciencias Sociales.',
+                image: './1101-26/PADILLA SANCHEZ LUNA PAOLA.jpeg',
+                gamePath: './1101-26/PADILLA SANCHEZ LUNA PAOLA.html',
+                likes: 0
             },
             {
-                id: 'edf-1',
-                title: 'Rosario Runner: Maratón Chaparral',
-                author: 'Daniel Torres (Grado 7-2)',
-                subject: 'ed-fisica',
-                subjectName: 'Educación Física',
-                badgeColor: 'text-red-400 border-red-400/30 bg-red-400/10',
-                description: 'Endless runner 2D esquivando obstáculos e identificando hábitos de vida saludable.',
-                image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80',
-                folderPath: './juegos/ed-fisica/rosario-runner/',
-                likes: 84
+                id: 'ing-3',
+                title: 'Shadow Protocol: English Quest',
+                author: 'José David Talaigua Hernández (Grado 11-1)',
+                subject: 'ingles',
+                subjectName: 'Inglés',
+                badgeColor: 'text-cyan-400 border-cyan-400/30 bg-cyan-400/10',
+                description: 'Supera niveles de acción y responde preguntas en inglés para avanzar en la misión.',
+                image: './1101-26/TALAIGUA HERNANDEZ JOSE DAVID.jpeg',
+                gamePath: './1101-26/TALAIGUA HERNANDEZ JOSE DAVID.html',
+                likes: 0
+            },
+            {
+                id: 'mat-3',
+                title: 'Super Laberinto Matemático',
+                author: 'María Esther Herrera Alape (Grado 9-1)',
+                subject: 'matematicas',
+                subjectName: 'Matemáticas',
+                badgeColor: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
+                description: 'Resuelve desafíos matemáticos para encontrar la salida en este laberinto móvil.',
+                image: './901-26/HERRERA ALAPE MARIA ESTHER.jpg',
+                gamePath: './901-26/HERRERA ALAPE MARIA ESTHER.html',
+                likes: 0
+            },
+            {
+                id: 'ing-1',
+                title: 'Timbiriche contra IA',
+                author: 'Sharit Jovana Suárez Valencia (Grado 9-1)',
+                subject: 'ingles',
+                subjectName: 'Inglés',
+                badgeColor: 'text-cyan-400 border-cyan-400/30 bg-cyan-400/10',
+                description: 'Compite contra una inteligencia artificial en partidas por niveles y responde retos de inglés para avanzar.',
+                image: './901-26/SUAREZ VALENCIA SHARIT JOVANA.png',
+                gamePath: './901-26/SUAREZ VALENCIA SHARIT JOVANA.html',
+                likes: 0
+            },
+            {
+                id: 'ing-2',
+                title: 'The Haunted Cyber-Roulette',
+                author: 'Cristian Andrés Méndez Pacheco (Grado 9-1)',
+                subject: 'ingles',
+                subjectName: 'Inglés',
+                badgeColor: 'text-cyan-400 border-cyan-400/30 bg-cyan-400/10',
+                description: 'Gira la ruleta embrujada y completa frases en inglés para sobrevivir en este desafío cibernético.',
+                image: './901-26/MENDEZ PACHECO CRISTIAN ANDRES.png',
+                gamePath: './901-26/MENDEZ PACHECO CRISTIAN ANDRES.html',
+                likes: 0
             }
         ];
 
