@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Astro Blaster</title>
+<style>
+  *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050817;color:#fff;font-family:Arial,Helvetica,sans-serif}
+  body{display:flex;align-items:center;justify-content:center}
+  #game{position:relative;width:100vw;height:100dvh;max-width:900px;max-height:700px;background:radial-gradient(ellipse at 50% 80%,#14244b 0%,#080e25 45%,#030611 100%);overflow:hidden}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  .hud{position:absolute;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;font-weight:800;text-shadow:0 2px 8px #000}
+  .pill{background:#0b163bd9;border:1px solid #4d70b8;border-radius:20px;padding:8px 13px;font-size:14px;letter-spacing:.5px}
+  .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#020611b9;padding:22px}
+  .panel{width:min(430px,100%);text-align:center;padding:28px 22px;border:1px solid #5a82d6;border-radius:22px;background:linear-gradient(145deg,#111e43f5,#080d21f5);box-shadow:0 0 35px #2563eb55}
+  h1{margin:0 0 8px;font-size:clamp(30px,8vw,48px);letter-spacing:2px;color:#8be9ff;text-shadow:0 0 18px #16b9ff}
+  p{line-height:1.5;color:#d2defc;margin:10px 0 20px}
+  button{border:0;border-radius:999px;padding:13px 28px;background:linear-gradient(90deg,#00c6ff,#536dfe);color:white;font-size:17px;font-weight:800;box-shadow:0 5px 20px #168cff66;cursor:pointer}
+  .small{font-size:12px;color:#9eafd9;margin-top:15px}
+  .controls{position:absolute;bottom:18px;left:0;right:0;display:flex;justify-content:space-between;padding:0 20px;pointer-events:none}
+  .ctrl{pointer-events:auto;width:66px;height:58px;border:1px solid #9bbcff88;border-radius:16px;background:#172c5c99;color:white;font-size:25px;font-weight:bold;touch-action:none;user-select:none}
+  .fire{width:86px;background:#a32645aa;border-color:#ff8ba5}
+  @media (min-width:700px){.controls{bottom:12px}.ctrl{opacity:.7}}
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="c"></canvas>
+  <div class="hud"><div class="pill">⭐ PUNTOS: <span id="score">0</span></div><div class="pill">❤️ VIDAS: <span id="lives">3</span></div><div class="pill">🌠 NIVEL: <span id="level">1</span></div></div>
+  <div id="question" style="position:absolute;top:58px;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:560px;text-align:center;padding:10px 14px;border:1px solid #80dfff;border-radius:14px;background:#071735eF;color:#fff;font-weight:800;font-size:clamp(15px,3.8vw,21px);box-shadow:0 0 18px #16b9ff55;pointer-events:none">I ___ a student. ¿Cuál es correcto?</div>
+  <div id="touchHint" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);padding:8px 13px;border-radius:20px;background:#0b163bd9;border:1px solid #4d70b8;color:#dceaff;font-size:12px;font-weight:700;pointer-events:none;white-space:nowrap">Toca y arrastra para moverte · Disparo automático</div>
+  <div class="overlay" id="start">
+    <div class="panel"><h1>ASTRO BLASTER</h1><p>¡Defiende la galaxia y practica el verbo TO BE! Lee la pregunta de arriba y destruye el asteroide con la respuesta correcta.<br><b>Los asteroides muestran AM, IS o ARE.</b></p><button id="play">INICIAR JUEGO</button><div class="small">Dispara al asteroide que complete correctamente la frase. Respuesta correcta: +20 puntos. Incorrecta: pierdes una vida.<br>PC: ← → y ESPACIO · Móvil: botones de abajo</div></div>
+  </div>
+  <div class="overlay" id="over" style="display:none">
+    <div class="panel"><h1>FIN DEL JUEGO</h1><p>Tu puntuación: <b id="finalScore">0</b></p><button id="again">VOLVER A JUGAR</button></div>
+  </div>
+</div>
+<script>
+(()=>{
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d'),game=document.getElementById('game');
+const scoreEl=document.getElementById('score'),livesEl=document.getElementById('lives'),levelEl=document.getElementById('level');
+let W=0,H=0,ship,bullets=[],rocks=[],stars=[],score=0,lives=3,level=1,playing=false,keys={},lastShot=0,spawn=0,last=0;
+const rockColor='#b8c5d8';
+const quiz=[
+ {q:'I ___ a student.',a:'AM'},
+ {q:'She ___ happy.',a:'IS'},
+ {q:'They ___ friends.',a:'ARE'},
+ {q:'He ___ my brother.',a:'IS'},
+ {q:'We ___ ready.',a:'ARE'},
+ {q:'You ___ very kind.',a:'ARE'},
+ {q:'It ___ a spaceship.',a:'IS'},
+ {q:'I ___ from Colombia.',a:'AM'},
+ {q:'The stars ___ bright.',a:'ARE'},
+ {q:'My dog ___ small.',a:'IS'}
+];
+let quizIndex=0;
+function resize(){const r=game.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=r.width;H=r.height;canvas.width=W*d;canvas.height=H*d;ctx.setTransform(d,0,0,d,0,0);if(ship)ship.y=H-95;}
+addEventListener('resize',resize);resize();
+function reset(){score=0;lives=3;level=1;quizIndex=0;showQuestion();bullets=[];rocks=[];ship={x:W/2,y:H-95,w:34,h:44,speed:6};stars=Array.from({length:85},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*2+0.5,v:Math.random()*1.2+0.3}));updateHud();}
+function updateHud(){scoreEl.textContent=score;livesEl.textContent=lives;levelEl.textContent=level;}
+function showQuestion(){document.getElementById('question').textContent=quiz[quizIndex%quiz.length].q+'  Elige: AM / IS / ARE';}
+function drawShip(){ctx.save();ctx.translate(ship.x,ship.y);ctx.shadowColor='#31d8ff';ctx.shadowBlur=18;ctx.fillStyle='#54e6ff';ctx.beginPath();ctx.moveTo(0,-25);ctx.lineTo(20,20);ctx.lineTo(0,11);ctx.lineTo(-20,20);ctx.closePath();ctx.fill();ctx.fillStyle='#eafcff';ctx.beginPath();ctx.ellipse(0,-5,5,10,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ff9c45';ctx.beginPath();ctx.moveTo(-7,17);ctx.lineTo(0,32+Math.random()*7);ctx.lineTo(7,17);ctx.fill();ctx.restore();}
+function drawRock(r){ctx.save();ctx.translate(r.x,r.y);ctx.rotate(r.rot);ctx.shadowColor=rockColor;ctx.shadowBlur=12;ctx.fillStyle=rockColor;ctx.strokeStyle='#e8f1ff';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<10;i++){let a=i*Math.PI/5,rad=r.r*(.82+Math.sin(i*7+r.seed)*.16);let x=Math.cos(a)*rad,y=Math.sin(a)*rad;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();ctx.stroke();
+ctx.shadowBlur=0;ctx.fillStyle='#17243b';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.answer,0,1);
+ctx.restore();}
+function shoot(){let now=performance.now();if(now-lastShot<230)return;lastShot=now;bullets.push({x:ship.x,y:ship.y-25,v:9});}
+function spawnRock(){let r=24+Math.random()*7;const correct=quiz[quizIndex%quiz.length].a;const options=['AM','IS','ARE'];let answer=options[Math.floor(Math.random()*3)];if(Math.random()<.42)answer=correct;rocks.push({x:r+Math.random()*(W-2*r),y:-r,r,v:1.5+level*.35+Math.random()*1.2,rot:Math.random()*6,seed:Math.random()*100,answer});}
+function hit(a,b){return Math.hypot(a.x-b.x,a.y-b.y)<b.r+5;}
+function update(dt){let step=dt/16.67;
+if(keys.ArrowLeft||keys.a)ship.x-=ship.speed*step;if(keys.ArrowRight||keys.d)ship.x+=ship.speed*step;ship.x=Math.max(24,Math.min(W-24,ship.x));
+if(keys.Space||keys[' ']||touching)shoot();
+stars.forEach(s=>{s.y+=s.v*step;if(s.y>H){s.y=0;s.x=Math.random()*W;}});
+bullets.forEach(b=>b.y-=b.v*step);bullets=bullets.filter(b=>b.y>-20);
+spawn+=dt;if(spawn>Math.max(330,950-level*65)){spawn=0;spawnRock();}
+rocks.forEach(r=>{r.y+=r.v*step;r.rot+=.01*step;});
+for(let i=rocks.length-1;i>=0;i--){let r=rocks[i],destroyed=false;for(let j=bullets.length-1;j>=0;j--){if(hit(bullets[j],r)){rocks.splice(i,1);bullets.splice(j,1);destroyed=true;
+if(r.answer===quiz[quizIndex%quiz.length].a){score+=20;quizIndex++;showQuestion();}else{lives--;}
+break;}}
+if(destroyed){if(lives<=0){end();return;}continue;}
+if(Math.hypot(ship.x-r.x,ship.y-r.y)<r.r+17||r.y>H+r.r){
+  rocks.splice(i,1);
+  // Solo penaliza dejar pasar (o chocar con) el asteroide que tiene la respuesta correcta.
+  if(r.answer===quiz[quizIndex%quiz.length].a){
+    lives--;
+    if(lives<=0){end();return;}
+  }
+}
+}
+let newLevel=Math.floor(score/100)+1;if(newLevel!==level){level=newLevel;}updateHud();}
+function draw(){ctx.clearRect(0,0,W,H);stars.forEach(s=>{ctx.fillStyle=`rgba(190,220,255,${.35+s.s/4})`;ctx.fillRect(s.x,s.y,s.s,s.s*2);});
+bullets.forEach(b=>{ctx.shadowColor='#fff36a';ctx.shadowBlur=12;ctx.fillStyle='#fff36a';ctx.fillRect(b.x-2,b.y-9,4,14);ctx.shadowBlur=0;});
+rocks.forEach(drawRock);if(ship)drawShip();}
+function loop(t){if(!playing)return;let dt=Math.min(35,t-last||16);last=t;update(dt);draw();if(playing)requestAnimationFrame(loop);}
+function start(){document.getElementById('start').style.display='none';document.getElementById('over').style.display='none';reset();playing=true;last=performance.now();requestAnimationFrame(loop);}
+function end(){playing=false;document.getElementById('finalScore').textContent=score;document.getElementById('over').style.display='flex';}
+document.getElementById('play').onclick=start;document.getElementById('again').onclick=start;
+addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight',' ','Space'].includes(e.key))e.preventDefault();keys[e.key===' '? ' ':e.key]=true;});
+addEventListener('keyup',e=>keys[e.key===' '? ' ':e.key]=false);
+function hold(id,key){let el=document.getElementById(id);el.addEventListener('pointerdown',e=>{e.preventDefault();keys[key]=true;el.setPointerCapture(e.pointerId);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>el.addEventListener(ev,()=>keys[key]=false));}
+// En celular: toca y arrastra para mover la nave; dispara automáticamente.
+let touching=false;
+function moveShipFromTouch(e){
+  const rect=canvas.getBoundingClientRect();
+  ship.x=Math.max(24,Math.min(W-24,e.clientX-rect.left));
+}
+canvas.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='touch'){
+    e.preventDefault();touching=true;canvas.setPointerCapture(e.pointerId);
+    moveShipFromTouch(e);shoot();
+  }
+});
+canvas.addEventListener('pointermove',e=>{
+  if(touching && e.pointerType==='touch'){e.preventDefault();moveShipFromTouch(e);}
+});
+canvas.addEventListener('pointerup',e=>{if(e.pointerType==='touch')touching=false;});
+canvas.addEventListener('pointercancel',()=>touching=false);
+reset();draw();
+})();
+</script>
+</body>
+</html>

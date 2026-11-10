@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Bosque del Arquero Matemático</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            /* Resembling the vibrant tropical jungle layout from user image with a stylized procedural gradient & canvas vibe */
+            background: linear-gradient(135deg, #2b5c2a, #113310);
+            background-image: radial-gradient(circle at 50% 20%, #fffae6 0%, transparent 60%),
+                              linear-gradient(to bottom, #4f9a48 0%, #173d14 100%);
+            border: 4px solid #4a3319;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            overflow: hidden;
+        }
+        /* Visual frames representing the jungle leaves framing from the image */
+        #game-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at top, transparent 40%, rgba(10,35,10,0.4) 90%);
+            pointer-events: none;
+            z-index: 2;
+        }
+        /* Interfaz Superior */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 10;
+            border-bottom: 2px solid #4a3319;
+        }
+        .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-shadow: 1px 1px 2px #000;
+        }
+        .music-btn {
+            background: #4a3319;
+            color: #fff;
+            border: 2px solid #8c6239;
+            padding: 5px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .music-btn.active {
+            background: #27ae60;
+            border-color: #2ecc71;
+            box-shadow: 0 0 8px #2ecc71;
+        }
+        /* Escenario de juego */
+        #game-canvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding-top: 60px;
+        }
+        /* El Arquero (SVG Animado con Rostro) */
+        #player {
+            position: absolute;
+            width: 70px;
+            height: 90px;
+            left: 50px;
+            top: 230px;
+            transition: transform 0.05s linear;
+            z-index: 5;
+            animation: breathe 1.5s ease-in-out infinite alternate;
+            filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.5));
+        }
+        @keyframes breathe {
+            0% { transform: translateY(0) scaleY(1); }
+            100% { transform: translateY(-4px) scaleY(1.02); }
+        }
+        /* Parpadeo de los ojos del personaje */
+        @keyframes blink {
+            0%, 45%, 55%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.1); }
+        }
+        .eye {
+            transform-origin: 32px 34px;
+            animation: blink 4s infinite;
+        }
+        .eye-r {
+            transform-origin: 42px 34px;
+            animation: blink 4s infinite;
+        }
+        /* Elementos del juego */
+        .arrow {
+            position: absolute;
+            width: 30px;
+            height: 4px;
+            background: #e6c280;
+            border-radius: 2px;
+            z-index: 4;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.6));
+        }
+        .arrow::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -3px;
+            border-left: 6px solid #e63946;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
+        .target {
+            position: absolute;
+            font-size: 38px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: default;
+            z-index: 3;
+            animation: float-wobble 2s ease-in-out infinite alternate;
+            filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.6));
+        }
+        @keyframes float-wobble {
+            0% { transform: rotate(-8deg); }
+            100% { transform: rotate(8deg); }
+        }
+        /* Modal del León con teclado numérico */
+        #math-modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #422613, #261407);
+            border: 4px solid #d4af37;
+            border-radius: 15px;
+            padding: 20px;
+            width: 360px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.6);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+        #math-modal.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-lion-head {
+            font-size: 55px;
+            margin-bottom: 5px;
+            animation: roar 0.5s ease-in-out infinite alternate;
+        }
+        @keyframes roar {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.12) rotate(2deg); }
+        }
+        .modal-title {
+            color: #d4af37;
+            font-size: 22px;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        .question-text {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #5a381b;
+        }
+        #math-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 22px;
+            text-align: center;
+            border: 2px solid #d4af37;
+            background: #111;
+            color: #fff;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            outline: none;
+        }
+        /* Teclado numérico en pantalla */
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .numpad-btn {
+            background: linear-gradient(to bottom, #5c3a21, #3d2210);
+            border: 2px solid #8c6239;
+            color: white;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.1s;
+            text-shadow: 1px 1px 2px #000;
+            box-shadow: inset 0 1px 3px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.4);
+        }
+        .numpad-btn:active {
+            background: #3d2210;
+            transform: translateY(1px);
+        }
+        .numpad-btn.action-btn {
+            background: linear-gradient(to bottom, #a63232, #731f1f);
+            border-color: #c94747;
+        }
+        .numpad-btn.submit-btn {
+            grid-column: span 3;
+            background: linear-gradient(to bottom, #27ae60, #1e7e43);
+            border-color: #2ecc71;
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+        /* Pantallas de mensajes */
+        .overlay-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 90;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+        .overlay-screen h1 {
+            font-size: 42px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.4);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-item" id="score-display">Puntos: 0 / 150</div>
+        <div class="hud-item" id="level-display">Nivel: 1</div>
+        <div class="hud-item" id="arrows-display">🏹 Infinitas</div>
+        <div class="hud-item" id="lives-display">❤️ ❤️ ❤️</div>
+        <div class="hud-item" style="gap: 10px;">
+            <button class="music-btn active" id="btn-track1" onclick="switchTrack(1)">Pista 1</button>
+            <button class="music-btn" id="btn-track2" onclick="switchTrack(2)">Pista 2</button>
+        </div>
+    </div>
+
+    <!-- Lienzo de juego -->
+    <div id="game-canvas">
+        <!-- El Arquero SVG integrado con rostro completo -->
+        <div id="player">
+            <svg viewBox="0 0 60 80" width="100%" height="100%">
+                <path d="M15,45 L45,45 L40,75 L20,75 Z" fill="#274e13" />
+                <rect x="22" y="72" width="6" height="8" fill="#1a1a1a" />
+                <rect x="32" y="72" width="6" height="8" fill="#1a1a1a" />
+                <rect x="20" y="78" width="9" height="3" fill="#4a3319" />
+                <rect x="31" y="78" width="9" height="3" fill="#4a3319" />
+                
+                <circle cx="30" cy="35" r="12" fill="#ffdbac" />
+                <circle class="eye" cx="32" cy="34" r="1.5" fill="#000" />
+                <circle class="eye-r" cx="42" cy="34" r="1.5" fill="#000" />
+                <path d="M29,31 L34,32" stroke="#4a3319" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M39,32 L44,31" stroke="#4a3319" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M36,35 L35,37 L37,37" fill="none" stroke="#e0b088" stroke-width="1" />
+                <path d="M33,41 Q36,44 40,41" fill="none" stroke="#a0522d" stroke-width="1.5" stroke-linecap="round" />
+                
+                <path d="M16,28 Q30,12 44,28 Q30,24 16,28 Z" fill="#38761d" />
+                <path d="M22,18 Q16,10 20,8 Q22,12 24,16 Z" fill="#cc0000" />
+                
+                <path d="M25,48 L45,48" stroke="#ffdbac" stroke-width="4" stroke-linecap="round" />
+                <path d="M42,25 Q55,48 42,71" fill="none" stroke="#8c6239" stroke-width="4" stroke-linecap="round" />
+                <rect x="10" y="46" width="6" height="18" fill="#5e3a19" transform="rotate(-15 10 46)" />
+                <line x1="7" y1="44" x2="4" y2="38" stroke="#d4a373" stroke-width="2" />
+                <line x1="10" y1="43" x2="8" y2="37" stroke="#d4a373" stroke-width="2" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- Modal con teclado numérico -->
+    <div id="math-modal">
+        <div class="modal-content">
+            <div class="modal-lion-head">🦁</div>
+            <h2 class="modal-title">¡León Matemático!</h2>
+            <div class="question-text" id="question-box">5 + 5 = ?</div>
+            <input type="number" id="math-input" placeholder="Respuesta" readonly>
+            
+            <!-- Teclado en pantalla -->
+            <div class="numpad">
+                <button class="numpad-btn" onclick="pressNum(1)">1</button>
+                <button class="numpad-btn" onclick="pressNum(2)">2</button>
+                <button class="numpad-btn" onclick="pressNum(3)">3</button>
+                <button class="numpad-btn" onclick="pressNum(4)">4</button>
+                <button class="numpad-btn" onclick="pressNum(5)">5</button>
+                <button class="numpad-btn" onclick="pressNum(6)">6</button>
+                <button class="numpad-btn" onclick="pressNum(7)">7</button>
+                <button class="numpad-btn" onclick="pressNum(8)">8</button>
+                <button class="numpad-btn" onclick="pressNum(9)">9</button>
+                <button class="numpad-btn action-btn" onclick="pressClear()">C</button>
+                <button class="numpad-btn" onclick="pressNum(0)">0</button>
+                <button class="numpad-btn action-btn" onclick="pressBackspace()">⌫</button>
+                <button class="numpad-btn submit-btn" onclick="checkMathAnswer()">✓ ENVIAR RESPUESTA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="level-screen" class="overlay-screen">
+        <h1 style="color: #d4af37;">¡NIVEL COMPLETADO! 🎉</h1>
+        <p id="level-screen-text" style="font-size: 20px;">Preparando el Siguiente Nivel...</p>
+    </div>
+
+    <div id="gameover-screen" class="overlay-screen">
+        <h1 style="color: #e63946;">GAME OVER 💀</h1>
+        <p id="final-score-text" style="font-size: 22px; margin-bottom: 30px;">Puntaje Final: 0</p>
+        <button class="music-btn" onclick="resetGame()" style="background: #e63946; color: white; padding: 10px 25px; font-size: 18px;">Jugar de Nuevo</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('game-canvas');
+    const player = document.getElementById('player');
+    const scoreDisplay = document.getElementById('score-display');
+    const levelDisplay = document.getElementById('level-display');
+    const livesDisplay = document.getElementById('lives-display');
+    const mathModal = document.getElementById('math-modal');
+    const questionBox = document.getElementById('question-box');
+    const mathInput = document.getElementById('math-input');
+
+    let score = 0;
+    let level = 1;
+    let lives = 3;
+    let pointsNeeded = 150;
+    let isPaused = false;
+    let currentAnswer = 0;
+
+    let playerX = 50;
+    let playerY = 230;
+    const playerSpeed = 8;
+    const keysPressed = {};
+
+    let arrows = [];
+    let targets = [];
+    const animalEmojis = ['🦊', '🦉', '🦅', '🦌', '🐗'];
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    let currentTrack = 1;
+    let musicInterval = null;
+    let noteStep = 0;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new AudioCtx();
+            startMusic();
+        }
+    }
+
+    function playSound(freq, type, duration, vol=0.1) {
+        if (!audioCtx) return;
+        try {
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        } catch(e){}
+    }
+
+    function playShootSound() {
+        playSound(400, 'triangle', 0.15, 0.15);
+    }
+
+    function playHitSound() {
+        playSound(600, 'sine', 0.1, 0.15);
+        playSound(900, 'sine', 0.15, 0.1);
+    }
+
+    function playLionSound() {
+        playSound(90, 'sawtooth', 0.5, 0.3);
+    }
+
+    function startMusic() {
+        if(musicInterval) clearInterval(musicInterval);
+        noteStep = 0;
+        musicInterval = setInterval(() => {
+            if (isPaused) return;
+            const track1Notes = [261, 293, 311, 349, 392, 349, 311, 293];
+            const track2Notes = [261, 311, 349, 392, 466, 392, 349, 311];
+            let notes = currentTrack === 1 ? track1Notes : track2Notes;
+            let currentNote = notes[noteStep % notes.length];
+            playSound(currentNote, 'triangle', 0.25, 0.05);
+            if(noteStep % 4 === 0) playSound(currentNote / 2, 'sine', 0.4, 0.1);
+            noteStep++;
+        }, 300);
+    }
+
+    function switchTrack(trackNumber) {
+        initAudio();
+        currentTrack = trackNumber;
+        document.getElementById('btn-track1').classList.toggle('active', trackNumber === 1);
+        document.getElementById('btn-track2').classList.toggle('active', trackNumber === 2);
+    }
+
+    window.addEventListener('keydown', (e) => {
+        initAudio();
+        keysPressed[e.key.toLowerCase()] = true;
+        if(e.key === ' ' || e.code === 'Space') {
+            e.preventDefault();
+            if(!isPaused) shootArrow();
+        }
+        if(!isPaused) return;
+        // Physical keyboard support inside modal
+        if(e.key >= '0' && e.key <= '9') pressNum(parseInt(e.key));
+        if(e.key === 'Backspace') pressBackspace();
+        if(e.key === 'Enter') checkMathAnswer();
+    });
+
+    window.addEventListener('keyup', (e) => {
+        keysPressed[e.key.toLowerCase()] = false;
+    });
+
+    function handleMovement() {
+        if (isPaused) return;
+        if (keysPressed['arrowup'] || keysPressed['w']) if (playerY > 60) playerY -= playerSpeed;
+        if (keysPressed['arrowdown'] || keysPressed['s']) if (playerY < 410) playerY += playerSpeed;
+        if (keysPressed['arrowleft'] || keysPressed['a']) if (playerX > 10) playerX -= playerSpeed;
+        if (keysPressed['arrowright'] || keysPressed['d']) if (playerX < 380) playerX += playerSpeed;
+
+        player.style.left = playerX + 'px';
+        player.style.top = playerY + 'px';
+    }
+
+    function shootArrow() {
+        playShootSound();
+        const arrowElement = document.createElement('div');
+        arrowElement.className = 'arrow';
+        arrowElement.style.left = (playerX + 55) + 'px';
+        arrowElement.style.top = (playerY + 46) + 'px';
+        canvas.appendChild(arrowElement);
+        arrows.push({ element: arrowElement, x: playerX + 55, y: playerY + 46, speed: 12 });
+    }
+
+    function spawnTarget() {
+        if (isPaused) return;
+        let isLion = Math.random() < 0.22;
+        let emoji = isLion ? '🦁' : animalEmojis[Math.floor(Math.random() * animalEmojis.length)];
+        const targetElement = document.createElement('div');
+        targetElement.className = 'target';
+        targetElement.innerText = emoji;
+        let startY = 60 + Math.random() * 370;
+        targetElement.style.left = '810px';
+        targetElement.style.top = startY + 'px';
+        canvas.appendChild(targetElement);
+
+        let baseSpeed = isLion ? 4.5 : 2.5;
+        let finalSpeed = baseSpeed + (level * 0.6);
+        targets.push({ element: targetElement, x: 810, y: startY, speed: finalSpeed, isLion: isLion });
+    }
+
+    function pressNum(num) { mathInput.value += num; }
+    function pressClear() { mathInput.value = ''; }
+    function pressBackspace() { mathInput.value = mathInput.value.slice(0, -1); }
+
+    function update() {
+        if (isPaused) return;
+        handleMovement();
+
+        for (let i = arrows.length - 1; i >= 0; i--) {
+            let arr = arrows[i];
+            arr.x += arr.speed;
+            arr.element.style.left = arr.x + 'px';
+            if (arr.x > 800) { arr.element.remove(); arrows.splice(i, 1); }
+        }
+
+        for (let t = targets.length - 1; t >= 0; t--) {
+            let target = targets[t];
+            target.x -= target.speed;
+            target.element.style.left = target.x + 'px';
+
+            if (target.x < -40) { target.element.remove(); targets.splice(t, 1); continue; }
+
+            for (let a = arrows.length - 1; a >= 0; a--) {
+                let arrow = arrows[a];
+                if (arrow.x + 30 >= target.x && arrow.x <= target.x + 45 &&
+                    arrow.y >= target.y && arrow.y <= target.y + 45) {
+                    playHitSound();
+                    target.element.remove();
+                    arrow.element.remove();
+                    arrows.splice(a, 1);
+                    if (target.isLion) { targets.splice(t, 1); triggerMathChallenge(); }
+                    else { score += 15; targets.splice(t, 1); checkScoreAndLevels(); }
+                    break;
+                }
+            }
+        }
+    }
+
+    function checkScoreAndLevels() {
+        scoreDisplay.innerText = `Puntos: ${score} / ${pointsNeeded}`;
+        if (score >= pointsNeeded) triggerLevelUp();
+    }
+
+    function triggerMathChallenge() {
+        isPaused = true;
+        playLionSound();
+        let num1 = Math.floor(Math.random() * (10 + level * 2)) + 2;
+        let num2 = Math.floor(Math.random() * (5 + level)) + 1;
+        let operations = ['+', '-', '*'];
+        let op = level === 1 ? operations[Math.floor(Math.random() * 2)] : operations[Math.floor(Math.random() * 3)];
+
+        if (op === '+') { currentAnswer = num1 + num2; questionBox.innerText = `${num1} + ${num2} = ?`; }
+        else if (op === '-') { if(num1 < num2) { let temp = num1; num1 = num2; num2 = temp; } currentAnswer = num1 - num2; questionBox.innerText = `${num1} - ${num2} = ?`; }
+        else { currentAnswer = num1 * num2; questionBox.innerText = `${num1} × ${num2} = ?`; }
+
+        mathInput.value = '';
+        mathModal.style.display = 'flex';
+        setTimeout(() => mathModal.classList.add('active'), 10);
+    }
+
+    function checkMathAnswer() {
+        let userAnswer = parseInt(mathInput.value);
+        mathModal.classList.remove('active');
+        mathModal.style.display = 'none';
+        if (userAnswer === currentAnswer) { score += 50; checkScoreAndLevels(); isPaused = false; }
+        else loseLife();
+    }
+
+    function loseLife() {
+        lives--;
+        let heartString = '';
+        for(let i=0; i<lives; i++) heartString += '❤️ ';
+        if(lives === 0) heartString = '💀 Sin vidas';
+        livesDisplay.innerText = heartString;
+        if (lives <= 0) triggerGameOver(); else isPaused = false;
+    }
+
+    function triggerLevelUp() {
+        isPaused = true;
+        level++; score = 0; pointsNeeded = 150 + (level * 50);
+        levelDisplay.innerText = `Nivel: ${level}`;
+        scoreDisplay.innerText = `Puntos: 0 / ${pointsNeeded}`;
+        clearScreenEntities();
+        document.getElementById('level-screen-text').innerText = `Entrando al Nivel ${level}. ¡Los animales correrán más rápido!`;
+        const lvlScreen = document.getElementById('level-screen');
+        lvlScreen.style.display = 'flex';
+        setTimeout(() => { lvlScreen.style.display = 'none'; isPaused = false; }, 2500);
+    }
+
+    function triggerGameOver() {
+        isPaused = true;
+        document.getElementById('final-score-text').innerText = `Alcanzaste el Nivel ${level}.`;
+        document.getElementById('gameover-screen').style.display = 'flex';
+    }
+
+    function clearScreenEntities() {
+        arrows.forEach(a => a.element.remove());
+        targets.forEach(t => t.element.remove());
+        arrows = []; targets = [];
+    }
+
+    function resetGame() {
+        score = 0; level = 1; lives = 3; pointsNeeded = 150; isPaused = false;
+        levelDisplay.innerText = `Nivel: 1`; scoreDisplay.innerText = `Puntos: 0 / 150`; livesDisplay.innerText = `❤️ ❤️ ❤️`;
+        clearScreenEntities();
+        document.getElementById('gameover-screen').style.display = 'none';
+        playerX = 50; playerY = 230;
+        player.style.left = playerX + 'px'; player.style.top = playerY + 'px';
+    }
+
+    setInterval(update, 1000 / 60);
+    function dynamicSpawnLoop() {
+        setTimeout(() => { spawnTarget(); dynamicSpawnLoop(); }, Math.max(800, 2000 - (level * 200)));
+    }
+    dynamicSpawnLoop();
+</script>
+</body>
+</html>

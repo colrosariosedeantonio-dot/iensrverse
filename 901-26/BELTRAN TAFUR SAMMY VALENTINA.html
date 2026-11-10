@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MISAELVERSE: Laberinto del conocimiento</title>
+<style>
+:root{--navy:#071735;--blue:#35c7ff;--gold:#ffd65a;--green:#51f0a5}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#174d80,#07132c 70%);color:#fff;font-family:system-ui,Arial,sans-serif}
+button{font:inherit;cursor:pointer;border:0}.wrap{max-width:1050px;margin:auto;padding:14px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#06132ce8;border:1px solid #4dc9ff88;border-radius:18px;padding:14px;box-shadow:0 8px 24px #0005}
+.logo{font-size:clamp(23px,4vw,38px);font-weight:1000;color:var(--gold);text-shadow:0 3px #8a4912}.sub{color:#c9edff;font-size:13px}
+.stats{display:flex;gap:7px;flex-wrap:wrap}.stat{padding:8px 10px;background:#132d57;border:1px solid #3d7bb0;border-radius:11px;font-weight:800}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:14px;margin-top:14px}
+.board{background:#071a37;border:1px solid #56c9ff88;border-radius:18px;padding:12px;min-width:0}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}.pill{background:#18385e;border:1px solid #5fcfff;border-radius:99px;padding:6px 10px;font-size:12px;font-weight:800}
+#maze{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:3px;width:100%;max-width:680px;margin:auto;aspect-ratio:1.12}
+.cell{border-radius:4px;display:grid;place-items:center;min-width:0;min-height:0;font-size:clamp(10px,2.5vw,22px);font-weight:900;user-select:none}
+.wall{background:linear-gradient(135deg,#2864a4,#143566);border:1px solid #478ed0}
+.floor{background:#b8e7a0;color:#123a3c;box-shadow:inset 0 0 0 1px #76b987}
+.start{background:#43e7a0;color:#073c35}.exit{background:#ffd85b;color:#533400;box-shadow:0 0 12px #ffdf5d}
+.player{background:#fff;color:#0a4386;box-shadow:0 0 0 2px #51d5ff,0 0 18px #65eaff;z-index:1;animation:walkStep .22s ease-in-out}\n@keyframes walkStep{0%{transform:scale(.82) translateY(2px) rotate(-7deg)}45%{transform:scale(1.12) translateY(-3px) rotate(7deg)}100%{transform:scale(1) translateY(0) rotate(0)}}
+.door{background:#d98aff;color:#3e155d;box-shadow:0 0 12px #d98aff}
+.key{background:#8de9ff;color:#00435c}
+aside{background:#071a37e8;border:1px solid #4dc9ff66;border-radius:18px;padding:14px}
+aside h3{margin:2px 0 8px}.bigicon{text-align:center;font-size:52px}.bar{height:10px;border-radius:99px;background:#294363;overflow:hidden;margin:8px 0}.bar div{height:100%;background:linear-gradient(90deg,#35e9a4,#4bcaff);width:0}
+button.action{width:100%;text-align:left;color:white;font-weight:800;background:linear-gradient(100deg,#1269ad,#17356b);border:1px solid #56bfff;border-radius:12px;padding:11px;margin:5px 0}
+button.action:hover{filter:brightness(1.2)}.help{font-size:13px;line-height:1.5;color:#d2eaff;background:#102951;border-radius:12px;padding:11px;margin-top:10px}
+.controls{display:grid;grid-template-columns:repeat(3,48px);justify-content:center;gap:6px;margin:12px auto 2px}.controls button{height:42px;border-radius:10px;background:#163764;border:1px solid #65cfff;color:#fff;font-size:22px}
+.controls .blank{visibility:hidden}.message{min-height:44px;margin-top:10px;background:#10294b;border:1px solid #3c7eac;border-radius:12px;padding:10px;font-size:14px}
+.modalback{display:none;position:fixed;inset:0;background:#020817df;z-index:5;align-items:center;justify-content:center;padding:14px}.modalback.show{display:flex}
+.modal{width:min(550px,100%);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#13366a,#111638);border:2px solid #66d4ff;border-radius:20px;padding:20px;box-shadow:0 0 50px #3cbfff44}
+.modal h2{margin-top:0}.qtext{font-size:20px;font-weight:850;margin:18px 0}.answers{display:grid;gap:9px}.answer{background:#1c477a;border:1px solid #6bbcff;color:#fff;border-radius:11px;padding:12px;text-align:left;font-weight:750}.answer.good{background:#08774e}.answer.bad{background:#8f2850}.feedback{min-height:28px;font-weight:800;margin:12px 0}.primary{background:var(--gold);color:#422c00;border-radius:11px;padding:11px 16px;font-weight:900}.secondary{background:#254568;color:#fff;border-radius:11px;padding:10px 14px;font-weight:800}.hidden{display:none!important}
+.footer{text-align:center;color:#c3e6ff;font-size:12px;padding:12px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.board{padding:8px}aside{order:2}#maze{gap:2px}.cell{border-radius:3px}.stats{width:100%}.stat{flex:1;text-align:center}}
+</style>
+</head>
+<body><div class="wrap">
+<header><div><div class="logo">🌎 MISAELVERSE</div><div class="sub">Laberinto del conocimiento · 5 mundos, puertas sorpresa y retos</div></div>
+<div class="stats"><div class="stat">⭐ <span id="stars">0</span></div><div class="stat">🪙 <span id="coins">0</span></div><div class="stat">❤️ <span id="lives">3</span></div></div></header>
+<div class="layout">
+<main class="board">
+<div class="topline"><h2 id="levelTitle" style="font-size:19px;margin:0">🧩 Nivel 1: Laberinto de Matemáticas</h2><span class="pill" id="progress">Nivel 1 de 4</span></div>
+<div id="maze" aria-label="Laberinto"></div>
+<div class="message" id="message">¡Muévete por los pasillos! Encuentra la puerta violeta para responder una pregunta. Llega a la salida amarilla.</div>
+<div class="controls">
+<button class="blank">•</button><button onclick="move(0,-1)" aria-label="Arriba">⬆️</button><button class="blank">•</button>
+<button onclick="move(-1,0)" aria-label="Izquierda">⬅️</button><button onclick="move(0,1)" aria-label="Abajo">⬇️</button><button onclick="move(1,0)" aria-label="Derecha">➡️</button>
+</div>
+</main>
+<aside><div class="bigicon">🧑🏻‍🚀</div><h3 style="text-align:center">Explorador/a</h3><div id="rank" style="text-align:center;color:#c9eaff">Aprendiz de portales</div><div class="bar"><div id="xpbar"></div></div><div id="xptext" style="font-size:12px;text-align:center">0 XP</div>
+<button class="action" onclick="newMaze()">🗺️ Reiniciar laberinto</button><button class="action" onclick="showHelp()">📜 Cómo jugar</button><button class="action" onclick="toggleSound()" id="soundBtn">🔊 Sonido activado</button>
+<div class="help"><b>Objetivo</b><br>🟢 Inicio · 🟣 puerta con pregunta · 🟡 salida<br><br>Usa las flechas de pantalla o las flechas del teclado. ¡Cada respuesta correcta te acerca al siguiente mundo! La puerta cambia de lugar.</div>
+</aside></div><div class="footer">🎮 MISAELVERSE · Juego educativo que funciona sin conexión</div></div>
+<div class="modalback" id="modal"><div class="modal"><div class="topline"><span class="pill" id="qbadge">Pregunta de Matemáticas</span><span id="qnumber">Desafío</span></div><h2>🚪 ¡Resuelve el desafío del portal!</h2><div class="qtext" id="qtext"></div><div class="answers" id="answers"></div><div class="feedback" id="feedback"></div><button class="primary hidden" id="continue" onclick="continueAfterQuestion()">Continuar ➜</button></div></div>
+<script>
+const maps=[
+["#############",
+"#S....#.....#",
+"#.##..#.###.#",
+"#....##...D.#",
+"###......##.#",
+"#.####.#....#",
+"#......#.##.#",
+"#.####...#..#",
+"#....###.#..#",
+"#.##.....#..#",
+"#....##.....#",
+"#...........E",
+"#############"],
+["#############",
+"#S....#.....#",
+"#.##..#.###.#",
+"#....##...D.#",
+"###......##.#",
+"#.####.#....#",
+"#.#...##.##.#",
+"#.####..##..#",
+"#..#.###.#..#",
+"####.....#..#",
+"#....##.....#",
+"#...........E",
+"#############"],
+["#############",
+"#S#...#.....#",
+"#.##..#.###.#",
+"#....##...D.#",
+"###.....###.#",
+"#.####.#....#",
+"##.#...#.##.#",
+"######...#..#",
+"#....###.#..#",
+"#.##.#...#..#",
+"#...###...#.#",
+"#.#......##.E",
+"#############"],
+["#############",
+"#S.##.#.....#",
+"#.##..#####.#",
+"#....##...D.#",
+"####.....##.#",
+"#.####.##...#",
+"##.#...#.##.#",
+"#.#####.##..#",
+"#.#..###.##.#",
+"#.##.#.###..#",
+"##...##...#.#",
+"#...#.......E",
+"#############"],
+["#############",
+"#S....#.....#",
+"###.#.#.###.#",
+"#...#...#...#",
+"#.#####.#.#.#",
+"#.....#...#D#",
+"#.###.#####.#",
+"#...#.....#.#",
+"###.#####.#.#",
+"#...#...#...#",
+"#.#...#...#.#",
+"#...........E",
+"#############"]
+];
+const subjects=[
+{name:"Matemáticas",icon:"➗",questions:[["¿Cuánto es 8 + 7?",["14","15","16"],1],["¿Cuánto es 20 − 6?",["12","14","16"],1],["¿Cuánto es 6 × 4?",["20","24","28"],1]]},
+{name:"Inglés",icon:"🔤",questions:[["Completa: I ___ a student.",["am","is","are"],0],["Completa: She ___ happy.",["am","is","are"],1],["Completa: They ___ friends.",["is","am","are"],2]]},
+{name:"Ciencias",icon:"🧪",questions:[["¿Qué planeta habitamos?",["Marte","La Tierra","Venus"],1],["¿Qué necesitan las plantas para la fotosíntesis?",["Luz solar","Plástico","Humo"],0],["¿En qué estado está el hielo?",["Líquido","Sólido","Gas"],1]]},
+{name:"Reto final",icon:"🌟",questions:[["¿Cuánto es 144 ÷ 12?",["10","12","14"],1],["Si x + 17 = 42, ¿cuánto vale x?",["25","29","59"],0],["¿Cuál es el resultado de 3² + 4²?",["12","25","49"],1]]},
+{name:"Mundo secreto",icon:"🌀",questions:[["¿Cuánto es 15 × 6?",["80","90","96"],1],["Si 3x = 27, ¿cuánto vale x?",["6","9","12"],1],["¿Cuánto es 2³ + 5?",["11","13","15"],1]]}
+];
+let level=0,grid=[],activeMap=[],player={x:1,y:1},stars=0,coins=0,lives=3,xp=0,doorDone=false,questionIndex=0,answered=false,sound=true,completed=[false,false,false,false],exitOpen=false;
+const $=id=>document.getElementById(id);
+function beep(f=600){if(!sound)return;try{let C=window.AudioContext||window.webkitAudioContext,c=new C(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=.04;o.start();g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.13);o.stop(c.currentTime+.13)}catch(e){}}
+function update(){ $("stars").textContent=stars;$("coins").textContent=coins;$("lives").textContent=lives;$("xpbar").style.width=(xp%100)+"%";$("xptext").textContent=xp+" XP";$("rank").textContent=xp>=250?"Maestro de portales":xp>=60?"Explorador experto":"Aprendiz de portales";$("levelTitle").textContent=subjects[level].icon+" Nivel "+(level+1)+": Laberinto de "+subjects[level].name;$("progress").textContent="Nivel "+(level+1)+" de 5 · "+["Fácil","Medio","Difícil","Experto","Maestro"][level]; }
+function render(){const el=$("maze");el.innerHTML="";grid=activeMap.map(r=>r.split(""));for(let y=0;y<13;y++)for(let x=0;x<13;x++){let c=grid[y][x],d=document.createElement("div");d.className="cell "+(c==="#"?"wall":"floor");if(c==="S"){d.className+=" start";d.textContent="🏁"}if(c==="E"){d.className+=" exit";d.textContent=exitOpen?"🚪":"🔒"}if(c==="D"){d.className+=" door";d.textContent=doorDone?"✓":"❔"}if(player.x===x&&player.y===y){d.className="cell player";d.textContent="🧑🏻‍🚀"}el.appendChild(d)}}
+function newMaze(){
+ player={x:1,y:1};doorDone=false;exitOpen=false;questionIndex=0;
+ // Each level gets a different question-door location chosen from walkable cells.
+ let rows=maps[level].map(r=>r.split(""));
+ for(let y=0;y<13;y++)for(let x=0;x<13;x++)if(rows[y][x]==="D")rows[y][x]=".";
+ let candidates=[];
+ for(let y=1;y<12;y++)for(let x=1;x<12;x++){
+   if(rows[y][x]==="." && !(x===1&&y===1) && !(x===11&&y===11)) candidates.push({x,y});
+ }
+ // Prefer a portal away from the starting point so the player explores the maze.
+ candidates=candidates.filter(p=>Math.abs(p.x-1)+Math.abs(p.y-1)>=5);
+ if(!candidates.length)candidates=[{x:9,y:3}];
+ const chosen=candidates[Math.floor(Math.random()*candidates.length)];
+ rows[chosen.y][chosen.x]="D";
+ activeMap=rows.map(r=>r.join(""));
+ render();$("message").textContent="¡Explora el laberinto! La puerta violeta aparece en un lugar distinto en cada partida.";update()
+}
+function move(dx,dy){let nx=player.x+dx,ny=player.y+dy;if(ny<0||ny>=13||nx<0||nx>=13||grid[ny][nx]==="#"){beep(180);return}let cell=grid[ny][nx];if(cell==="D"&&!doorDone){player.x=nx;player.y=ny;render();openQuestion();return}if(cell==="E"){if(!exitOpen){$("message").textContent="🔒 La salida está cerrada. Primero resuelve la pregunta de la puerta violeta.";beep(180);return}completeLevel();return}player.x=nx;player.y=ny;render();beep(420);if(cell==="D"&&doorDone)$("message").textContent="La puerta ya está abierta. ¡Busca la salida amarilla!"}
+function openQuestion(){answered=false;const qs=subjects[level].questions;let q=qs[questionIndex%qs.length];$("qbadge").textContent=subjects[level].name;$("qnumber").textContent="Desafío "+(questionIndex+1);$("qtext").textContent=q[0];$("feedback").textContent="";$("continue").classList.add("hidden");$("answers").innerHTML="";q[1].forEach((a,i)=>{let b=document.createElement("button");b.className="answer";b.textContent=String.fromCharCode(65+i)+". "+a;b.onclick=()=>answer(i,b,q[2]);$("answers").appendChild(b)});$("modal").classList.add("show");beep(700)}
+function answer(i,btn,correct){if(answered)return;answered=true;[...$("answers").children].forEach((b,j)=>{b.disabled=true;if(j===correct)b.classList.add("good")});if(i===correct){stars++;coins+=10;xp+=20;doorDone=true;exitOpen=true;$("feedback").textContent="✅ ¡Correcto! Puerta abierta: +1 estrella, +10 monedas y +20 XP.";beep(900)}else{btn.classList.add("bad");lives=Math.max(0,lives-1);$("feedback").textContent="💡 ¡La respuesta correcta está marcada! Inténtalo otra vez en el próximo reto.";beep(220)}update();$("continue").classList.remove("hidden")}
+function continueAfterQuestion(){$("modal").classList.remove("show");if(doorDone){$("message").textContent="🌟 ¡Desafío superado! La salida está abierta. Encuentra la puerta amarilla 🚪";render()}else{$("message").textContent="Vuelve a la puerta violeta para intentarlo de nuevo.";player.x=player.x-1;render()} }
+function completeLevel(){completed[level]=true;coins+=25;xp+=30;beep(1000);if(level<4){alert("🎉 ¡Nivel "+(level+1)+" completado! Has desbloqueado "+subjects[level+1].name+".");level++;newMaze()}else{alert("🏆 ¡Felicidades! ¡Completaste los 5 laberintos de MISAELVERSE!");level=0;newMaze()}update()}
+function showHelp(){alert("CÓMO JUGAR\\n\\n1. Muévete con las flechas de pantalla o del teclado.\\n2. Encuentra la puerta violeta ❔ y responde la pregunta.\\n3. Cuando se abra la salida amarilla, llega hasta ella.\\n4. Hay 5 laberintos: la dificultad aumenta de Fácil a Maestro y la puerta de preguntas cambia de lugar en cada partida.")}
+function toggleSound(){sound=!sound;$("soundBtn").textContent=sound?"🔊 Sonido activado":"🔇 Sonido apagado";beep(500)}
+document.addEventListener("keydown",e=>{const k={"ArrowUp":[0,-1],"ArrowDown":[0,1],"ArrowLeft":[-1,0],"ArrowRight":[1,0]};if(k[e.key]&&!$("modal").classList.contains("show")){e.preventDefault();move(...k[e.key])}if(e.key==="Escape")$("modal").classList.remove("show")});
+update();newMaze();
+</script></body></html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cyber-Roulette .38 TACTICAL AUDIO</title>
+    <style>
+        :root { --glow: #ff3333; --bg: #050508; --green: #33ff33; }
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Courier New', monospace; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; overflow: hidden; position: relative;
+            background-image: radial-gradient(circle at 50% 50%, rgba(255, 51, 51, 0.15), transparent 60%), linear-gradient(0deg, rgba(20,20,30,0.4) 50%, rgba(0,0,0,0.7) 50%), linear-gradient(90deg, rgba(255,0,0,0.05) 1px, transparent 1px); background-size: 100% 100%, 4px 4px, 20px 20px;
+            animation: bgGlitch 4s steps(4) infinite;
+        }
+        @keyframes bgGlitch {
+            0%, 95%, 100% { filter: hue-rotate(0deg) contrast(1); }
+            96% { filter: hue-rotate(45deg) contrast(1.5) brightness(1.2); background-color: #1a0505; }
+            98% { filter: hue-rotate(-45deg) contrast(2) invert(0.1); }
+        }
+        body::after {
+            content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none;
+            background-image: radial-gradient(#ff3333 1px, transparent 1px), radial-gradient(#ffaa00 2px, transparent 2px);
+            background-size: 80px 80px, 120px 120px; background-position: 0 0, 40px 60px;
+            animation: sparks 3s linear infinite; opacity: 0.3; z-index: 1;
+        }
+        @keyframes sparks { 0% { transform: translateY(100vh) scale(0.8); } 100% { transform: translateY(-100vh) scale(1.2); } }
+
+        .chassis { background: rgba(10, 12, 18, 0.93); border: 2px solid var(--glow); border-radius: 16px; padding: 25px; box-shadow: 0 0 50px rgba(255,51,51,0.3), inset 0 0 20px rgba(0,0,0,0.9); text-align: center; position: relative; z-index: 2; backdrop-filter: blur(8px); }
+        .container { position: relative; width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; margin: 15px auto; }
+        .cylinder { width: 260px; height: 260px; background: radial-gradient(circle, #4f5564 0%, #1c2029 65%, #050608 100%); border: 5px solid #5c6b84; border-radius: 50%; position: relative; box-shadow: inset 0 0 35px #000, 0 0 20px rgba(255,51,51,0.1); transition: transform 3s cubic-bezier(0.1, 0.8, 0.1, 1); }
+        .cylinder::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 45px; height: 45px; background: radial-gradient(circle, #8c9abc, #0b0d12); border-radius: 50%; border: 3px solid #12151b; z-index: 10; }
+        .flute { position: absolute; width: 44px; height: 24px; background: #07080a; border-radius: 12px; left: calc(50% - 22px); transform-origin: 22px 130px; box-shadow: inset 0 3px 6px #000; }
+        .chamber { position: absolute; width: 50px; height: 50px; background: radial-gradient(circle, #020304, #2c313c); border: 2px solid #5c6b84; border-radius: 50%; left: calc(50% - 25px); top: 20px; transform-origin: 25px 110px; display: flex; align-items: center; justify-content: center; }
+        .bullet { width: 32px; height: 32px; background: radial-gradient(circle, #ff6666 10%, #b30000 70%, #3a0000 100%); border: 2px solid #ff3333; border-radius: 50%; box-shadow: 0 0 15px var(--glow), inset 0 0 5px #fff; }
+        .pointer { position: absolute; top: -12px; width: 4px; height: 26px; background: var(--glow); box-shadow: 0 0 15px var(--glow), 0 0 25px var(--glow); z-index: 20; }
+        .trigger-btn { background: linear-gradient(180deg, #2c3340, #0f1217); color: #fff; border: 2px solid #5c6b84; padding: 12px 30px; font-family: inherit; font-size: 1.1rem; font-weight: bold; cursor: pointer; border-radius: 6px; letter-spacing: 1px; box-shadow: 0 5px 15px #000; }
+        .trigger-btn:hover { border-color: var(--glow); box-shadow: 0 0 20px rgba(255, 51, 51, 0.4); }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3,4,6,0.97); z-index: 100; align-items: center; justify-content: center; }
+        .quiz-box { background: #050608; border: 2px solid var(--glow); padding: 25px; width: 90%; max-width: 450px; border-radius: 8px; box-shadow: 0 0 40px rgba(255,51,51,0.3); }
+        .phrase { font-size: 1.2rem; margin: 15px 0; padding: 12px; background: rgba(255,51,51,0.05); border-left: 4px solid var(--glow); border-radius: 4px; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .opt-btn { background: #161a22; border: 1px solid #323b4c; color: #fff; padding: 12px; text-align: left; font-family: inherit; cursor: pointer; border-radius: 4px; font-size: 1.05rem; }
+        .opt-btn:hover { border-color: var(--green); background: rgba(51,255,51,0.05); }
+        .c-0 { transform: rotate(0deg); } .c-1 { transform: rotate(60deg); } .c-2 { transform: rotate(120deg); } .c-3 { transform: rotate(180deg); } .c-4 { transform: rotate(240deg); } .c-5 { transform: rotate(300deg); }
+        .f-0 { transform: rotate(30deg); } .f-1 { transform: rotate(90deg); } .f-2 { transform: rotate(150deg); } .f-3 { transform: rotate(210deg); } .f-4 { transform: rotate(270deg); } .f-5 { transform: rotate(330deg); }
+    </style>
+</head>
+<body>
+    <div class="chassis">
+        <h2 style="margin:0; text-shadow:0 0 10px var(--glow); letter-spacing:1px;"># RUAN_DE_MORT: HAUNTED_SYS</h2>
+        <p style="margin:5px 0; font-size:0.9rem; color:#aab4be; letter-spacing:1px;">ALMAS_REST: <span id="soulsDisplay">💀💀💀</span> | BALAS CILINDRO: <span id="bulletsCountDisplay">6</span>/6</p>
+        <div class="container">
+            <div class="pointer"></div>
+            <div class="cylinder" id="cylinder">
+                <div class="chamber c-0"><div class="bullet" id="b-0"></div></div>
+                <div class="chamber c-1"><div class="bullet" id="b-1"></div></div>
+                <div class="chamber c-2"><div class="bullet" id="b-2"></div></div>
+                <div class="chamber c-3"><div class="bullet" id="b-3"></div></div>
+                <div class="chamber c-4"><div class="bullet" id="b-4"></div></div>
+                <div class="chamber c-5"><div class="bullet" id="b-5"></div></div>
+                <div class="flute f-0"></div><div class="flute f-1"></div><div class="flute f-2"></div><div class="flute f-3"></div><div class="flute f-4"></div><div class="flute f-5"></div>
+            </div>
+        </div>
+        <button class="trigger-btn" id="spinBtn" onclick="iniciarConjuracion()">PERCUTIR TAMBOR [ESPACIO]</button>
+    </div>
+    <div class="overlay" id="overlay">
+        <div class="quiz-box">
+            <h3 style="color:var(--glow); margin:0;">// CORE_ERROR: COMPLETAR VERBO TO BE</h3>
+            <div class="phrase" id="phraseDisplay"></div>
+            <div class="options" id="optionsContainer"></div>
+        </div>
+    </div>
+    <script>
+        const preguntas = [
+            { f: "She __________ a software engineer at the cyber lab.", o: ["am", "is", "are", "were"], c: 1 },
+            { f: "They __________ scanning the system for ghosts last night.", o: ["was", "is", "were", "am"], c: 2 },
+            { f: "I __________ ready to purge the corrupted terminal memory.", o: ["is", "am", "are", "be"], c: 1 },
+            { f: "We __________ safely disconnected from the mainframe now.", o: ["are", "is", "was", "am"], c: 0 },
+            { f: "The AI system __________ online before the power grid collapsed.", o: ["were", "are", "was", "be"], c: 2 },
+            { f: "You __________ the chosen operator to free the lost souls.", o: ["is", "am", "was", "are"], c: 3 },
+            { f: "It __________ a dangerous experiment conducted in 2024.", o: ["are", "am", "is", "were"], c: 2 },
+            { f: "He __________ testing the firewall scripts when it failed.", o: ["was", "were", "are", "be"], c: 0 }
+        ];
+
+        const cylinder = document.getElementById('cylinder'), overlay = document.getElementById('overlay'), phraseDisplay = document.getElementById('phraseDisplay'), optionsContainer = document.getElementById('optionsContainer'), soulsDisplay = document.getElementById('soulsDisplay'), bulletsCountDisplay = document.getElementById('bulletsCountDisplay');
+        let rotation = 0, isSpinning = false, vidas = 3, recamaras = [true, true, true, true, true, true], targetIdx = 0;
+
+        // Función del motor de audio unificado para sintetizar efectos
+        function dispararEfectoSonoro(tipo) {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                
+                // Generador de Ruido Blanco Común para la Pólvora/Chispa
+                const bufferSize = ctx.sampleRate * 0.5;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+                
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                const noiseFilter = ctx.createBiquadFilter();
+                const noiseGain = ctx.createGain();
+
+                // Oscilador de Sub-bajos para el impacto
+                const osc = ctx.createOscillator();
+                const oscGain = ctx.createGain();
+
+                if (tipo === 'acierto') {
+                    // Sonido controlado: Destrucción digital/Chispa eléctrica comprimida
+                    noiseFilter.type = 'highpass';
+                    noiseFilter.frequency.value = 1800;
+                    noiseGain.gain.setValueAtTime(0.6, ctx.currentTime);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.1);
+                    oscGain.gain.setValueAtTime(0.4, ctx.currentTime);
+                    oscGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                } else if (tipo === 'fallo') {
+                    // Sonido potente: Disparo de arma realista (.38)
+                    noiseFilter.type = 'lowpass';
+                    noiseFilter.frequency.value = 3500;
+                    noiseGain.gain.setValueAtTime(1.8, ctx.currentTime);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(160, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(5, ctx.currentTime + 0.28);
+                    oscGain.gain.setValueAtTime(2.0, ctx.currentTime);
+                    oscGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                }
+
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(ctx.destination);
+
+                osc.connect(oscGain);
+                oscGain.connect(ctx.destination);
+
+                noise.start();
+                osc.start();
+                noise.stop(ctx.currentTime + 0.5);
+                osc.stop(ctx.currentTime + 0.5);
+            } catch (e) { console.log("Audio temporalmente bloqueado por el navegador."); }
+        }
+
+        function iniciarConjuracion() {
+            const restantes = recamaras.filter(b => b).length; 
+            if (isSpinning || vidas <= 0 || restantes <= 0) return; 
+            isSpinning = true;
+            rotation += (4 + Math.floor(Math.random() * 3)) * 360 + Math.floor(Math.random() * 6) * 60; 
+            cylinder.style.transform = "rotate(" + rotation + "deg)";
+            setTimeout(() => { 
+                isSpinning = false; 
+                targetIdx = (6 - ((rotation % 360) / 60)) % 6; 
+                if (recamaras[targetIdx]) lanzarPregunta(); 
+                else alert("✔ CLICK... Recámara vacía. Gira de nuevo."); 
+            }, 3000);
+        }
+
+        function lanzarPregunta() {
+            const p = preguntas[Math.floor(Math.random() * preguntas.length)]; 
+            phraseDisplay.innerHTML = p.f.replace("__________", "<span style='color:var(--glow);font-weight:bold;'>[ ¿_______? ]</span>"); 
+            optionsContainer.innerHTML = "";
+            p.o.forEach((opc, i) => { 
+                const btn = document.createElement('button'); btn.className = 'opt-btn'; btn.innerText = String.fromCharCode(65+i) + ") " + opc; 
+                btn.onclick = () => verificar(i, p.c); optionsContainer.appendChild(btn); 
+            });
+            overlay.style.display = "flex";
+        }
+
+        function verificar(sel, corr) {
+            overlay.style.display = "none";
+            if (sel === corr) {
+                // Suena la destrucción controlada de la bala
+                dispararEfectoSonoro('acierto');
+                alert("💥 ¡CORRECTO! Proyectil neutralizado."); 
+                recamaras[targetIdx] = false; 
+                document.getElementById("b-" + targetIdx).style.display = 'none'; 
+                actualizarUI();
+                
+                if (recamaras.filter(b => b).length <= 0) { 
+                    alert("🏆 ¡SISTEMA PURGADO! Has vaciado el arma con éxito."); 
+                    finalizar("MAIN_FRAME SECURED", "var(--green)"); 
+                }
+            } else {
+                // Suena el disparo realista del revólver .38 por fallar
+                dispararEfectoSonoro('fallo');
+                vidas--; 
+                actualizarUI(); 
+                if (vidas <= 0) { 
+                    alert("💥 GAME OVER: El arma explotó por sobrecarga."); 
+                    finalizar("SISTEMA BLOQUEADO", "var(--glow)"); 
+                } else {
+                    alert("❌ INCORRECTO: Pierdes un alma. La bala se mantiene y se cambia la frase.");
+                }
+            }
+        }
+
+        function actualizarUI() { 
+            let c = ""; for(let i=0; i<vidas; i++) c += "💀"; 
+            soulsDisplay.innerText = c || "SIN ALMAS"; 
+            bulletsCountDisplay.innerText = recamaras.filter(b => b).length; 
+        }
+
+        function finalizar(m, col) { 
+            const b = document.getElementById('spinBtn'); 
+            b.disabled = true; b.innerText = m; b.style.borderColor = col; b.style.color = col; 
+        }
+
+        window.onkeydown = (e) => { 
+            if (e.code === 'Space' && overlay.style.display !== "flex") { 
+                e.preventDefault(); 
+                iniciarConjuracion(); 
+            } 
+        };
+    </script>
+</body>
+</html>
