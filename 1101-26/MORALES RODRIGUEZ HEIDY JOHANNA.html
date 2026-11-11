@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Cueva de las Sombras: Rescate Matemático</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  body {
+    background: radial-gradient(circle at center, #1b1124 0%, #09060d 100%);
+    color: #f3e8ff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
+  .cave-container {
+    background: linear-gradient(180deg, #1e1629 0%, #120d1a 100%);
+    border: 2px solid #4c1d95;
+    border-radius: 22px;
+    padding: 28px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), inset 0 0 30px rgba(88, 28, 135, 0.25);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  h1 {
+    font-size: 1.85rem;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, #f472b6, #c084fc, #38bdf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    color: #cbd5e1;
+    font-size: 0.95rem;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .story-box {
+    background: rgba(15, 10, 24, 0.85);
+    border: 1px solid #3b0764;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 20px;
+    text-align: left;
+    font-size: 0.9rem;
+    color: #e2e8f0;
+    line-height: 1.5;
+  }
+  .story-box ul {
+    margin-top: 10px;
+    margin-left: 20px;
+  }
+  .story-box li {
+    margin-bottom: 6px;
+  }
+  /* Escenario visual de la cueva */
+  .cave-scene {
+    background: linear-gradient(180deg, #0d0914 0%, #241736 80%, #1a1226 100%);
+    border: 2px solid #3b0764;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .cave-ceiling {
+    font-size: 0.75rem;
+    letter-spacing: 6px;
+    color: #475569;
+    margin-bottom: 8px;
+    user-select: none;
+  }
+  .battle-stage {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    min-height: 105px;
+  }
+  .character {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 30%;
+  }
+  .sprite {
+    font-size: 3.1rem;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.7));
+    transition: transform 0.3s ease;
+  }
+  .monster-sprite {
+    font-size: 3.6rem;
+    animation: floatMonster 2.2s ease-in-out infinite;
+  }
+  .char-name {
+    font-size: 0.78rem;
+    font-weight: bold;
+    margin-top: 6px;
+    color: #d8b4fe;
+    background: rgba(0,0,0,0.45);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .vs-zone {
+    width: 36%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .danger-tag {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #fca5a5;
+    background: rgba(153, 27, 27, 0.45);
+    border: 1px solid #ef4444;
+    padding: 3px 8px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+  /* Barra de progreso del rescate */
+  .progress-wrapper {
+    margin-top: 10px;
+  }
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .progress-track {
+    width: 100%;
+    height: 10px;
+    background: #09060d;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #334155;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #a855f7, #ec4899, #38bdf8);
+    transition: width 0.4s ease;
+  }
+  /* HUD */
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    background: #0f0a18;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid #2e1065;
+    font-weight: bold;
+  }
+  .lives {
+    font-size: 1.25rem;
+    letter-spacing: 2px;
+  }
+  .stage-info {
+    color: #f472b6;
+    font-size: 0.95rem;
+  }
+  /* Temporizador */
+  .timer-bar-bg {
+    width: 100%;
+    height: 10px;
+    background: #09060d;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .timer-bar-fill {
+    height: 100%;
+    width: 100%;
+    background: #22c55e;
+    transition: width 0.1s linear, background-color 0.3s;
+  }
+  .timer-text {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    margin-bottom: 14px;
+    font-weight: bold;
+  }
+  /* Comodines Matemáticos */
+  .lifelines-bar {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .lifeline-btn {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 1px solid #38bdf8;
+    color: #e0f2fe;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: bold;
+    cursor: pointer;
+    flex: 1;
+    min-width: 140px;
+    transition: all 0.2s;
+  }
+  .lifeline-btn:hover:not(:disabled) {
+    background: #0284c7;
+    color: #fff;
+    transform: translateY(-2px);
+  }
+  .lifeline-btn:disabled {
+    opacity: 0.35;
+    border-color: #475569;
+    cursor: not-allowed;
+    transform: none;
+  }
+  /* Pregunta y entrada */
+  .op-badge {
+    display: inline-block;
+    background: #3b0764;
+    color: #e9d5ff;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .question-box {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: #ffffff;
+    letter-spacing: 2px;
+  }
+  .hint-box {
+    min-height: 22px;
+    font-size: 0.88rem;
+    color: #38bdf8;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+  .input-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  input[type="number"] {
+    width: 62%;
+    padding: 12px;
+    font-size: 1.4rem;
+    border-radius: 12px;
+    border: 2px solid #6b21a8;
+    background: #09060d;
+    color: #fff;
+    text-align: center;
+    outline: none;
+  }
+  input[type="number"]:focus {
+    border-color: #f472b6;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .main-btn {
+    background: linear-gradient(135deg, #9333ea, #db2777);
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  .main-btn:hover {
+    opacity: 0.92;
+  }
+  .main-btn:active {
+    transform: scale(0.97);
+  }
+  .feedback {
+    min-height: 24px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
+  .correct { color: #4ade80; }
+  .wrong { color: #f87171; }
+  .hidden { display: none !important; }
+  .end-icon {
+    font-size: 4.2rem;
+    margin-bottom: 10px;
+    animation: pulse 1.5s infinite;
+  }
+  .final-stats {
+    background: #0f0a18;
+    border: 1px solid #3b0764;
+    padding: 16px;
+    border-radius: 12px;
+    margin: 18px 0;
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+  @keyframes floatMonster {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(3deg); }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+  }
+  .shake {
+    animation: shake 0.35s ease-in-out;
+  }
+</style>
+</head>
+<body>
+
+<div class="cave-container" id="card">
+  <!-- PANTALLA DE INICIO -->
+  <div id="start-screen">
+    <h1>La Cueva de las Sombras</h1>
+    <p class="subtitle">Una heroína valiente entra a las profundidades para rescatar a su compañero atrapado.</p>
+    <div class="story-box">
+      <p>La cueva está infestada de criaturas horribles: <strong>culebras venenosas, arañas gigantes, murciélagos vampiro, fantasmas, ogros y un dragón final</strong>. No tienes espadas ni escudos; tus únicas armas y comodines son las <strong>matemáticas</strong>.</p>
+      <ul>
+        <li><strong>Misión:</strong> Derrota a <strong>10 monstruos</strong> para llegar a la jaula y liberar al prisionero.</li>
+        <li><strong>Tiempo límite:</strong> Tienes <strong>10 segundos</strong> para resolver cada operación y atacar.</li>
+        <li><strong>3 Vidas:</strong> Si fallas o se acaba el tiempo, la bestia te hiere. Si pierdes las 3 vidas, mueres en la cueva.</li>
+        <li><strong>3 Comodines Matemáticos (1 uso cada uno):</strong>
+          <br>⏳ <em>+5s Tiempo Extra</em> | ➗ <em>Pista de Paridad/Rango</em> | ⚡ <em>Simplificar Fórmula</em>
+        </li>
+      </ul>
+    </div>
+    <button class="main-btn" onclick="startGame()" style="width: 100%;">⚔️ Entrar a la Cueva</button>
+  </div>
+
+  <!-- PANTALLA DE JUEGO -->
+  <div id="play-screen" class="hidden">
+    <div class="hud">
+      <div class="lives" id="lives-display">❤️❤️❤️</div>
+      <div class="stage-info">Monstruo <span id="stage-num">1</span> de 10</div>
+    </div>
+
+    <div class="cave-scene">
+      <div class="cave-ceiling">🔻🪨🔻🕳️🔻🪨🔻🕳️🔻🪨🔻</div>
+      <div class="battle-stage">
+        <div class="character">
+          <div class="sprite" id="hero-sprite">🦸‍♀️</div>
+          <div class="char-name">Heroína</div>
+        </div>
+        <div class="vs-zone">
+          <div class="danger-tag" id="monster-threat">¡Emboscada!</div>
+          <div style="font-size: 1.4rem;">⚔️✨</div>
+        </div>
+        <div class="character">
+          <div class="sprite monster-sprite" id="monster-sprite">🐍</div>
+          <div class="char-name" id="monster-name">Culebra Gigante</div>
+        </div>
+      </div>
+
+      <div class="progress-wrapper">
+        <div class="progress-labels">
+          <span>Entrada</span>
+          <span>Camino al Rescate</span>
+          <span>⛓️ Prisionero 🧑</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timer-bar-bg">
+      <div class="timer-bar-fill" id="timer-bar"></div>
+    </div>
+    <div class="timer-text" id="timer-text">10.0s</div>
+
+    <!-- COMODINES MATEMÁTICOS -->
+    <div class="lifelines-bar">
+      <button class="lifeline-btn" id="btn-time" onclick="useTimeJoker()">⏳ +5s Reloj Áureo</button>
+      <button class="lifeline-btn" id="btn-hint" onclick="useHintJoker()">📐 Pista Numérica</button>
+      <button class="lifeline-btn" id="btn-simplify" onclick="useSimplifyJoker()">⚡ Reducir Fórmula</button>
+    </div>
+
+    <div class="op-badge" id="op-type">Operación</div>
+    <div class="question-box" id="question-display">12 × 6</div>
+    <div class="hint-box" id="hint-display"></div>
+
+    <div class="input-group">
+      <input type="number" id="answer-input" placeholder="Resultado" autocomplete="off">
+      <button class="main-btn" onclick="checkAnswer()">Atacar</button>
+    </div>
+    <div class="feedback" id="feedback-display"></div>
+  </div>
+
+  <!-- PANTALLA DE MUERTE -->
+  <div id="gameover-screen" class="hidden">
+    <div class="end-icon">💀</div>
+    <h2 style="font-size: 2.2rem; color: #ef4444; margin-bottom: 8px;">¡HAS CAÍDO EN LA CUEVA!</h2>
+    <p class="subtitle" id="death-reason">Las criaturas de la oscuridad te derrotaron antes de lograr el rescate.</p>
+    <div class="final-stats">
+      <div>Monstruos derrotados: <strong id="final-defeated" style="color:#c084fc;">0 / 10</strong></div>
+      <div>Último hechizo fallido: <strong id="last-mistake" style="color:#f87171;">-</strong></div>
+    </div>
+    <button class="main-btn" onclick="startGame()" style="width: 100%;">Volver a Intentar el Rescate</button>
+  </div>
+
+  <!-- PANTALLA DE VICTORIA -->
+  <div id="victory-screen" class="hidden">
+    <div class="end-icon">🦸‍♀️🎉🧑</div>
+    <h2 style="font-size: 2.1rem; color: #4ade80; margin-bottom: 8px;">¡RESCATE COMPLETADO!</h2>
+    <p class="subtitle">Derrotaste al Dragón de las Sombras con puro poder matemático y liberaste a tu compañero.</p>
+    <div class="final-stats">
+      <div>Vidas restantes: <strong id="win-lives" style="color:#f472b6;">❤️❤️❤️</strong></div>
+      <div>Monstruos vencidos: <strong style="color:#4ade80;">10 / 10</strong></div>
+    </div>
+    <button class="main-btn" onclick="startGame()" style="width: 100%;">Jugar Otra Vez</button>
+  </div>
+</div>
+
+<script>
+  const monsters = [
+    { name: "Culebra Venenosa", sprite: "🐍", threat: "Mordida Tóxica" },
+    { name: "Araña Peluda", sprite: "🕷️", threat: "Telaraña Mortal" },
+    { name: "Murciélago Vampiro", sprite: "🦇", threat: "Ataque Nocturno" },
+    { name: "Escorpión Gigante", sprite: "🦂", threat: "Aguijón Letal" },
+    { name: "Esqueleto Maldito", sprite: "💀", threat: "Huesos Crujientes" },
+    { name: "Fantasma Aullador", sprite: "👻", threat: "Grito Helado" },
+    { name: "Zombi de Caverna", sprite: "🧟", threat: "Garra Podrida" },
+    { name: "Ogro de Roca", sprite: "👹", threat: "Mazo Brutal" },
+    { name: "Espectro Sombrío", sprite: "🧌", threat: "Sombra Asfixiante" },
+    { name: "Dragón de Fuego", sprite: "🐉", threat: "JEFE FINAL" }
+  ];
+
+  let lives = 3;
+  let stage = 0; // 0 a 9
+  let currentAnswer = 0;
+  let currentQuestionText = "";
+  let currentOpType = 0;
+  let timeLeft = 10.0;
+  let maxTime = 10.0;
+  let timerInterval = null;
+  let isTransitioning = false;
+
+  // Estado de los 3 comodines matemáticos
+  let jokerTimeUsed = false;
+  let jokerHintUsed = false;
+  let jokerSimplifyUsed = false;
+
+  const startScreen = document.getElementById('start-screen');
+  const playScreen = document.getElementById('play-screen');
+  const gameoverScreen = document.getElementById('gameover-screen');
+  const victoryScreen = document.getElementById('victory-screen');
+
+  const livesDisplay = document.getElementById('lives-display');
+  const stageNumDisplay = document.getElementById('stage-num');
+  const monsterSprite = document.getElementById('monster-sprite');
+  const monsterName = document.getElementById('monster-name');
+  const monsterThreat = document.getElementById('monster-threat');
+  const progressFill = document.getElementById('progress-fill');
+
+  const timerBar = document.getElementById('timer-bar');
+  const timerText = document.getElementById('timer-text');
+  const opTypeDisplay = document.getElementById('op-type');
+  const questionDisplay = document.getElementById('question-display');
+  const hintDisplay = document.getElementById('hint-display');
+  const answerInput = document.getElementById('answer-input');
+  const feedbackDisplay = document.getElementById('feedback-display');
+  const card = document.getElementById('card');
+
+  const btnTime = document.getElementById('btn-time');
+  const btnHint = document.getElementById('btn-hint');
+  const btnSimplify = document.getElementById('btn-simplify');
+
+  answerInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      checkAnswer();
+    }
+  });
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function startGame() {
+    lives = 3;
+    stage = 0;
+    isTransitioning = false;
+    jokerTimeUsed = false;
+    jokerHintUsed = false;
+    jokerSimplifyUsed = false;
+
+    btnTime.disabled = false;
+    btnHint.disabled = false;
+    btnSimplify.disabled = false;
+
+    updateHUD();
+    feedbackDisplay.textContent = "";
+    hintDisplay.textContent = "";
+
+    startScreen.classList.add('hidden');
+    gameoverScreen.classList.add('hidden');
+    victoryScreen.classList.add('hidden');
+    playScreen.classList.remove('hidden');
+
+    loadMonsterStage();
+  }
+
+  function updateHUD() {
+    let hearts = "";
+    for (let i = 0; i < 3; i++) {
+      hearts += i < lives ? "❤️" : "🖤";
+    }
+    livesDisplay.textContent = hearts;
+    stageNumDisplay.textContent = Math.min(stage + 1, 10);
+    progressFill.style.width = `${(stage / 10) * 100}%`;
+  }
+
+  function loadMonsterStage() {
+    isTransitioning = false;
+    feedbackDisplay.textContent = "";
+    hintDisplay.textContent = "";
+    answerInput.value = "";
+    answerInput.disabled = false;
+
+    const m = monsters[stage];
+    monsterSprite.textContent = m.sprite;
+    monsterName.textContent = m.name;
+    monsterThreat.textContent = m.threat;
+
+    generateQuestion();
+    answerInput.focus();
+    startTimer();
+  }
+
+  function generateQuestion(easier = false) {
+    // Dificultad media-retadora equilibrada
+    const scale = easier ? 0 : Math.floor(stage / 3) * 3;
+    const opIndex = easier ? randInt(0, 2) : randInt(0, 6);
+    currentOpType = opIndex;
+
+    let q = "";
+    let ans = 0;
+    let label = "";
+
+    switch (opIndex) {
+      case 0: { // Suma
+        const a = easier ? randInt(8, 22) : randInt(16 + scale, 65 + scale);
+        const b = easier ? randInt(6, 18) : randInt(14 + scale, 55 + scale);
+        q = `${a} + ${b}`;
+        ans = a + b;
+        label = "Hechizo de Suma";
+        break;
+      }
+      case 1: { // Resta
+        const a = easier ? randInt(20, 40) : randInt(42 + scale, 110 + scale);
+        const b = easier ? randInt(5, 15) : randInt(15, a - 8);
+        q = `${a} − ${b}`;
+        ans = a - b;
+        label = "Escudo de Resta";
+        break;
+      }
+      case 2: { // Multiplicación
+        const a = easier ? randInt(3, 8) : randInt(7, 14);
+        const b = easier ? randInt(2, 5) : randInt(4, 9);
+        q = `${a} × ${b}`;
+        ans = a * b;
+        label = "Rayo Multiplicador";
+        break;
+      }
+      case 3: { // División exacta
+        const divisor = randInt(4, 11);
+        const quotient = randInt(5, 12);
+        const dividend = divisor * quotient;
+        q = `${dividend} ÷ ${divisor}`;
+        ans = quotient;
+        label = "Corte de División";
+        break;
+      }
+      case 4: { // Potencia
+        if (Math.random() < 0.75) {
+          const base = randInt(6, 12);
+          q = `${base}²`;
+          ans = base * base;
+        } else {
+          const base = randInt(2, 5);
+          q = `${base}³`;
+          ans = base * base * base;
+        }
+        label = "Explosión de Potencia";
+        break;
+      }
+      case 5: { // Raíz cuadrada
+        const root = randInt(5, 13);
+        const square = root * root;
+        q = `√${square}`;
+        ans = root;
+        label = "Raíz Purificadora";
+        break;
+      }
+      case 6: { // Operación combinada
+        const a = randInt(3, 8);
+        const b = randInt(3, 8);
+        const c = randInt(4, 15);
+        if (Math.random() < 0.5) {
+          q = `(${a} × ${b}) + ${c}`;
+          ans = (a * b) + c;
+        } else {
+          q = `(${a} × ${b}) − ${c}`;
+          ans = (a * b) - c;
+        }
+        label = "Fórmula Combinada";
+        break;
+      }
+    }
+
+    currentQuestionText = q;
+    currentAnswer = ans;
+    opTypeDisplay.textContent = label;
+    questionDisplay.textContent = q;
+  }
+
+  // COMODÍN 1: +5 Segundos de Reloj Áureo
+  function useTimeJoker() {
+    if (jokerTimeUsed || isTransitioning) return;
+    jokerTimeUsed = true;
+    btnTime.disabled = true;
+    timeLeft = Math.min(timeLeft + 5.0, 15.0);
+    maxTime = Math.max(maxTime, timeLeft);
+    hintDisplay.textContent = "⏳ ¡Comodín usado! Ganaste +5 segundos extra.";
+    updateTimerUI();
+    answerInput.focus();
+  }
+
+  // COMODÍN 2: Pista Numérica (Par/Impar y último dígito o rango)
+  function useHintJoker() {
+    if (jokerHintUsed || isTransitioning) return;
+    jokerHintUsed = true;
+    btnHint.disabled = true;
+    const parity = currentAnswer % 2 === 0 ? "PAR" : "IMPAR";
+    const lastDigit = Math.abs(currentAnswer) % 10;
+    hintDisplay.textContent = `📐 Pista: El resultado es ${parity} y termina en ${lastDigit}.`;
+    answerInput.focus();
+  }
+
+  // COMODÍN 3: Reducir Fórmula (cambia el problema por una operación básica sencilla)
+  function useSimplifyJoker() {
+    if (jokerSimplifyUsed || isTransitioning) return;
+    jokerSimplifyUsed = true;
+    btnSimplify.disabled = true;
+    generateQuestion(true);
+    hintDisplay.textContent = "⚡ ¡Fórmula simplificada! La bestia se debilitó.";
+    answerInput.focus();
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    timeLeft = 10.0;
+    maxTime = 10.0;
+    updateTimerUI();
+
+    timerInterval = setInterval(() => {
+      timeLeft -= 0.1;
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        updateTimerUI();
+        clearInterval(timerInterval);
+        handleMistake(`¡Tiempo agotado! ${monsters[stage].name} te atacó (Era ${currentAnswer})`);
+      } else {
+        updateTimerUI();
+      }
+    }, 100);
+  }
+
+  function updateTimerUI() {
+    const pct = (timeLeft / maxTime) * 100;
+    timerBar.style.width = `${pct}%`;
+    timerText.textContent = `${timeLeft.toFixed(1)}s`;
+
+    if (timeLeft > 5) {
+      timerBar.style.backgroundColor = "#22c55e";
+    } else if (timeLeft > 2.5) {
+      timerBar.style.backgroundColor = "#eab308";
+    } else {
+      timerBar.style.backgroundColor = "#ef4444";
+    }
+  }
+
+  function checkAnswer() {
+    if (isTransitioning) return;
+    const raw = answerInput.value.trim();
+    if (raw === "") return;
+
+    const userAns = Number(raw);
+    clearInterval(timerInterval);
+
+    if (userAns === currentAnswer) {
+      isTransitioning = true;
+      answerInput.disabled = true;
+      const defeatedName = monsters[stage].name;
+      stage++;
+      updateHUD();
+
+      feedbackDisplay.className = "feedback correct";
+      feedbackDisplay.textContent = `✨ ¡Impacto crítico! Venciste a ${defeatedName}.`;
+
+      if (stage >= 10) {
+        setTimeout(() => {
+          playScreen.classList.add('hidden');
+          victoryScreen.classList.remove('hidden');
+          document.getElementById('win-lives').textContent = livesDisplay.textContent;
+        }, 900);
+      } else {
+        setTimeout(loadMonsterStage, 850);
+      }
+    } else {
+      handleMistake(`¡Fallaste! ${currentQuestionText} = ${currentAnswer}`);
+    }
+  }
+
+  function handleMistake(reason) {
+    isTransitioning = true;
+    answerInput.disabled = true;
+    lives--;
+    updateHUD();
+
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+
+    feedbackDisplay.className = "feedback wrong";
+    feedbackDisplay.textContent = reason;
+
+    if (lives <= 0) {
+      setTimeout(() => {
+        playScreen.classList.add('hidden');
+        gameoverScreen.classList.remove('hidden');
+        document.getElementById('final-defeated').textContent = `${stage} / 10`;
+        document.getElementById('last-mistake').textContent = `${currentQuestionText} = ${currentAnswer}`;
+        document.getElementById('death-reason').textContent = `${monsters[stage].name} acabó con tus vidas en las profundidades de la cueva.`;
+      }, 1200);
+    } else {
+      setTimeout(loadMonsterStage, 1200);
+    }
+  }
+</script>
+</body>
+</html>
