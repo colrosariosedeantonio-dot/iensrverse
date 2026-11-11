@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Void Survivor - Arcade Action</title>
+<style>
+:root{--bg:#020617;--surface:#0f172a;--primary:#3b82f6;--danger:#ef4444;--text:#f8fafc}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Courier New',monospace;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text)}
+body{display:flex;align-items:center;justify-content:center}
+#game-container{position:relative;width:min(100vw,600px);height:min(100dvh,900px);background:#000;overflow:hidden}
+canvas{display:block;width:100%;height:100%;background:radial-gradient(circle at center,#0b1329 0%,#000 100%)}
+#hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;z-index:3;font-size:14px;text-shadow:0 2px 5px #000;pointer-events:none}
+.hud-box{background:#0f172acc;border:1px solid #334155;border-radius:6px;padding:8px 10px}
+#health{color:#fb7185;letter-spacing:2px}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#020617df;padding:24px;text-align:center;z-index:10}
+.screen.hidden{display:none}
+h1{font-size:clamp(28px,8vw,42px);color:var(--primary);text-shadow:0 0 14px var(--primary);margin-bottom:18px}
+p{font-size:14px;line-height:1.7;margin-bottom:25px;color:#cbd5e1}
+.btn{background:transparent;color:white;border:2px solid var(--primary);padding:14px 28px;font-size:16px;font-weight:bold;cursor:pointer;border-radius:5px;box-shadow:0 0 15px #3b82f64d}
+.btn:active{background:var(--primary)}
+#mobile-controls{position:absolute;bottom:22px;left:0;right:0;display:none;justify-content:space-between;padding:0 18px;z-index:5;pointer-events:none}
+.d-pad{display:flex;gap:10px;pointer-events:auto}
+.ctrl-btn{width:62px;height:62px;background:#ffffff20;border:2px solid #ffffff80;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:24px;font-weight:bold;touch-action:none}
+#fire-btn{width:72px;height:72px;background:#ef444433;border-color:#ef4444aa;pointer-events:auto}
+@media(pointer:coarse){#mobile-controls{display:flex}}
+.small{font-size:12px;color:#94a3b8;margin-top:14px}
+</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="gameCanvas"></canvas>
+  <div id="hud" class="hidden">
+    <div class="hud-box">PUNTOS: <span id="score">0</span><br>RÉCORD: <span id="best">0</span></div>
+    <div class="hud-box">NIVEL: <span id="level">1</span><br>VIDAS: <span id="health">♥♥♥</span></div>
+  </div>
+  <div id="mobile-controls">
+    <div class="d-pad">
+      <div class="ctrl-btn" id="left-btn">◀</div>
+      <div class="ctrl-btn" id="right-btn">▶</div>
+    </div>
+    <div class="ctrl-btn" id="fire-btn">🔥</div>
+  </div>
+  <div id="start-screen" class="screen">
+    <h1>VOID SURVIVOR</h1>
+    <p>Esquiva los asteroides y elimina las naves invasoras.<br><br><b>PC:</b> Flechas o A/D para moverte · Espacio para disparar<br><b>Móvil:</b> Usa los botones de la pantalla.</p>
+    <button class="btn" id="start-btn">INICIAR COMBATE</button>
+    <div class="small">Sobrevive todo lo que puedas. ¡Buena suerte, piloto!</div>
+  </div>
+  <div id="gameover-screen" class="screen hidden">
+    <h1 style="color:#ef4444;text-shadow:0 0 14px #ef4444">NAVE DESTRUIDA</h1>
+    <p id="stats-text"></p>
+    <button class="btn" id="retry-btn" style="border-color:#ef4444">REINTENTAR</button>
+  </div>
+</div>
+<script>
+(() => {
+const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+let W=0,H=0,player,lasers,enemies,rocks,particles,stars;
+let score=0,level=1,playing=false,frame=0,spawnTimer=0,rockTimer=0;
+let keys={},touchLeft=false,touchRight=false,touchFire=false,best=0;
+try{best=Number(localStorage.getItem('voidSurvivorBest')||0)}catch(e){}
+$('best').textContent=best;
+function resize(){
+ const dpr=Math.min(window.devicePixelRatio||1,2),r=canvas.getBoundingClientRect();
+ W=r.width;H=r.height;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ if(stars)makeStars();
+}
+function makeStars(){stars=Array.from({length:75},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*2+.4,v:Math.random()*1.4+.4}))}
+window.addEventListener('resize',resize);resize();
+function bindHold(id,setter){
+ const el=$(id);
+ el.addEventListener('pointerdown',e=>{e.preventDefault();setter(true);});
+ ['pointerup','pointercancel','pointerleave'].forEach(ev=>el.addEventListener(ev,()=>setter(false)));
+}
+bindHold('left-btn',v=>touchLeft=v);bindHold('right-btn',v=>touchRight=v);bindHold('fire-btn',v=>touchFire=v);
+window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight',' ','ArrowUp','ArrowDown'].includes(e.key))e.preventDefault();keys[e.code]=true});
+window.addEventListener('keyup',e=>keys[e.code]=false);
+window.addEventListener('blur',()=>{keys={};touchLeft=touchRight=touchFire=false});
+function explosion(x,y,color,n=14){
+ for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,v=Math.random()*4+1;
+ particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,r:Math.random()*3+1,life:30+Math.random()*20,color})}
+}
+function start(){
+ player={x:W/2,y:H-125,w:34,h:36,speed:6,cool:0,hp:3,invuln:0};
+ lasers=[];enemies=[];rocks=[];particles=[];score=0;level=1;frame=0;spawnTimer=0;rockTimer=0;
+ makeStars();playing=true;$('start-screen').classList.add('hidden');$('gameover-screen').classList.add('hidden');$('hud').classList.remove('hidden');
+ updateHud();requestAnimationFrame(loop);
+}
+function updateHud(){
+ $('score').textContent=score;$('level').textContent=level;$('health').textContent='♥'.repeat(player.hp)+'♡'.repeat(3-player.hp);
+}
+function endGame(){
+ playing=false;$('hud').classList.add('hidden');
+ if(score>best){best=score;try{localStorage.setItem('voidSurvivorBest',best)}catch(e){}}
+ $('stats-text').innerHTML=`Puntuación: <b>${score}</b><br>Enemigos eliminados: <b>${Math.floor(score/10)}</b><br>Nivel alcanzado: <b>${level}</b><br>Récord: <b>${best}</b>`;
+ $('gameover-screen').classList.remove('hidden');
+}
+function hitPlayer(){
+ if(player.invuln>0)return;
+ player.hp--;player.invuln=75;explosion(player.x,player.y,'#60a5fa',20);updateHud();
+ if(player.hp<=0)endGame();
+}
+function spawnEnemy(){
+ const x=25+Math.random()*(W-50),type=Math.random()<.25?'fast':'normal';
+ enemies.push({x,y:-25,w:type==='fast'?25:31,h:27,s:type==='fast'?2.8:1.6+level*.13,hp:type==='fast'?1:2,type,phase:Math.random()*6});
+}
+function spawnRock(){
+ const r=12+Math.random()*13;
+ rocks.push({x:r+Math.random()*(W-2*r),y:-r,r,s:1.5+Math.random()*1.6+level*.08,rot:Math.random()*6,spin:(Math.random()-.5)*.06});
+}
+function circleRect(cx,cy,r,rx,ry,rw,rh){
+ const x=Math.max(rx,Math.min(cx,rx+rw)),y=Math.max(ry,Math.min(cy,ry+rh));
+ return (cx-x)**2+(cy-y)**2<r*r;
+}
+function loop(){
+ if(!playing)return;
+ frame++;level=1+Math.floor(score/120);
+ ctx.clearRect(0,0,W,H);ctx.fillStyle='#020617';ctx.fillRect(0,0,W,H);
+ // Estrellas
+ for(const s of stars){s.y+=s.v;if(s.y>H){s.y=0;s.x=Math.random()*W}ctx.fillStyle='#dbeafe';ctx.globalAlpha=.35+s.s*.2;ctx.fillRect(s.x,s.y,s.s,s.s)}
+ ctx.globalAlpha=1;
+ // Movimiento
+ if(keys.ArrowLeft||keys.KeyA||touchLeft)player.x-=player.speed;
+ if(keys.ArrowRight||keys.KeyD||touchRight)player.x+=player.speed;
+ player.x=Math.max(20,Math.min(W-20,player.x));
+ if(player.cool>0)player.cool--;
+ if((keys.Space||touchFire)&&player.cool===0){lasers.push({x:player.x,y:player.y-18,s:9});player.cool=13}
+ // Nave
+ if(player.invuln%10<6){
+ ctx.save();ctx.translate(player.x,player.y);
+ ctx.fillStyle='#1e3a8a';ctx.strokeStyle='#60a5fa';ctx.lineWidth=2;
+ ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(-18,16);ctx.lineTo(0,7);ctx.lineTo(18,16);ctx.closePath();ctx.fill();ctx.stroke();
+ ctx.fillStyle='#f97316';ctx.beginPath();ctx.moveTo(-6,12);ctx.lineTo(0,25+Math.random()*6);ctx.lineTo(6,12);ctx.fill();
+ ctx.restore();
+ }
+ if(player.invuln>0)player.invuln--;
+ // Disparos
+ for(let i=lasers.length-1;i>=0;i--){let l=lasers[i];l.y-=l.s;ctx.fillStyle='#7dd3fc';ctx.shadowBlur=10;ctx.shadowColor='#3b82f6';ctx.fillRect(l.x-2,l.y,4,14);ctx.shadowBlur=0;if(l.y<-20)lasers.splice(i,1)}
+ // Enemigos
+ spawnTimer++;if(spawnTimer>Math.max(24,70-level*4)){spawnEnemy();spawnTimer=0}
+ for(let i=enemies.length-1;i>=0;i--){
+  let e=enemies[i];e.y+=e.s;e.x+=Math.sin(frame*.035+e.phase)*(e.type==='fast'?1.8:.7);
+  ctx.save();ctx.translate(e.x,e.y);ctx.fillStyle=e.type==='fast'?'#7c3aed':'#991b1b';ctx.strokeStyle=e.type==='fast'?'#c4b5fd':'#fb7185';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,16);ctx.lineTo(-17,-10);ctx.lineTo(-6,-6);ctx.lineTo(0,-15);ctx.lineTo(6,-6);ctx.lineTo(17,-10);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+  for(let j=lasers.length-1;j>=0;j--){let l=lasers[j];if(Math.abs(l.x-e.x)<18&&l.y>e.y-16&&l.y<e.y+16){lasers.splice(j,1);e.hp--;if(e.hp<=0){explosion(e.x,e.y,'#fb7185');enemies.splice(i,1);score+=10;updateHud()}break}}
+  if(i<enemies.length&&Math.abs(e.x-player.x)<23&&Math.abs(e.y-player.y)<25){enemies.splice(i,1);hitPlayer()}
+  else if(e.y>H+30){enemies.splice(i,1);hitPlayer()}
+ }
+ // Asteroides
+ rockTimer++;if(rockTimer>95){spawnRock();rockTimer=0}
+ for(let i=rocks.length-1;i>=0;i--){
+  let r=rocks[i];r.y+=r.s;r.rot+=r.spin;
+  ctx.save();ctx.translate(r.x,r.y);ctx.rotate(r.rot);ctx.fillStyle='#64748b';ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.5;ctx.beginPath();
+  for(let k=0;k<9;k++){let a=k*Math.PI*2/9,rr=r.r*(.78+((k*7)%4)*.07);let x=Math.cos(a)*rr,y=Math.sin(a)*rr;k?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+  ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+  if(circleRect(r.x,r.y,r.r,player.x-13,player.y-15,26,30)){rocks.splice(i,1);hitPlayer()}
+  else if(r.y>H+r.r)rocks.splice(i,1);
+ }
+ // Partículas
+ for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vx*=.97;p.vy*=.97;p.life--;ctx.globalAlpha=Math.max(0,p.life/45);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();if(p.life<=0)particles.splice(i,1)}
+ ctx.globalAlpha=1;
+ // Indicador de nivel
+ if(frame<100){ctx.textAlign='center';ctx.font='bold 18px Courier New';ctx.fillStyle='#93c5fd';ctx.fillText('NIVEL '+level,W/2,75)}
+ updateHud();
+ if(playing)requestAnimationFrame(loop);
+}
+$('start-btn').addEventListener('click',start);$('retry-btn').addEventListener('click',start);
+})();
+</script>
+</body>
+</html>
