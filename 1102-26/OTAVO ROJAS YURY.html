@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORRE Y GANA SI PUEDES</title>
+<style>
+:root{--sky:#83d9ff;--grass:#48b84d;--ink:#17243a}
+*{box-sizing:border-box}
+body{margin:0;background:#152238;color:white;font-family:Arial,sans-serif;display:flex;justify-content:center;min-height:100vh;padding:14px}
+#app{width:min(960px,100%)}
+h1{margin:8px 0 12px;text-align:center;font-size:clamp(24px,5vw,42px);color:#ffe45c;text-shadow:3px 3px #a33}
+#gamebox{position:relative;border:5px solid #fff;border-radius:14px;overflow:hidden;background:var(--sky);box-shadow:0 8px 25px #0007}
+canvas{display:block;width:100%;height:auto;image-rendering:pixelated;background:linear-gradient(#75d5ff 0 70%,#b6edff 70%)}
+#cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;background:linear-gradient(135deg,#1388d0dd,#163b7add),repeating-linear-gradient(45deg,transparent 0 18px,#ffffff12 18px 36px)}
+#cover h2{font-size:clamp(28px,6vw,56px);line-height:1.05;margin:0 0 10px;color:#ffe45c;text-shadow:4px 4px #9c3c20}
+#cover p{font-size:clamp(14px,2.5vw,20px);margin:5px 0 18px}
+.runner{font-size:clamp(45px,9vw,76px);margin:8px}
+button{border:0;border-radius:10px;padding:12px 18px;font-weight:bold;font-size:16px;background:#ffe45c;color:#17243a;cursor:pointer;box-shadow:0 4px #c79c21}
+button:active{transform:translateY(2px);box-shadow:0 2px #c79c21}
+#hud{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 2px;font-weight:bold}
+#message{min-height:24px;text-align:center;color:#ffe45c;font-weight:bold;margin:6px}
+.controls{display:flex;justify-content:center;gap:16px;margin-top:10px}
+.controls button{min-width:72px;font-size:24px;touch-action:none}
+.small{font-size:13px;text-align:center;color:#d4e4f8;margin:10px 0}
+#quiz{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#10223aeb;padding:18px}
+#quizcard{background:white;color:#17243a;border-radius:14px;padding:20px;max-width:500px;width:100%;text-align:center}
+#quizcard h3{margin-top:0}
+.answers{display:grid;gap:8px}
+.answers button{background:#e7f1ff;box-shadow:0 3px #a8bfdc;text-align:left}
+#feedback{min-height:24px;font-weight:bold;margin-top:10px}
+@media(min-width:700px){.controls{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+<h1>🏁 CORRE Y GANA SI PUEDES 🏁</h1>
+<div id="hud"><span id="level">Nivel 1 / 20</span><span id="coins">Monedas: 0</span><span id="lives">Vidas: 3</span></div>
+<div id="gamebox">
+<canvas id="game" width="900" height="450" aria-label="Juego de plataformas"></canvas>
+<div id="cover">
+<div class="runner">🏃‍♂️ 💨 🪙 🏁</div>
+<h2>CORRE Y GANA<br>SI PUEDES</h2>
+<p>¡Corre, salta, recoge monedas y supera los 20 niveles!</p>
+<button id="start">COMENZAR A JUGAR</button>
+</div>
+<div id="quiz"><div id="quizcard"><h3>¡Inténtalo de nuevo!</h3><p id="question"></p><div class="answers" id="answers"></div><div id="feedback"></div></div></div>
+</div>
+<div class="controls"><button id="left">◀</button><button id="jump">▲</button><button id="right">▶</button></div>
+<p class="small">En computador: usa ← → para moverte y espacio o ↑ para saltar. En celular: usa los botones.</p>
+</div>
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const W=canvas.width,H=canvas.height,ground=390;
+const $=id=>document.getElementById(id);
+let level=1,coins=0,lives=3,playing=false,won=false,keys={},platforms=[],gold=[],foes=[],goal=850,required=4;
+const player={x:45,y:330,w:34,h:48,vx:0,vy:0,on:false,inv:0};
+const quiz=[
+["¿Qué órgano bombea la sangre?","El corazón",["El estómago","El corazón","Los pulmones"]],
+["¿Con qué parte del cuerpo vemos?","Los ojos",["Los ojos","Las manos","Los pies"]],
+["¿Qué órganos usamos principalmente para respirar?","Los pulmones",["Los riñones","Los pulmones","El cerebro"]],
+["¿Cuántos huesos tiene aproximadamente un adulto?","206",["106","206","306"]],
+["¿Qué protege el cerebro?","El cráneo",["Las costillas","El cráneo","La rodilla"]],
+["¿Qué órgano ayuda a digerir los alimentos?","El estómago",["El corazón","El estómago","Los pulmones"]]
+];
+function buildLevel(){
+  const difficulty=level-1;
+  platforms=[{x:0,y:ground,w:W,h:60}];
+  let count=2+Math.min(5,Math.floor(difficulty/3));
+  for(let i=0;i<count;i++){
+    let x=150+i*(650/count),y=300-(i%3)*45-Math.min(25,difficulty*2);
+    platforms.push({x,y,w:100+((i+difficulty)%3)*15,h:15});
+  }
+  required=4+Math.floor(difficulty/3);
+  gold=[];
+  for(let i=0;i<required+2;i++){
+    let x=130+i*(650/(required+1));
+    let y= i%2===0 ? 340 : 260-(difficulty%3)*8;
+    gold.push({x,y,r:10,taken:false});
+  }
+  foes=[];
+  let n=1+Math.floor(difficulty/2);
+  for(let i=0;i<n;i++)foes.push({x:280+i*(500/Math.max(1,n)),y:ground-30,w:30,h:30,v:1.2+difficulty*.18,dir:i%2? -1:1,min:160+i*40,max:800-i*20});
+  player.x=45;player.y=ground-player.h;player.vx=0;player.vy=0;player.inv=35;
+  goal=850;
+  updateHud();
+}
+function updateHud(){$('level').textContent=`Nivel ${level} / 20`;$('coins').textContent=`Monedas: ${coins}`;$('lives').textContent=`Vidas: ${lives}`;}
+function draw(){
+ ctx.clearRect(0,0,W,H);
+ // nubes y paisaje
+ ctx.fillStyle='#e8fbff';for(let i=0;i<5;i++){let x=(i*210+((Date.now()/70)%210))%950-30;ctx.beginPath();ctx.arc(x,75+i%2*35,22,0,Math.PI*2);ctx.arc(x+24,75+i%2*35,28,0,Math.PI*2);ctx.arc(x+50,75+i%2*35,20,0,Math.PI*2);ctx.fill();}
+ ctx.fillStyle='#48b84d';ctx.fillRect(0,ground,W,H-ground);
+ ctx.fillStyle='#278638';for(let x=0;x<W;x+=35)ctx.fillRect(x,ground,18,8);
+ platforms.forEach(p=>{ctx.fillStyle='#8b552e';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle='#39a843';ctx.fillRect(p.x,p.y,p.w,6);});
+ gold.forEach(c=>{if(!c.taken){ctx.fillStyle='#ffd928';ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#b87900';ctx.lineWidth=3;ctx.stroke();}});
+ foes.forEach(e=>{ctx.fillStyle='#c43c48';ctx.fillRect(e.x,e.y,e.w,e.h);ctx.fillStyle='white';ctx.fillRect(e.x+6,e.y+7,6,7);ctx.fillRect(e.x+19,e.y+7,6,7);ctx.fillStyle='#17243a';ctx.fillRect(e.x+8,e.y+9,3,4);ctx.fillRect(e.x+21,e.y+9,3,4);});
+ // bandera/meta
+ ctx.fillStyle='#fff';ctx.fillRect(goal,ground-100,6,100);ctx.fillStyle='#ffdb35';ctx.beginPath();ctx.moveTo(goal+6,ground-100);ctx.lineTo(goal+65,ground-82);ctx.lineTo(goal+6,ground-64);ctx.fill();
+ // personaje pixelado
+ if(player.inv%8<5){ctx.fillStyle='#263b9b';ctx.fillRect(player.x+7,player.y+18,22,25);ctx.fillStyle='#f0b27d';ctx.fillRect(player.x+8,player.y,22,20);ctx.fillStyle='#33251e';ctx.fillRect(player.x+6,player.y,24,7);ctx.fillStyle='#17243a';ctx.fillRect(player.x+23,player.y+8,4,4);ctx.fillStyle='#e33';ctx.fillRect(player.x+4,player.y+43,12,5);ctx.fillRect(player.x+20,player.y+43,12,5);}
+ ctx.fillStyle='#17243a';ctx.font='bold 16px Arial';ctx.fillText(`Recoge ${required} monedas y llega a la bandera`,20,25);
+}
+function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+function update(){
+ if(!playing)return;
+ if(keys.left)player.vx=-4.2;else if(keys.right)player.vx=4.2;else player.vx*=.78;
+ player.x=Math.max(0,Math.min(W-player.w,player.x+player.vx));
+ player.vy+=.55;player.y+=player.vy;player.on=false;
+ for(const p of platforms){if(player.vy>=0&&player.x+player.w>p.x&&player.x<p.x+p.w&&player.y+player.h>=p.y&&player.y+player.h<=p.y+player.vy+9){player.y=p.y-player.h;player.vy=0;player.on=true;}}
+ if(player.y>H){loseLife();}
+ gold.forEach(c=>{if(!c.taken&&Math.hypot(player.x+player.w/2-c.x,player.y+player.h/2-c.y)<28){c.taken=true;coins++;updateHud();}});
+ foes.forEach(e=>{e.x+=e.v*e.dir;if(e.x<e.min||e.x>e.max)e.dir*=-1;if(player.inv<=0&&overlap(player,e)){loseLife();}});
+ if(player.inv>0)player.inv--;
+ if(player.x+player.w>=goal&&gold.filter(c=>c.taken).length>=required){nextLevel();}
+}
+function loseLife(){if(player.inv>0)return;lives--;updateHud();if(lives<=0){playing=false;showQuiz();}else{player.x=45;player.y=ground-player.h;player.vy=0;player.inv=70;}}
+function nextLevel(){if(level>=20){playing=false;won=true;$('cover').style.display='flex';$('cover').innerHTML='<div class="runner">🏆 🎉 🏁</div><h2>¡LO LOGRASTE!</h2><p>¡Completaste los 20 niveles de CORRE Y GANA SI PUEDES!</p><button onclick="restart()">JUGAR OTRA VEZ</button>';return;}level++;buildLevel();}
+function showQuiz(){const q=quiz[Math.floor(Math.random()*quiz.length)];$('question').textContent=q[0];$('answers').innerHTML='';$('feedback').textContent='';q[2].forEach(a=>{let b=document.createElement('button');b.textContent=a;b.onclick=()=>{if(a===q[1]){lives=1;updateHud();$('quiz').style.display='none';playing=true;player.x=45;player.y=ground-player.h;player.inv=100;}else{$('feedback').textContent='Esa no es la respuesta. ¡Prueba otra opción!';}};$('answers').appendChild(b);});$('quiz').style.display='flex';}
+function restart(){level=1;coins=0;lives=3;won=false;$('cover').style.display='none';$('quiz').style.display='none';buildLevel();playing=true;}
+$('start').onclick=restart;
+window.restart=restart;
+function loop(){update();draw();requestAnimationFrame(loop);}buildLevel();loop();
+window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp',' '].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft')keys.left=true;if(e.key==='ArrowRight')keys.right=true;if(e.key==='ArrowUp'||e.key===' ')if(player.on&&playing)player.vy=-11;});
+window.addEventListener('keyup',e=>{if(e.key==='ArrowLeft')keys.left=false;if(e.key==='ArrowRight')keys.right=false;});
+function hold(id,key){let b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();keys[key]=true;});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[key]=false));}
+hold('left','left');hold('right','right');$('jump').addEventListener('pointerdown',e=>{e.preventDefault();if(player.on&&playing)player.vy=-11;});
+</script>
+</body>
+</html>
