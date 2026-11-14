@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Circuito de Educación Física - 10 Niveles (Pixel Art SVG)</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  body {
+    background-color: #1a252f;
+    color: #ecf0f1;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 100dvh;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  header {
+    width: 100%;
+    max-width: 800px;
+    background: #2c3e50;
+    border-radius: 10px;
+    padding: 8px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+    border-bottom: 3px solid #e67e22;
+  }
+
+  .hud-item {
+    font-size: 0.92rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .hud-level {
+    color: #f1c40f;
+  }
+
+  .hud-bottles {
+    color: #3498db;
+  }
+
+  .hud-boost {
+    color: #2ecc71;
+    min-width: 95px;
+    justify-content: center;
+  }
+
+  #game-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 6px 0;
+    min-height: 0;
+  }
+
+  canvas {
+    background-color: #27ae60;
+    border: 4px solid #ecf0f1;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 4 / 3;
+    display: block;
+  }
+
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 30, 40, 0.88);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+  }
+
+  #overlay.hidden {
+    display: none;
+  }
+
+  #overlay h1 {
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    color: #f1c40f;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  #overlay p {
+    font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+    max-width: 480px;
+    line-height: 1.45;
+    margin-bottom: 16px;
+    color: #bdc3c7;
+  }
+
+  #quiz-panel {
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 16px;
+  }
+
+  #quiz-panel.hidden {
+    display: none;
+  }
+
+  #start-btn.hidden {
+    display: none;
+  }
+
+  #quiz-options {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .quiz-option {
+    background: #34495e;
+    color: #fff;
+    border: 2px solid #7f8c8d;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  .quiz-option:hover {
+    background: #415b76;
+  }
+
+  #quiz-feedback {
+    min-height: 1.4em;
+    margin-bottom: 0;
+    font-weight: 700;
+  }
+
+  #quiz-feedback.correct {
+    color: #2ecc71;
+  }
+
+  #quiz-feedback.incorrect {
+    color: #ff7675;
+  }
+
+  .legend-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    font-size: 0.85rem;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 10px 14px;
+    border-radius: 8px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.45);
+    transition: transform 0.12s ease, background 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-primary:active {
+    transform: scale(0.95);
+  }
+
+  /* Cruceta táctil para móviles */
+  #touch-controls {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 12px 8px;
+    gap: 12px;
+  }
+
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 54px);
+    grid-template-rows: repeat(3, 48px);
+    gap: 4px;
+  }
+
+  .dpad-btn {
+    background: rgba(236, 240, 241, 0.16);
+    border: 2px solid rgba(236, 240, 241, 0.4);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.08s, transform 0.08s;
+  }
+
+  .dpad-btn:active, .dpad-btn.active {
+    background: rgba(241, 196, 15, 0.55);
+    border-color: #f1c40f;
+    transform: scale(0.93);
+  }
+
+  .dpad-up { grid-column: 2; grid-row: 1; }
+  .dpad-left { grid-column: 1; grid-row: 2; }
+  .dpad-down { grid-column: 2; grid-row: 3; }
+  .dpad-right { grid-column: 3; grid-row: 2; }
+
+  .action-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .btn-restart {
+    background: #34495e;
+    color: #ecf0f1;
+    border: 2px solid #7f8c8d;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-restart:active {
+    background: #2c3e50;
+    transform: scale(0.95);
+  }
+
+  .hint-text {
+    font-size: 0.75rem;
+    color: #95a5a6;
+    text-align: right;
+  }
+
+  /* Contenedor oculto para las definiciones SVG pixel art */
+  #svg-sprites-bank {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  @media (min-width: 820px) {
+    .dpad {
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(3, 42px);
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- BANCO DE SPRITES SVG PUROS (INLINE) EN PIXEL ART 16x16 -->
+<div id="svg-sprites-bank" aria-hidden="true">
+  <!-- Frame 0: De pie / Frente (Idle) -->
+  <svg id="sprite-idle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <!-- Cabello castaño -->
+    <rect x="5" y="1" width="6" height="1" fill="#4e2a1e"/>
+    <rect x="4" y="2" width="8" height="1" fill="#4e2a1e"/>
+    <!-- Cinta deportiva roja -->
+    <rect x="4" y="3" width="8" height="1" fill="#e74c3c"/>
+    <rect x="12" y="3" width="1" height="1" fill="#c0392b"/>
+    <!-- Rostro y ojos -->
+    <rect x="4" y="4" width="8" height="3" fill="#ffcc99"/>
+    <rect x="5" y="5" width="1" height="1" fill="#1a1a1a"/>
+    <rect x="10" y="5" width="1" height="1" fill="#1a1a1a"/>
+    <!-- Camiseta deportiva azul con franja blanca -->
+    <rect x="4" y="7" width="8" height="4" fill="#2980b9"/>
+    <rect x="4" y="9" width="8" height="1" fill="#ecf0f1"/>
+    <!-- Brazos -->
+    <rect x="3" y="7" width="1" height="2" fill="#2980b9"/>
+    <rect x="12" y="7" width="1" height="2" fill="#2980b9"/>
+    <rect x="3" y="9" width="1" height="2" fill="#ffcc99"/>
+    <rect x="12" y="9" width="1" height="2" fill="#ffcc99"/>
+    <!-- Pantaloneta blanca con borde azul -->
+    <rect x="4" y="11" width="8" height="2" fill="#ecf0f1"/>
+    <rect x="7" y="12" width="2" height="1" fill="#2c3e50"/>
+    <!-- Piernas -->
+    <rect x="5" y="13" width="2" height="1" fill="#ffcc99"/>
+    <rect x="9" y="13" width="2" height="1" fill="#ffcc99"/>
+    <!-- Tenis rojos con suela blanca -->
+    <rect x="4" y="14" width="3" height="1" fill="#e74c3c"/>
+    <rect x="9" y="14" width="3" height="1" fill="#e74c3c"/>
+    <rect x="4" y="15" width="3" height="1" fill="#ffffff"/>
+    <rect x="9" y="15" width="3" height="1" fill="#ffffff"/>
+  </svg>
+
+  <!-- Frame 1: Ciclo de caminata / carrera paso 1 (Perfil/Tres cuartos) -->
+  <svg id="sprite-walk1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <!-- Cabello -->
+    <rect x="5" y="1" width="6" height="1" fill="#4e2a1e"/>
+    <rect x="4" y="2" width="8" height="1" fill="#4e2a1e"/>
+    <!-- Cinta deportiva con cola ondeando atrás -->
+    <rect x="4" y="3" width="8" height="1" fill="#e74c3c"/>
+    <rect x="2" y="3" width="2" height="1" fill="#c0392b"/>
+    <rect x="1" y="4" width="2" height="1" fill="#e74c3c"/>
+    <!-- Rostro perfil derecho -->
+    <rect x="4" y="4" width="8" height="3" fill="#ffcc99"/>
+    <rect x="9" y="5" width="1" height="1" fill="#1a1a1a"/>
+    <!-- Camiseta azul -->
+    <rect x="5" y="7" width="6" height="4" fill="#2980b9"/>
+    <rect x="5" y="9" width="6" height="1" fill="#ecf0f1"/>
+    <!-- Brazo derecho atrás, brazo izquierdo adelante -->
+    <rect x="3" y="8" width="2" height="2" fill="#ffcc99"/>
+    <rect x="11" y="7" width="2" height="2" fill="#ffcc99"/>
+    <!-- Pantaloneta -->
+    <rect x="5" y="11" width="6" height="2" fill="#ecf0f1"/>
+    <!-- Pierna delantera (derecha) y pierna trasera (izquierda) -->
+    <rect x="9" y="13" width="2" height="1" fill="#ffcc99"/>
+    <rect x="4" y="13" width="2" height="1" fill="#ffcc99"/>
+    <!-- Tenis alternados -->
+    <rect x="9" y="14" width="4" height="1" fill="#e74c3c"/>
+    <rect x="9" y="15" width="4" height="1" fill="#ffffff"/>
+    <rect x="3" y="14" width="3" height="1" fill="#e74c3c"/>
+    <rect x="3" y="15" width="3" height="1" fill="#ffffff"/>
+  </svg>
+
+  <!-- Frame 2: Ciclo de caminata / carrera paso 2 (Pies invertidos) -->
+  <svg id="sprite-walk2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <!-- Cabello (rebote de carrera) -->
+    <rect x="5" y="2" width="6" height="1" fill="#4e2a1e"/>
+    <rect x="4" y="3" width="8" height="1" fill="#4e2a1e"/>
+    <!-- Cinta deportiva -->
+    <rect x="4" y="4" width="8" height="1" fill="#e74c3c"/>
+    <rect x="2" y="4" width="2" height="1" fill="#c0392b"/>
+    <rect x="1" y="3" width="2" height="1" fill="#e74c3c"/>
+    <!-- Rostro -->
+    <rect x="4" y="5" width="8" height="2" fill="#ffcc99"/>
+    <rect x="9" y="5" width="1" height="1" fill="#1a1a1a"/>
+    <!-- Camiseta azul -->
+    <rect x="5" y="7" width="6" height="4" fill="#2980b9"/>
+    <rect x="5" y="9" width="6" height="1" fill="#ecf0f1"/>
+    <!-- Brazos alternados -->
+    <rect x="11" y="8" width="2" height="2" fill="#ffcc99"/>
+    <rect x="3" y="7" width="2" height="2" fill="#ffcc99"/>
+    <!-- Pantaloneta -->
+    <rect x="5" y="11" width="6" height="2" fill="#ecf0f1"/>
+    <!-- Piernas cruzadas en zancada opuesta -->
+    <rect x="6" y="13" width="2" height="1" fill="#ffcc99"/>
+    <rect x="8" y="13" width="2" height="1" fill="#ffcc99"/>
+    <!-- Tenis alternados -->
+    <rect x="5" y="14" width="3" height="1" fill="#e74c3c"/>
+    <rect x="5" y="15" width="3" height="1" fill="#ffffff"/>
+    <rect x="8" y="14" width="4" height="1" fill="#e74c3c"/>
+    <rect x="8" y="15" width="4" height="1" fill="#ffffff"/>
+  </svg>
+</div>
+
+<header>
+  <div class="hud-item hud-level">🏅 Nivel: <span id="ui-level">1</span> / 10</div>
+  <div class="hud-item hud-bottles">💧 Hidratación: <span id="ui-bottles">0/0</span></div>
+  <div class="hud-item hud-boost" id="ui-boost">⚡ Normal</div>
+</header>
+
+<div id="game-container">
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <div id="overlay">
+    <h1 id="overlay-title">Circuito de Educación Física</h1>
+    <p id="overlay-desc">
+      Supera los 10 circuitos deportivos. Recoge todas las <strong>botellas de agua (💧)</strong> para abrir la <strong>meta (🏆)</strong> y evita los obstáculos y rivales.
+    </p>
+    <div id="quiz-panel" class="hidden">
+      <p id="quiz-question"></p>
+      <div id="quiz-options"></div>
+      <p id="quiz-feedback" aria-live="polite"></p>
+    </div>
+    <div class="legend-box">
+      <span>🏃 Atleta Pixel SVG</span>
+      <span>💧 Agua (Abre Meta)</span>
+      <span>🍎 Manzana (Turbo)</span>
+      <span>🚧 Conos / Vallas</span>
+      <span>⚽ Balones / Defensas</span>
+    </div>
+    <button class="btn-primary" id="start-btn">¡Comenzar Circuito!</button>
+  </div>
+</div>
+
+<div id="touch-controls">
+  <div class="dpad">
+    <button class="dpad-btn dpad-up" data-dir="up" aria-label="Arriba">▲</button>
+    <button class="dpad-btn dpad-left" data-dir="left" aria-label="Izquierda">◀</button>
+    <button class="dpad-btn dpad-down" data-dir="down" aria-label="Abajo">▼</button>
+    <button class="dpad-btn dpad-right" data-dir="right" aria-label="Derecha">▶</button>
+  </div>
+  <div class="action-panel">
+    <button class="btn-restart" id="restart-btn">🔄 Reiniciar Nivel</button>
+    <div class="hint-text">Usa flechas del teclado<br>o la cruceta táctil</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Referencias UI
+  const uiLevel = document.getElementById('ui-level');
+  const uiBottles = document.getElementById('ui-bottles');
+  const uiBoost = document.getElementById('ui-boost');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlay-title');
+  const overlayDesc = document.getElementById('overlay-desc');
+  const startBtn = document.getElementById('start-btn');
+  const restartBtn = document.getElementById('restart-btn');
+  const quizPanel = document.getElementById('quiz-panel');
+  const quizQuestion = document.getElementById('quiz-question');
+  const quizOptions = document.getElementById('quiz-options');
+  const quizFeedback = document.getElementById('quiz-feedback');
+
+  // Carga de sprites SVG puros inline en memoria para renderizado rápido con estética píxel
+  const playerSprites = {
+    idle: new Image(),
+    walk1: new Image(),
+    walk2: new Image()
+  };
+
+  function svgElementToImage(svgId, targetImg) {
+    const svgEl = document.getElementById(svgId);
+    const xml = new XMLSerializer().serializeToString(svgEl);
+    targetImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+  }
+
+  svgElementToImage('sprite-idle', playerSprites.idle);
+  svgElementToImage('sprite-walk1', playerSprites.walk1);
+  svgElementToImage('sprite-walk2', playerSprites.walk2);
+
+  // Estado de entrada (Teclado + Cruceta Táctil)
+  const keys = { up: false, down: false, left: false, right: false };
+
+  window.addEventListener('keydown', (e) => {
+    if (['ArrowUp', 'w', 'W'].includes(e.key)) { keys.up = true; e.preventDefault(); }
+    if (['ArrowDown', 's', 'S'].includes(e.key)) { keys.down = true; e.preventDefault(); }
+    if (['ArrowLeft', 'a', 'A'].includes(e.key)) { keys.left = true; e.preventDefault(); }
+    if (['ArrowRight', 'd', 'D'].includes(e.key)) { keys.right = true; e.preventDefault(); }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (['ArrowUp', 'w', 'W'].includes(e.key)) keys.up = false;
+    if (['ArrowDown', 's', 'S'].includes(e.key)) keys.down = false;
+    if (['ArrowLeft', 'a', 'A'].includes(e.key)) keys.left = false;
+    if (['ArrowRight', 'd', 'D'].includes(e.key)) keys.right = false;
+  });
+
+  // Eventos táctiles y de ratón para la cruceta
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
+    const dir = btn.dataset.dir;
+    const press = (e) => {
+      e.preventDefault();
+      keys[dir] = true;
+      btn.classList.add('active');
+    };
+    const release = (e) => {
+      e.preventDefault();
+      keys[dir] = false;
+      btn.classList.remove('active');
+    };
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+    btn.addEventListener('touchcancel', release, { passive: false });
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+  });
+
+  // Configuración del juego
+  let currentLevel = 1;
+  const maxLevels = 10;
+  let gameState = 'menu'; // 'menu', 'playing', 'quiz', 'victory'
+  let lastTime = 0;
+  let quizAction = 'retry';
+  let activeQuestion = null;
+
+  const physicalEducationQuestions = [
+    {
+      question: '¿Para qué sirve el calentamiento antes de hacer ejercicio?',
+      options: ['Preparar el cuerpo y reducir el riesgo de lesiones', 'Cansarse antes de empezar', 'Evitar tomar agua'],
+      answer: 0
+    },
+    {
+      question: '¿Cuál es una buena forma de hidratarse durante la actividad física?',
+      options: ['Beber agua en pausas y al terminar', 'Esperar a tener mucha sed siempre', 'Tomar solo bebidas energéticas'],
+      answer: 0
+    },
+    {
+      question: '¿Qué capacidad física se relaciona con mantener un esfuerzo durante un tiempo prolongado?',
+      options: ['Resistencia', 'Flexibilidad', 'Equilibrio'],
+      answer: 0
+    },
+    {
+      question: '¿Qué debemos hacer al sentir dolor fuerte o mareo mientras hacemos ejercicio?',
+      options: ['Detenernos y avisar a un adulto o docente', 'Aumentar la velocidad', 'Ignorarlo y continuar'],
+      answer: 0
+    },
+    {
+      question: '¿Qué hábito ayuda a recuperarse después de la actividad física?',
+      options: ['Descansar y mantener una alimentación equilibrada', 'No dormir', 'Evitar cualquier líquido'],
+      answer: 0
+    },
+    {
+      question: '¿Qué capacidad nos permite mover las articulaciones con amplitud?',
+      options: ['Flexibilidad', 'Velocidad', 'Fuerza'],
+      answer: 0
+    },
+    {
+      question: '¿Cuál es una regla importante para jugar en equipo?',
+      options: ['Respetar a los compañeros y las reglas', 'Hacer trampa para ganar', 'No pasar el balón'],
+      answer: 0
+    },
+    {
+      question: '¿Qué actividad ayuda a mejorar la resistencia cardiovascular?',
+      options: ['Trotar a un ritmo adecuado', 'Permanecer sentado', 'Levantar un objeto una sola vez'],
+      answer: 0
+    },
+    {
+      question: '¿Para qué sirve volver a la calma al terminar el ejercicio?',
+      options: ['Ayudar al cuerpo a regresar gradualmente al reposo', 'Acelerar el pulso de nuevo', 'Reemplazar el calentamiento'],
+      answer: 0
+    },
+    {
+      question: '¿Qué significa practicar actividad física de forma segura?',
+      options: ['Usar el espacio y los implementos correctamente', 'Correr sin mirar alrededor', 'Jugar sin respetar turnos'],
+      answer: 0
+    }
+  ];
+
+  // Jugador (Atleta SVG Pixel Art con control de animación y dirección)
+  const player = {
+    x: 50,
+    y: 280,
+    size: 32,
+    baseSpeed: 235,
+    boostTimer: 0,
+    facing: 'right',
+    isMoving: false,
+    animTimer: 0,
+    animFrame: 0 // 0: idle, 1: walk1, 2: walk2
+  };
+
+  // Entidades del nivel actual
+  let walls = [];
+  let mats = [];       // Colchonetas (ralentizan si pasas por encima)
+  let bottles = [];    // Botellas de agua (obligatorias para abrir meta)
+  let apples = [];     // Manzanas (dan impulso de velocidad)
+  let hazards = [];    // Balones en movimiento y defensas patrullando
+  let chasers = [];    // Rivales perseguidores (niveles altos)
+  let goal = { x: 720, y: 265, w: 48, h: 70 };
+
+  // Generador de los 10 niveles de Educación Física
+  function loadLevel(lvl) {
+    player.x = 42;
+    player.y = 284;
+    player.boostTimer = 0;
+    player.facing = 'right';
+    player.isMoving = false;
+    player.animTimer = 0;
+    player.animFrame = 0;
+
+    walls = [];
+    mats = [];
+    bottles = [];
+    apples = [];
+    hazards = [];
+    chasers = [];
+    goal = { x: 725, y: 265, w: 46, h: 70 };
+
+    // Marcos perimetrales internos
+    walls.push({ x: 0, y: 0, w: 800, h: 14, type: 'border' });
+    walls.push({ x: 0, y: 586, w: 800, h: 14, type: 'border' });
+    walls.push({ x: 0, y: 0, w: 14, h: 600, type: 'border' });
+    walls.push({ x: 786, y: 0, w: 14, h: 600, type: 'border' });
+
+    switch (lvl) {
+      case 1: // Nivel 1: Calentamiento con conos y primera hidratación
+        walls.push({ x: 240, y: 80, w: 32, h: 180, type: 'cones' });
+        walls.push({ x: 240, y: 340, w: 32, h: 180, type: 'cones' });
+        walls.push({ x: 500, y: 160, w: 32, h: 280, type: 'cones' });
+        bottles.push({ x: 370, y: 290, collected: false });
+        bottles.push({ x: 620, y: 120, collected: false });
+        apples.push({ x: 370, y: 100, collected: false });
+        break;
+
+      case 2: // Nivel 2: Circuito de vallas y balones rodando verticalmente
+        walls.push({ x: 200, y: 14, w: 28, h: 360, type: 'hurdle' });
+        walls.push({ x: 420, y: 226, w: 28, h: 360, type: 'hurdle' });
+        hazards.push({ x: 310, y: 80, r: 15, vx: 0, vy: 190, minY: 40, maxY: 560, kind: 'ball' });
+        hazards.push({ x: 560, y: 520, r: 15, vx: 0, vy: -210, minY: 40, maxY: 560, kind: 'ball' });
+        bottles.push({ x: 110, y: 80, collected: false });
+        bottles.push({ x: 310, y: 510, collected: false });
+        bottles.push({ x: 640, y: 100, collected: false });
+        break;
+
+      case 3: // Nivel 3: Colchonetas de gimnasia (frenan) + pases de balón
+        mats.push({ x: 180, y: 140, w: 160, h: 320 });
+        mats.push({ x: 460, y: 80, w: 150, h: 180 });
+        mats.push({ x: 460, y: 340, w: 150, h: 180 });
+        hazards.push({ x: 260, y: 60, r: 15, vx: 0, vy: 240, minY: 35, maxY: 565, kind: 'ball' });
+        hazards.push({ x: 535, y: 540, r: 15, vx: 0, vy: -240, minY: 35, maxY: 565, kind: 'ball' });
+        bottles.push({ x: 260, y: 300, collected: false });
+        bottles.push({ x: 535, y: 160, collected: false });
+        bottles.push({ x: 535, y: 430, collected: false });
+        apples.push({ x: 120, y: 490, collected: false });
+        break;
+
+      case 4: // Nivel 4: Slalom de conos y defensas patrullando
+        for (let i = 0; i < 4; i++) {
+          walls.push({ x: 180 + i * 130, y: (i % 2 === 0) ? 14 : 230, w: 30, h: 356, type: 'cones' });
+        }
+        hazards.push({ x: 245, y: 100, r: 17, vx: 0, vy: 230, minY: 40, maxY: 560, kind: 'defender' });
+        hazards.push({ x: 375, y: 500, r: 17, vx: 0, vy: -230, minY: 40, maxY: 560, kind: 'defender' });
+        hazards.push({ x: 505, y: 120, r: 17, vx: 0, vy: 250, minY: 40, maxY: 560, kind: 'defender' });
+        bottles.push({ x: 245, y: 520, collected: false });
+        bottles.push({ x: 375, y: 80, collected: false });
+        bottles.push({ x: 650, y: 300, collected: false });
+        apples.push({ x: 110, y: 90, collected: false });
+        break;
+
+      case 5: // Nivel 5: Cancha cruzada (balones horizontales y verticales)
+        walls.push({ x: 340, y: 230, w: 120, h: 140, type: 'hurdle' });
+        hazards.push({ x: 150, y: 130, r: 15, vx: 270, vy: 0, minX: 120, maxX: 680, kind: 'ball' });
+        hazards.push({ x: 650, y: 470, r: 15, vx: -270, vy: 0, minX: 120, maxX: 680, kind: 'ball' });
+        hazards.push({ x: 230, y: 60, r: 16, vx: 0, vy: 250, minY: 35, maxY: 565, kind: 'defender' });
+        hazards.push({ x: 570, y: 540, r: 16, vx: 0, vy: -250, minY: 35, maxY: 565, kind: 'defender' });
+        bottles.push({ x: 400, y: 80, collected: false });
+        bottles.push({ x: 400, y: 520, collected: false });
+        bottles.push({ x: 160, y: 300, collected: false });
+        bottles.push({ x: 640, y: 300, collected: false });
+        apples.push({ x: 230, y: 300, collected: false });
+        break;
+
+      case 6: // Nivel 6: Aparece el primer Rival Perseguidor + Colchonetas
+        mats.push({ x: 220, y: 100, w: 140, h: 400 });
+        walls.push({ x: 480, y: 14, w: 30, h: 210, type: 'hurdle' });
+        walls.push({ x: 480, y: 376, w: 30, h: 210, type: 'hurdle' });
+        chasers.push({ x: 650, y: 100, r: 17, speed: 125 });
+        hazards.push({ x: 580, y: 80, r: 15, vx: 0, vy: 280, minY: 35, maxY: 565, kind: 'ball' });
+        bottles.push({ x: 290, y: 150, collected: false });
+        bottles.push({ x: 290, y: 450, collected: false });
+        bottles.push({ x: 620, y: 500, collected: false });
+        apples.push({ x: 120, y: 100, collected: false });
+        apples.push({ x: 420, y: 300, collected: false });
+        break;
+
+      case 7: // Nivel 7: Laberinto de gimnasio con ráfagas de balones
+        walls.push({ x: 160, y: 14, w: 28, h: 420, type: 'cones' });
+        walls.push({ x: 320, y: 166, w: 28, h: 420, type: 'hurdle' });
+        walls.push({ x: 480, y: 14, w: 28, h: 420, type: 'cones' });
+        walls.push({ x: 620, y: 166, w: 28, h: 420, type: 'hurdle' });
+        hazards.push({ x: 240, y: 80, r: 15, vx: 0, vy: 310, minY: 35, maxY: 565, kind: 'ball' });
+        hazards.push({ x: 400, y: 520, r: 15, vx: 0, vy: -310, minY: 35, maxY: 565, kind: 'ball' });
+        hazards.push({ x: 550, y: 100, r: 15, vx: 0, vy: 320, minY: 35, maxY: 565, kind: 'ball' });
+        bottles.push({ x: 240, y: 520, collected: false });
+        bottles.push({ x: 400, y: 80, collected: false });
+        bottles.push({ x: 550, y: 520, collected: false });
+        apples.push({ x: 90, y: 500, collected: false });
+        break;
+
+      case 8: // Nivel 8: Doble presión defensiva y zonas de colchoneta
+        mats.push({ x: 150, y: 60, w: 480, h: 110 });
+        mats.push({ x: 150, y: 430, w: 480, h: 110 });
+        walls.push({ x: 260, y: 240, w: 260, h: 120, type: 'hurdle' });
+        chasers.push({ x: 680, y: 80, r: 17, speed: 138 });
+        chasers.push({ x: 680, y: 520, r: 17, speed: 138 });
+        hazards.push({ x: 180, y: 115, r: 15, vx: 330, vy: 0, minX: 140, maxX: 640, kind: 'ball' });
+        hazards.push({ x: 620, y: 485, r: 15, vx: -330, vy: 0, minX: 140, maxX: 640, kind: 'ball' });
+        bottles.push({ x: 390, y: 115, collected: false });
+        bottles.push({ x: 390, y: 485, collected: false });
+        bottles.push({ x: 190, y: 300, collected: false });
+        bottles.push({ x: 590, y: 300, collected: false });
+        apples.push({ x: 390, y: 200, collected: false });
+        apples.push({ x: 390, y: 400, collected: false });
+        break;
+
+      case 9: // Nivel 9: Circuito olímpico de velocidad y reflejos
+        walls.push({ x: 180, y: 120, w: 30, h: 360, type: 'hurdle' });
+        walls.push({ x: 385, y: 14, w: 30, h: 210, type: 'cones' });
+        walls.push({ x: 385, y: 376, w: 30, h: 210, type: 'cones' });
+        walls.push({ x: 590, y: 120, w: 30, h: 360, type: 'hurdle' });
+        hazards.push({ x: 280, y: 60, r: 16, vx: 0, vy: 340, minY: 35, maxY: 565, kind: 'defender' });
+        hazards.push({ x: 490, y: 540, r: 16, vx: 0, vy: -340, minY: 35, maxY: 565, kind: 'defender' });
+        hazards.push({ x: 220, y: 65, r: 15, vx: 320, vy: 0, minX: 180, maxX: 620, kind: 'ball' });
+        hazards.push({ x: 580, y: 535, r: 15, vx: -320, vy: 0, minX: 180, maxX: 620, kind: 'ball' });
+        chasers.push({ x: 690, y: 300, r: 17, speed: 148 });
+        bottles.push({ x: 280, y: 300, collected: false });
+        bottles.push({ x: 490, y: 300, collected: false });
+        bottles.push({ x: 400, y: 300, collected: false });
+        bottles.push({ x: 670, y: 80, collected: false });
+        bottles.push({ x: 670, y: 520, collected: false });
+        apples.push({ x: 100, y: 80, collected: false });
+        apples.push({ x: 100, y: 520, collected: false });
+        break;
+
+      case 10: // Nivel 10: Gran Final de Educación Física
+        mats.push({ x: 210, y: 210, w: 360, h: 180 });
+        walls.push({ x: 150, y: 14, w: 28, h: 190, type: 'hurdle' });
+        walls.push({ x: 150, y: 396, w: 28, h: 190, type: 'hurdle' });
+        walls.push({ x: 610, y: 14, w: 28, h: 190, type: 'hurdle' });
+        walls.push({ x: 610, y: 396, w: 28, h: 190, type: 'hurdle' });
+        walls.push({ x: 375, y: 120, w: 30, h: 90, type: 'cones' });
+        walls.push({ x: 375, y: 390, w: 30, h: 90, type: 'cones' });
+
+        hazards.push({ x: 250, y: 50, r: 15, vx: 0, vy: 360, minY: 35, maxY: 565, kind: 'ball' });
+        hazards.push({ x: 530, y: 550, r: 15, vx: 0, vy: -360, minY: 35, maxY: 565, kind: 'ball' });
+        hazards.push({ x: 200, y: 100, r: 15, vx: 350, vy: 0, minX: 190, maxX: 590, kind: 'ball' });
+        hazards.push({ x: 580, y: 500, r: 15, vx: -350, vy: 0, minX: 190, maxX: 590, kind: 'ball' });
+
+        chasers.push({ x: 680, y: 70, r: 17, speed: 152 });
+        chasers.push({ x: 680, y: 530, r: 17, speed: 152 });
+
+        bottles.push({ x: 390, y: 65, collected: false });
+        bottles.push({ x: 390, y: 535, collected: false });
+        bottles.push({ x: 390, y: 300, collected: false });
+        bottles.push({ x: 240, y: 300, collected: false });
+        bottles.push({ x: 540, y: 300, collected: false });
+
+        apples.push({ x: 90, y: 100, collected: false });
+        apples.push({ x: 90, y: 500, collected: false });
+        apples.push({ x: 680, y: 300, collected: false });
+        break;
+    }
+
+    updateHUD();
+  }
+
+  function updateHUD() {
+    uiLevel.textContent = currentLevel;
+    const collectedCount = bottles.filter(b => b.collected).length;
+    uiBottles.textContent = `${collectedCount}/${bottles.length}`;
+    if (player.boostTimer > 0) {
+      uiBoost.textContent = `⚡ Turbo (${player.boostTimer.toFixed(1)}s)`;
+      uiBoost.style.color = '#f1c40f';
+    } else {
+      uiBoost.textContent = '👟 Normal';
+      uiBoost.style.color = '#2ecc71';
+    }
+  }
+
+  // Utilidades de colisión
+  function rectIntersect(r1, r2) {
+    return !(r2.x >= r1.x + r1.w ||
+             r2.x + r2.w <= r1.x ||
+             r2.y >= r1.y + r1.h ||
+             r2.y + r2.h <= r1.y);
+  }
+
+  function circleRectIntersect(cx, cy, cr, rx, ry, rw, rh) {
+    const closestX = Math.max(rx, Math.min(cx, rx + rw));
+    const closestY = Math.max(ry, Math.min(cy, ry + rh));
+    const dx = cx - closestX;
+    const dy = cy - closestY;
+    return (dx * dx + dy * dy) < (cr * cr);
+  }
+
+  // Actualización lógica
+  function update(dt) {
+    if (gameState !== 'playing') return;
+
+    // Temporizador de impulso (manzana)
+    if (player.boostTimer > 0) {
+      player.boostTimer = Math.max(0, player.boostTimer - dt);
+    }
+
+    // Verificar si pisa colchoneta (reduce velocidad 40%)
+    const playerBox = { x: player.x, y: player.y, w: player.size, h: player.size };
+    let onMat = false;
+    for (const m of mats) {
+      if (rectIntersect(playerBox, m)) {
+        onMat = true;
+        break;
+      }
+    }
+
+    let currentSpeed = player.baseSpeed;
+    if (player.boostTimer > 0) currentSpeed *= 1.45;
+    if (onMat) currentSpeed *= 0.6;
+
+    // Movimiento del jugador
+    let dx = 0;
+    let dy = 0;
+    if (keys.up) dy -= 1;
+    if (keys.down) dy += 1;
+    if (keys.left) dx -= 1;
+    if (keys.right) dx += 1;
+
+    if (dx !== 0 && dy !== 0) {
+      const inv = 1 / Math.SQRT2;
+      dx *= inv;
+      dy *= inv;
+    }
+
+    // Gestión de estado de animación y orientación del sprite SVG
+    player.isMoving = (dx !== 0 || dy !== 0);
+    if (dx < 0) player.facing = 'left';
+    if (dx > 0) player.facing = 'right';
+
+    if (player.isMoving) {
+      // Velocidad de zancada dinámica según si tiene turbo o pisa colchoneta
+      const animSpeed = (player.boostTimer > 0) ? 0.085 : (onMat ? 0.22 : 0.13);
+      player.animTimer += dt;
+      if (player.animTimer >= animSpeed) {
+        player.animTimer = 0;
+        player.animFrame = (player.animFrame === 1) ? 2 : 1;
+      }
+    } else {
+      player.animFrame = 0;
+      player.animTimer = 0;
+    }
+
+    // Mover en X y resolver colisiones con muros/conos/vallas
+    player.x += dx * currentSpeed * dt;
+    for (const w of walls) {
+      if (rectIntersect({ x: player.x, y: player.y, w: player.size, h: player.size }, w)) {
+        if (dx > 0) player.x = w.x - player.size;
+        if (dx < 0) player.x = w.x + w.w;
+      }
+    }
+
+    // Mover en Y y resolver colisiones
+    player.y += dy * currentSpeed * dt;
+    for (const w of walls) {
+      if (rectIntersect({ x: player.x, y: player.y, w: player.size, h: player.size }, w)) {
+        if (dy > 0) player.y = w.y - player.size;
+        if (dy < 0) player.y = w.y + w.h;
+      }
+    }
+
+    // Recoger botellas de agua
+    for (const b of bottles) {
+      if (!b.collected && circleRectIntersect(b.x, b.y, 16, player.x, player.y, player.size, player.size)) {
+        b.collected = true;
+      }
+    }
+
+    // Recoger manzanas (turbo)
+    for (const a of apples) {
+      if (!a.collected && circleRectIntersect(a.x, a.y, 16, player.x, player.y, player.size, player.size)) {
+        a.collected = true;
+        player.boostTimer = 4.0;
+      }
+    }
+
+    // Actualizar balones y defensas patrullando
+    for (const h of hazards) {
+      h.x += h.vx * dt;
+      h.y += h.vy * dt;
+      if (h.vx !== 0) {
+        if (h.x <= h.minX) { h.x = h.minX; h.vx *= -1; }
+        if (h.x >= h.maxX) { h.x = h.maxX; h.vx *= -1; }
+      }
+      if (h.vy !== 0) {
+        if (h.y <= h.minY) { h.y = h.minY; h.vy *= -1; }
+        if (h.y >= h.maxY) { h.y = h.maxY; h.vy *= -1; }
+      }
+
+      if (circleRectIntersect(h.x, h.y, h.r - 2, player.x, player.y, player.size, player.size)) {
+        showQuiz('retry');
+        return;
+      }
+    }
+
+    // Actualizar rivales perseguidores
+    const pxCenter = player.x + player.size / 2;
+    const pyCenter = player.y + player.size / 2;
+    for (const c of chasers) {
+      const angle = Math.atan2(pyCenter - c.y, pxCenter - c.x);
+      const nextX = c.x + Math.cos(angle) * c.speed * dt;
+      const nextY = c.y + Math.sin(angle) * c.speed * dt;
+
+      let blockedX = false;
+      let blockedY = false;
+      for (const w of walls) {
+        if (circleRectIntersect(nextX, c.y, c.r, w.x, w.y, w.w, w.h)) blockedX = true;
+        if (circleRectIntersect(c.x, nextY, c.r, w.x, w.y, w.w, w.h)) blockedY = true;
+      }
+      if (!blockedX) c.x = nextX;
+      if (!blockedY) c.y = nextY;
+
+      if (circleRectIntersect(c.x, c.y, c.r - 2, player.x, player.y, player.size, player.size)) {
+        showQuiz('retry');
+        return;
+      }
+    }
+
+    // Verificar llegada a la meta (solo si recogió todas las botellas)
+    const allBottlesCollected = bottles.every(b => b.collected);
+    if (allBottlesCollected && rectIntersect({ x: player.x, y: player.y, w: player.size, h: player.size }, goal)) {
+      showQuiz('advance');
+    }
+
+    updateHUD();
+  }
+
+  // Renderizado gráfico
+  function draw() {
+    // Fondo de cancha deportiva
+    ctx.fillStyle = '#27ae60';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Líneas blancas de cancha
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(24, 24, canvas.width - 48, canvas.height - 48);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 24);
+    ctx.lineTo(canvas.width / 2, canvas.height - 24);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, canvas.height / 2, 70, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Colchonetas de gimnasia (azules)
+    for (const m of mats) {
+      ctx.fillStyle = '#2980b9';
+      ctx.fillRect(m.x, m.y, m.w, m.h);
+      ctx.strokeStyle = '#1f618d';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(m.x, m.y, m.w, m.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('COLCHONETA', m.x + m.w / 2, m.y + m.h / 2 + 4);
+    }
+
+    // Meta (bloqueada en gris o abierta en dorado)
+    const goalOpen = bottles.every(b => b.collected);
+    ctx.fillStyle = goalOpen ? '#f1c40f' : '#7f8c8d';
+    ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
+    ctx.font = '26px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(goalOpen ? '🏆' : '🔒', goal.x + goal.w / 2, goal.y + goal.h / 2);
+
+    // Obstáculos (bordes, conos y vallas)
+    for (const w of walls) {
+      if (w.type === 'border') {
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillRect(w.x, w.y, w.w, w.h);
+      } else if (w.type === 'cones') {
+        ctx.fillStyle = '#e67e22';
+        ctx.fillRect(w.x, w.y, w.w, w.h);
+        // Franjas blancas de cono deportivo
+        ctx.fillStyle = '#fff';
+        for (let y = w.y + 16; y < w.y + w.h - 12; y += 36) {
+          ctx.fillRect(w.x + 4, y, w.w - 8, 8);
+        }
+      } else if (w.type === 'hurdle') {
+        ctx.fillStyle = '#c0392b';
+        ctx.fillRect(w.x, w.y, w.w, w.h);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(w.x + 2, w.y + 2, w.w - 4, w.h - 4);
+      }
+    }
+
+    // Botellas de agua
+    ctx.font = '24px sans-serif';
+    for (const b of bottles) {
+      if (!b.collected) {
+        ctx.fillText('💧', b.x, b.y);
+      }
+    }
+
+    // Manzanas (turbo)
+    for (const a of apples) {
+      if (!a.collected) {
+        ctx.fillText('🍎', a.x, a.y);
+      }
+    }
+
+    // Balones y defensas
+    for (const h of hazards) {
+      if (h.kind === 'ball') {
+        ctx.font = '26px sans-serif';
+        ctx.fillText('⚽', h.x, h.y);
+      } else {
+        // Defensa rival (camiseta roja)
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('DEF', h.x, h.y + 1);
+      }
+    }
+
+    // Rivales perseguidores (camiseta morada)
+    for (const c of chasers) {
+      ctx.fillStyle = '#8e44ad';
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#f1c40f';
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('RIV', c.x, c.y + 1);
+    }
+
+    // JUGADOR (Atleta Pixel Art SVG con nitidez crispEdges y volteo horizontal)
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+
+    // Aura de turbo si comió manzana
+    if (player.boostTimer > 0) {
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(
+        player.x + player.size / 2,
+        player.y + player.size / 2,
+        player.size * 0.65,
+        0,
+        Math.PI * 2
+      );
+      ctx.stroke();
+    }
+
+    // Seleccionar fotograma SVG actual
+    let activeSprite = playerSprites.idle;
+    if (player.animFrame === 1) activeSprite = playerSprites.walk1;
+    else if (player.animFrame === 2) activeSprite = playerSprites.walk2;
+
+    // Dibujar con volteo horizontal si mira a la izquierda
+    if (activeSprite.complete) {
+      if (player.facing === 'left') {
+        ctx.translate(player.x + player.size, player.y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(activeSprite, 0, 0, player.size, player.size);
+      } else {
+        ctx.drawImage(activeSprite, player.x, player.y, player.size, player.size);
+      }
+    }
+    ctx.restore();
+  }
+
+  function showOverlay(title, desc, btnText) {
+    quizPanel.classList.add('hidden');
+    startBtn.classList.remove('hidden');
+    overlayTitle.textContent = title;
+    overlayDesc.innerHTML = desc;
+    startBtn.textContent = btnText;
+    overlay.classList.remove('hidden');
+  }
+
+  function showQuiz(action) {
+    gameState = 'quiz';
+    quizAction = action;
+    const question = physicalEducationQuestions[
+      Math.floor(Math.random() * physicalEducationQuestions.length)
+    ];
+    const shuffledOptions = question.options.map((text, index) => ({ text, index }));
+    for (let i = shuffledOptions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+    }
+    activeQuestion = {
+      question: question.question,
+      options: shuffledOptions.map(option => option.text),
+      answer: shuffledOptions.findIndex(option => option.index === question.answer)
+    };
+    overlayTitle.textContent = action === 'advance' ? '¡Nivel superado!' : '¡Inténtalo de nuevo!';
+    overlayDesc.textContent = action === 'advance'
+      ? 'Responde correctamente una pregunta de Educación Física para pasar al siguiente nivel.'
+      : 'Responde correctamente una pregunta de Educación Física para reintentar este nivel.';
+    quizQuestion.textContent = activeQuestion.question;
+    quizFeedback.textContent = '';
+    quizFeedback.className = '';
+    quizOptions.replaceChildren();
+    activeQuestion.options.forEach((option, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'quiz-option';
+      button.textContent = option;
+      button.addEventListener('click', () => answerQuiz(index));
+      quizOptions.appendChild(button);
+    });
+    quizPanel.classList.remove('hidden');
+    startBtn.classList.add('hidden');
+    overlay.classList.remove('hidden');
+  }
+
+  function answerQuiz(selectedIndex) {
+    if (!activeQuestion || gameState !== 'quiz') return;
+    if (selectedIndex !== activeQuestion.answer) {
+      quizFeedback.textContent = 'Respuesta incorrecta. No puedes avanzar; inténtalo otra vez.';
+      quizFeedback.className = 'incorrect';
+      return;
+    }
+
+    quizFeedback.textContent = '¡Correcto!';
+    quizFeedback.className = 'correct';
+    activeQuestion = null;
+    if (quizAction === 'retry') {
+      loadLevel(currentLevel);
+      gameState = 'playing';
+      overlay.classList.add('hidden');
+      return;
+    }
+
+    if (currentLevel < maxLevels) {
+      currentLevel++;
+      loadLevel(currentLevel);
+      gameState = 'playing';
+      overlay.classList.add('hidden');
+      return;
+    }
+
+    gameState = 'victory';
+    showOverlay(
+      '🏆 ¡Campeón de Educación Física!',
+      '¡Felicidades! Has superado los 10 niveles del circuito deportivo con excelente resistencia, agilidad y velocidad.',
+      'Jugar de Nuevo'
+    );
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (gameState === 'victory') {
+      currentLevel = 1;
+    }
+    loadLevel(currentLevel);
+    gameState = 'playing';
+    overlay.classList.add('hidden');
+  });
+
+  restartBtn.addEventListener('click', () => {
+    if (gameState === 'playing') {
+      loadLevel(currentLevel);
+    }
+  });
+
+  // Bucle principal
+  function gameLoop(timestamp) {
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+    lastTime = timestamp;
+
+    update(dt);
+    draw();
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  loadLevel(1);
+  requestAnimationFrame(gameLoop);
+})();
+</script>
+</body>
+</html>
