@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Eco-Pixel Quest: Ciencias Naturales (v4)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #121214;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 10px;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            background: #1a1a1e;
+            border: 4px solid #3a3a42;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        #header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            background: #26262b;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            background: #111;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        /* Controles táctiles */
+        #controls {
+            width: 100%;
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 60px);
+            gap: 8px;
+            max-width: 240px;
+        }
+        .btn-ctrl {
+            background: #3a3a42;
+            border: none;
+            border-bottom: 4px solid #25252b;
+            border-radius: 8px;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .btn-ctrl:active {
+            background: #25252b;
+            border-bottom: 0px solid transparent;
+            transform: translateY(4px);
+        }
+        #btn-up { grid-column: 2; grid-row: 1; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 3; }
+
+        /* Modal de preguntas y pantallas modificado para scroll */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 15, 18, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 15px;
+            text-align: center;
+            z-index: 10;
+            overflow-y: auto; /* Corrección para permitir scroll si el contenido se desborda */
+        }
+        .hidden { display: none !important; }
+        
+        h2 { color: #4caf50; margin-top: 5px; margin-bottom: 8px; font-size: 20px; }
+        p { margin-bottom: 12px; font-size: 14px; line-height: 1.3; }
+        
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            max-width: 400px;
+            padding-bottom: 10px; /* Margen interno inferior para asegurar visibilidad al scrollear */
+        }
+        .btn-opt {
+            background: #2a2a32;
+            border: 2px solid #444;
+            border-radius: 6px;
+            color: white;
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        .btn-opt:hover { background: #34343f; border-color: #4caf50; }
+        
+        .btn-main {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        .btn-main:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="header">
+            <div class="stat">Nivel: <span id="lbl-level">1</span>/10</div>
+            <div class="stat">Vidas: <span id="lbl-lives">❤️❤️❤️</span></div>
+            <div class="stat">Muestra: <span id="lbl-status">❌</span></div>
+        </div>
+
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="300"></canvas>
+            
+            <!-- Pantalla de Inicio (Limpia sin el párrafo de bienvenida) -->
+            <div id="screen-start" class="overlay">
+                <h2>Eco-Pixel Quest</h2>
+                <p>Esquiva los contaminantes, recoge la muestra biológica (🍃) y entra en el portal para responder el desafío de Ciencias Naturales.</p>
+                <button class="btn-main" onclick="startGame()">Comenzar Misión</button>
+            </div>
+
+            <!-- Pantalla de Pregunta -->
+            <div id="screen-quiz" class="overlay hidden">
+                <h2 id="quiz-title">Desafío Biológico</h2>
+                <p id="quiz-question">Pregunta...</p>
+                <div class="options-grid" id="quiz-options"></div>
+            </div>
+
+            <!-- Pantalla de Éxito / Fin -->
+            <div id="screen-msg" class="overlay hidden">
+                <h2 id="msg-title">¡Victoria!</h2>
+                <p id="msg-text">Felicidades...</p>
+                <button class="btn-main" id="btn-msg-action" onclick="closeMsgScreen()">Continuar</button>
+            </div>
+        </div>
+
+        <!-- Botonera Táctil Móvil -->
+        <div id="controls">
+            <button class="btn-ctrl" id="btn-up">▲</button>
+            <button class="btn-ctrl" id="btn-left">◀</button>
+            <button class="btn-ctrl" id="btn-right">▶</button>
+            <button class="btn-ctrl" id="btn-down">▼</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Configuración y Variables de Estado del Juego
+        let level = 1;
+        let lives = 3;
+        let hasSample = false;
+        let gameActive = false;
+        let animationFrameId = null;
+
+        // Datos de los niveles y preguntas de Ciencias Naturales
+        const quizBank = [
+            { q: "¿Cuál es el pigmento celular encargado de absorber la luz solar durante la fotosíntesis?", a: ["Clorofila", "Caroteno", "Hemoglobina", "Xantofila"], c: 0 },
+            { q: "¿Qué gas absorben principalmente las plantas del entorno para realizar la fotosíntesis?", a: ["Oxígeno", "Dióxido de carbono", "Nitrógeno", "Metano"], c: 1 },
+            { q: "Los hongos y las levaduras pertenecen a cuál de los siguientes reinos biológicos:", a: ["Reino Plantae", "Reino Protista", "Reino Fungi", "Reino Monera"], c: 2 },
+            { q: "¿Cuál es la cámara del corazón humano que bombea sangre oxigenada hacia la arteria aorta?", a: ["Aurícula derecha", "Ventrículo izquierdo", "Aurícula izquierda", "Ventrículo derecho"], c: 1 },
+            { q: "¿Qué propiedad describe la resistencia de un fluido líquido a fluir o derramarse?", a: ["Densidad", "Viscosidad", "Tensión superficial", "Volatilidad"], c: 1 },
+            { q: "¿Cómo se denomina a los organismos constituidos por una única célula sin núcleo definido?", a: ["Eucariotas", "Pluricelulares", "Procariotas", "Invertebrados"], c: 2 },
+            { q: "¿En qué capa de la atmósfera terrestre se concentra el ozono que absorbe los rayos UV?", a: ["Troposfera", "Estratosfera", "Mesosfera", "Termosfera"], c: 1 },
+            { q: "¿Qué tipo de energía renovable aprovecha el calor interno de la corteza terrestre?", a: ["Energía eólica", "Energía biomasa", "Energía geotérmica", "Energía solar"], c: 2 },
+            { q: "¿A qué grupo taxonómico pertenecen las esponjas de mar debido a su falta de columna vertebral?", a: ["Vertebrados", "Invertebrados / Poríferos", "Moluscos", "Anélidos"], c: 1 },
+            { q: "¿Qué orgánulo celular especializado es considerado la central energética de las células eucariotas?", a: ["Cloroplasto", "Ribosoma", "Mitocondria", "Aparato de Golgi"], c: 2 }
+        ];
+
+        // --- SECCIÓN DE SPRITES SVG INLINE OPTIMIZADOS ---
+        // Diseñados en cuadrículas de pixel con shape-rendering="crispEdges"
+        const svgFrameIdle = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+            <!-- Pelo / Casco -->
+            <path d="M4 1h8v1H4zm-1 1h10v1H3zm-1 1h12v2H2z" fill="#00bcd4"/>
+            <!-- Piel Cara -->
+            <path d="M3 5h10v4H3z" fill="#ffcc80"/>
+            <!-- Ojos -->
+            <rect x="4" y="6" width="2" height="2" fill="#1a237e"/>
+            <rect x="10" y="6" width="2" height="2" fill="#1a237e"/>
+            <!-- Traje / Cuerpo -->
+            <path d="M3 9h10v4H3z" fill="#e91e63"/>
+            <!-- Cinturón -->
+            <path d="M3 13h10v1H3z" fill="#3f51b5"/>
+            <!-- Botas Quieto -->
+            <rect x="3" y="14" width="3" height="2" fill="#37474f"/>
+            <rect x="10" y="14" width="3" height="2" fill="#37474f"/>
+        </svg>`;
+
+        const svgFrameWalk = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+            <path d="M4 1h8v1H4zm-1 1h10v1H3zm-1 1h12v2H2z" fill="#00bcd4"/>
+            <path d="M3 5h10v4H3z" fill="#ffcc80"/>
+            <rect x="5" y="6" width="2" height="2" fill="#1a237e"/>
+            <rect x="11" y="6" width="2" height="2" fill="#1a237e"/>
+            <path d="M3 9h10v4H3z" fill="#e91e63"/>
+            <path d="M3 13h10v1H3z" fill="#3f51b5"/>
+            <rect x="2" y="14" width="3" height="1" fill="#37474f"/>
+            <rect x="4" y="15" width="2" height="1" fill="#37474f"/>
+            <rect x="10" y="14" width="3" height="2" fill="#37474f"/>
+        </svg>`;
+
+        // Preparar las imágenes cargando los SVG en tiempo real (Base64 / Data URI)
+        const imgIdle = new Image();
+        imgIdle.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFrameIdle);
+
+        const imgWalk = new Image();
+        imgWalk.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFrameWalk);
+
+        // Control de Entrada e Interfaz del Jugador
+        const player = {
+            x: 30, y: 140,
+            width: 26, height: 26,
+            speed: 3.5,
+            isMoving: false,
+            animTimer: 0
+        };
+
+        const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, a: false, s: false, d: false };
+        let touchDirections = { up: false, down: false, left: false, right: false };
+
+        // Entidades del mundo interactivo
+        let sample = { x: 340, y: 140, size: 16 };
+        let portal = { x: 350, y: 40, size: 30 };
+        let enemies = [];
+
+        function initEnemies() {
+            enemies = [];
+            const count = Math.min(2 + level, 9);
+            const speedMultiplier = 1 + (level * 0.18);
+            
+            for(let i = 0; i < count; i++) {
+                enemies.push({
+                    x: 90 + (i * 30) + Math.random() * 20,
+                    y: Math.random() * (canvas.height - 40) + 10,
+                    size: 14,
+                    vy: (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 1.5) * speedMultiplier
+                });
+            }
+        }
+
+        // Mapeo de Eventos Teclado
+        window.addEventListener('keydown', e => { if (e.key in keys) keys[e.key] = true; });
+        window.addEventListener('keyup', e => { if (e.key in keys) keys[e.key] = false; });
+
+        // Configuración de Botones Táctiles Móviles
+        function setupTouchBtn(id, dir) {
+            const btn = document.getElementById(id);
+            const start = (e) => { e.preventDefault(); touchDirections[dir] = true; };
+            const end = (e) => { e.preventDefault(); touchDirections[dir] = false; };
+            btn.addEventListener('touchstart', start);
+            btn.addEventListener('touchend', end);
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        }
+        setupTouchBtn('btn-up', 'up');
+        setupTouchBtn('btn-down', 'down');
+        setupTouchBtn('btn-left', 'left');
+        setupTouchBtn('btn-right', 'right');
+
+        function startGame() {
+            document.getElementById('screen-start').classList.add('hidden');
+            level = 1;
+            lives = 3;
+            resetLevel();
+            gameActive = true;
+            loop();
+        }
+
+        function resetLevel() {
+            player.x = 30;
+            player.y = 140;
+            player.isMoving = false;
+            hasSample = false;
+            updateHeader();
+            initEnemies();
+        }
+
+        function updateHeader() {
+            document.getElementById('lbl-level').innerText = level;
+            document.getElementById('lbl-lives').innerText = '❤️'.repeat(lives) || '💀';
+            document.getElementById('lbl-status').innerText = hasSample ? '✅ Listo' : '❌ Falta';
+        }
+
+        function checkCollision(r1, r2) {
+            return r1.x < r2.x + r2.size && r1.x + r1.width > r2.x &&
+                   r1.y < r2.y + r2.size && r1.y + r1.height > r2.y;
+        }
+
+        function showQuiz() {
+            gameActive = false;
+            cancelAnimationFrame(animationFrameId);
+            const data = quizBank[level - 1];
+            document.getElementById('quiz-question').innerText = data.q;
+            
+            const optionsBox = document.getElementById('quiz-options');
+            optionsBox.innerHTML = '';
+            
+            data.a.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-opt';
+                btn.innerText = `${idx + 1}. ${opt}`;
+                btn.onclick = () => evalAnswer(idx);
+                optionsBox.appendChild(btn);
+            });
+            
+            // Restablecer el scroll del overlay de preguntas al principio
+            const quizOverlay = document.getElementById('screen-quiz');
+            quizOverlay.scrollTop = 0;
+            quizOverlay.classList.remove('hidden');
+        }
+
+        function evalAnswer(idx) {
+            document.getElementById('screen-quiz').classList.add('hidden');
+            const data = quizBank[level - 1];
+            
+            if (idx === data.c) {
+                if (level === 10) {
+                    showMsg("¡Gran Científico!", "Has superado los 10 niveles respondiendo correctamente todos los dilemas ecológicos. ¡Salvaste la biodiversidad mundial!", "Reiniciar", true);
+                } else {
+                    level++;
+                    showMsg("Respuesta Correcta", `¡Excelente avance! Científico listo para subir al Nivel ${level}. El ecosistema se vuelve más inestable y rápido.`, "Siguiente Nivel", false);
+                }
+            } else {
+                lives--;
+                if (lives <= 0) {
+                    showMsg("Misión Fallida", "Te has quedado sin puntos vitales en el ecosistema. Repasa tus apuntes de Ciencias Naturales y vuelve a intentarlo.", "Reintentar", true);
+                } else {
+                    showMsg("Error Biológico", "Respuesta incorrecta. El ambiente debilita tu salud celular. Pierdes una vida.", "Reintentar Nivel", false);
+                }
+            }
+        }
+
+        function showMsg(title, text, btnText, isEnd) {
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-text').innerText = text;
+            const btn = document.getElementById('btn-msg-action');
+            btn.innerText = btnText;
+            btn.onclick = isEnd ? () => { document.getElementById('screen-msg').classList.add('hidden'); document.getElementById('screen-start').classList.remove('hidden'); }
+                                : () => { document.getElementById('screen-msg').classList.add('hidden'); resetLevel(); gameActive = true; loop(); };
+            
+            const msgOverlay = document.getElementById('screen-msg');
+            msgOverlay.scrollTop = 0;
+            msgOverlay.classList.remove('hidden');
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            let dx = 0;
+            let dy = 0;
+
+            if (keys.ArrowUp || keys.w || touchDirections.up) dy = -player.speed;
+            if (keys.ArrowDown || keys.s || touchDirections.down) dy = player.speed;
+            if (keys.ArrowLeft || keys.a || touchDirections.left) dx = -player.speed;
+            if (keys.ArrowRight || keys.d || touchDirections.right) dx = player.speed;
+
+            player.x += dx;
+            player.y += dy;
+
+            // Determinar si está en movimiento para alternar el frame SVG
+            if (dx !== 0 || dy !== 0) {
+                player.isMoving = true;
+                player.animTimer++;
+            } else {
+                player.isMoving = false;
+            }
+
+            // Colisiones con paredes del lienzo
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.y < 0) player.y = 0;
+            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+
+            // Movimiento y comportamiento de enemigos
+            enemies.forEach(enemy => {
+                enemy.y += enemy.vy;
+                if (enemy.y <= 0 || enemy.y + enemy.size >= canvas.height) {
+                    enemy.vy *= -1;
+                }
+
+                // Colisión jugador - oponente contaminante
+                if (checkCollision(player, enemy)) {
+                    lives--;
+                    if (lives <= 0) {
+                        gameActive = false;
+                        showMsg("Fin de la Partida", "Fuiste absorbido por la contaminación industrial.", "Recomenzar", true);
+                    } else {
+                        resetLevel();
+                    }
+                }
+            });
+
+            // Recoger Muestra Biológica
+            if (!hasSample && checkCollision(player, sample)) {
+                hasSample = true;
+                updateHeader();
+            }
+
+            // Ingreso al Portal / Meta
+            if (hasSample && checkCollision(player, { x: portal.x, y: portal.y, size: portal.size })) {
+                showQuiz();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Fondo de Bioma en Pixel art simple
+            ctx.fillStyle = '#1e251e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar Portal / Meta (Estructura de laboratorio tecnológico)
+            ctx.fillStyle = hasSample ? '#00e676' : '#555';
+            ctx.fillRect(portal.x, portal.y, portal.size, portal.size);
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px monospace';
+            ctx.fillText("PORTAL", portal.x - 4, portal.y - 6);
+
+            // Dibujar Muestra Biológica (Hoja de planta pixelada)
+            if (!hasSample) {
+                ctx.fillStyle = '#81c784';
+                ctx.fillRect(sample.x + 4, sample.y, 8, 16);
+                ctx.fillRect(sample.x, sample.y + 4, 16, 8);
+            }
+
+            // Dibujar Oponentes (Nubes de Smog Gris)
+            enemies.forEach(enemy => {
+                ctx.fillStyle = '#78909c';
+                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+                ctx.fillStyle = '#cfd8dc';
+                ctx.fillRect(enemy.x + 3, enemy.y + 3, enemy.size - 6, enemy.size - 6);
+            });
+
+            // --- RENDERIZADO DINÁMICO DEL NUEVO PERSONAJE CON SVG INLINE ---
+            let activeSprite = imgIdle;
+            if (player.isMoving) {
+                activeSprite = Math.floor(player.animTimer / 8) % 2 === 0 ? imgWalk : imgIdle;
+            }
+
+            ctx.drawImage(activeSprite, player.x, player.y, player.width, player.height);
+        }
+
+        function loop() {
+            if (!gameActive) return;
+            update();
+            draw();
+            animationFrameId = requestAnimationFrame(loop);
+        }
+
+        updateHeader();
+    </script>
+</body>
+</html>
