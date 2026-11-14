@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salta y Aprende: Aventura Social</title>
+<style>
+:root{--ink:#18233b;--blue:#3568d4;--gold:#ffd166;--green:#35b779;--pink:#ff7b9c}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:linear-gradient(135deg,#dff5ff,#f7e9ff);color:var(--ink);min-height:100vh;display:grid;place-items:center;padding:18px}
+.app{width:min(900px,100%);background:#fff;border-radius:24px;padding:clamp(16px,3vw,28px);box-shadow:0 18px 50px #26385a25}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(1.4rem,4vw,2.1rem);margin:0;color:#284b9b}
+.pill{background:#edf2ff;border-radius:999px;padding:8px 13px;font-weight:700}
+.intro{margin:10px 0 16px;color:#56627a}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.game-wrap{position:relative}
+canvas{width:100%;display:block;border:3px solid #c8d8ff;border-radius:18px;background:#bdeeff;touch-action:pan-y}
+.overlay{position:absolute;inset:3px;border-radius:15px;background:#14213dcc;color:white;display:grid;place-items:center;text-align:center;padding:20px}
+.overlay.hidden{display:none}
+.overlay h2{margin:0 0 8px;font-size:clamp(1.4rem,4vw,2rem)}
+.overlay p{max-width:520px;line-height:1.5}
+button{border:0;border-radius:12px;background:var(--blue);color:#fff;font-weight:800;padding:12px 18px;font-size:1rem;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.controls{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:12px}
+.jump{background:#e9efff;color:#24468f;min-width:130px}
+.hint{text-align:center;color:#65718a;font-size:.9rem;margin:10px 0 0}
+.quiz{margin-top:18px;padding:18px;border-radius:18px;background:#f4f7ff;border:1px solid #dce5ff}
+.quiz[hidden]{display:none}
+.quiz h2{margin:0 0 8px;font-size:1.25rem}
+#question{font-weight:750;font-size:1.05rem;margin:10px 0}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.answers button{background:white;color:#263755;border:2px solid #d8e2fa;text-align:left}
+.answers button:hover{border-color:var(--blue);background:#edf2ff}
+.answers button:disabled{cursor:default;opacity:.8}
+#feedback{min-height:26px;font-weight:700;margin:10px 0 0}
+#next{margin-top:10px}
+@media(max-width:560px){.answers{grid-template-columns:1fr}.app{padding:14px}canvas{height:auto}}
+</style>
+</head>
+<body>
+<main class="app">
+<header>
+  <h1>🌎 Salta y Aprende</h1>
+  <span class="pill" id="levelLabel">Nivel 1 de 5</span>
+</header>
+<p class="intro">¡Esquiva los obstáculos, llega a la meta y responde una pregunta de ciencias sociales para desbloquear el siguiente nivel!</p>
+<div class="stats">
+  <span class="pill">⭐ Puntos: <b id="score">0</b></span>
+  <span class="pill">❤️ Intentos: <b id="lives">3</b></span>
+  <span class="pill">🏁 Meta: llega al final</span>
+</div>
+<div class="game-wrap">
+  <canvas id="game" width="800" height="330" aria-label="Juego de plataformas: usa las flechas o el botón para saltar obstáculos"></canvas>
+  <div class="overlay" id="startScreen">
+    <div><h2>¡Comienza la aventura!</h2><p>Presiona <b>Espacio</b>, <b>↑</b> o el botón <b>SALTAR</b> para brincar los obstáculos. En celular, toca el botón.</p><button id="startBtn">Jugar</button></div>
+  </div>
+  <div class="overlay hidden" id="endScreen">
+    <div><h2 id="endTitle">¡Buen trabajo!</h2><p id="endText"></p><button id="restartBtn">Volver a jugar</button></div>
+  </div>
+</div>
+<div class="controls">
+  <button class="jump" id="jumpBtn">⬆ SALTAR</button>
+  <button id="pauseBtn" class="jump">⏸ Pausar</button>
+</div>
+<p class="hint">Teclado: Espacio o flecha ↑ para saltar. También puedes tocar SALTAR.</p>
+<section class="quiz" id="quiz" hidden>
+  <h2>🧠 Reto de ciencias sociales</h2>
+  <div id="question"></div>
+  <div class="answers" id="answers"></div>
+  <div id="feedback" aria-live="polite"></div>
+  <button id="next" hidden>Siguiente nivel ➜</button>
+</section>
+</main>
+<script>
+(() => {
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const questions=[
+ {q:"¿En qué año se proclamó la Constitución Política actual de Colombia?",a:["1810","1886","1991","2002"],c:2,why:"La Constitución Política de Colombia vigente fue promulgada en 1991."},
+ {q:"¿Cuáles son las tres ramas del poder público en Colombia?",a:["Nacional, regional y local","Ejecutiva, Legislativa y Judicial","Civil, militar y electoral","Pública, privada y mixta"],c:1,why:"Las ramas son Ejecutiva, Legislativa y Judicial."},
+ {q:"¿Cuál es el objetivo principal de la ONU?",a:["Promover la paz y la cooperación internacional","Organizar los deportes","Controlar todos los gobiernos","Crear una moneda mundial"],c:0,why:"La ONU busca mantener la paz, la seguridad y la cooperación entre países."},
+ {q:"¿Qué significa democracia?",a:["Gobierno de una sola persona","Gobierno elegido por el pueblo","Gobierno exclusivo de militares","Ausencia de leyes"],c:1,why:"En una democracia, la ciudadanía participa en las decisiones y elige a sus representantes."},
+ {q:"¿Qué documento reúne los derechos y deberes fundamentales de Colombia?",a:["La Constitución Política","El registro escolar","Un tratado comercial","El código de tránsito"],c:0,why:"La Constitución establece la organización del Estado y los derechos y deberes."}
+];
+let level=0,score=0,lives=3,running=false,paused=false,quizMode=false,frame=0,speed=4,obstacles=[],ground=270;
+const player={x:90,y:ground-42,w:34,h:42,vy:0,onGround:true};
+function updateStats(){$('score').textContent=score;$('lives').textContent=lives;$('levelLabel').textContent=`Nivel ${Math.min(level+1,5)} de 5`;}
+function resetLevel(){player.y=ground-player.h;player.vy=0;player.onGround=true;frame=0;speed=4+level*.55;obstacles=[];for(let i=0;i<5;i++)obstacles.push({x:520+i*270+Math.random()*100,w:25+Math.random()*18,h:30+Math.random()*30,passed:false});}
+function draw(){
+ ctx.clearRect(0,0,800,330);
+ let sky=ctx.createLinearGradient(0,0,0,330);sky.addColorStop(0,'#9be3ff');sky.addColorStop(1,'#effcff');ctx.fillStyle=sky;ctx.fillRect(0,0,800,330);
+ // clouds
+ ctx.fillStyle='#ffffffb8';for(let i=0;i<5;i++){let x=((i*190-frame*.35)%950+950)%950-80;ctx.beginPath();ctx.arc(x,65+(i%2)*35,19,0,7);ctx.arc(x+22,58+(i%2)*35,25,0,7);ctx.arc(x+48,68+(i%2)*35,17,0,7);ctx.fill();}
+ // distant hills
+ ctx.fillStyle='#9bd7a6';ctx.beginPath();ctx.moveTo(0,250);for(let x=0;x<=800;x+=40)ctx.lineTo(x,220+Math.sin((x+frame*.5)/75)*17);ctx.lineTo(800,330);ctx.lineTo(0,330);ctx.fill();
+ ctx.fillStyle='#5dbb82';ctx.fillRect(0,ground,800,60);
+ ctx.fillStyle='#398c61';for(let x=0;x<840;x+=45)ctx.fillRect((x-frame*speed*.7%45),ground+12,22,5);
+ // finish flag
+ ctx.fillStyle='#fff';ctx.fillRect(770,150,5,120);ctx.fillStyle='#ff5577';ctx.beginPath();ctx.moveTo(775,152);ctx.lineTo(815,165);ctx.lineTo(775,180);ctx.fill();
+ // obstacles
+ obstacles.forEach(o=>{ctx.fillStyle='#d96a43';ctx.fillRect(o.x,o.y||ground-o.h,o.w,o.h);ctx.fillStyle='#f6b35b';ctx.fillRect(o.x+5,(o.y||ground-o.h)+6,6,Math.max(5,o.h-12));});
+ // player
+ ctx.fillStyle='#274c9b';ctx.fillRect(player.x,player.y+8,player.w,player.h-8);
+ ctx.fillStyle='#ffd166';ctx.beginPath();ctx.arc(player.x+17,player.y+7,14,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#18233b';ctx.fillRect(player.x+22,player.y+4,3,3);
+ ctx.fillStyle='#fff';ctx.fillRect(player.x+5,player.y+player.h-3,10,5);ctx.fillRect(player.x+22,player.y+player.h-3,10,5);
+ ctx.fillStyle='#18304d';ctx.font='bold 15px system-ui';ctx.fillText(`ETAPA ${level+1}`,18,27);
+}
+function jump(){if(running&&!paused&&!quizMode&&player.onGround){player.vy=-12.5;player.onGround=false;}}
+function showQuiz(){running=false;quizMode=true;$('quiz').hidden=false;const q=questions[level];$('question').textContent=q.q;$('feedback').textContent='';$('next').hidden=true;$('answers').innerHTML='';q.a.forEach((answer,i)=>{let b=document.createElement('button');b.textContent=String.fromCharCode(65+i)+'. '+answer;b.onclick=()=>answerQuestion(i,b);$('answers').appendChild(b);});}
+function answerQuestion(i,button){const q=questions[level];[...$('answers').children].forEach(b=>b.disabled=true);if(i===q.c){score+=100;$('feedback').textContent='¡Correcto! '+q.why;$('feedback').style.color='#168451';$('next').hidden=false;}else{$('feedback').textContent='No es correcto. '+q.why+' Inténtalo de nuevo en el próximo juego.';$('feedback').style.color='#bd3b52';$('answers').children[q.c].style.borderColor='#35b779';$('answers').children[q.c].style.background='#eafff3';$('next').hidden=false;}updateStats();}
+function nextLevel(){level++;$('quiz').hidden=true;if(level>=5){$('endTitle').textContent='🏆 ¡Misión cumplida!';$('endText').textContent=`Terminaste los 5 niveles y conseguiste ${score} puntos. ¡Eres un explorador de las ciencias sociales!`;$('endScreen').classList.remove('hidden');$('restartBtn').textContent='Jugar otra vez';return;}resetLevel();running=true;updateStats();loop();}
+function loseLife(){lives--;updateStats();if(lives<=0){running=false;$('endTitle').textContent='¡Fin del juego!';$('endText').textContent=`Llegaste al nivel ${level+1}. Obtuviste ${score} puntos. ¡Vuelve a intentarlo!`;$('endScreen').classList.remove('hidden');}else{player.y=ground-player.h;player.vy=0;player.onGround=true;obstacles=obstacles.filter(o=>o.x>player.x+100);}}
+function loop(){if(!running||paused||quizMode)return;frame++;player.vy+=.58;player.y+=player.vy;if(player.y>=ground-player.h){player.y=ground-player.h;player.vy=0;player.onGround=true;}
+ obstacles.forEach(o=>{o.x-=speed;if(!o.passed&&o.x+o.w<player.x){o.passed=true;score+=10;updateStats();}let oy=ground-o.h;if(player.x+player.w-5>o.x&&player.x+5<o.x+o.w&&player.y+player.h>oy+3&&player.y<ground){o.x=-100;loseLife();}});
+ obstacles=obstacles.filter(o=>o.x>-60);if(obstacles.length<4){let last=Math.max(...obstacles.map(o=>o.x),800);obstacles.push({x:last+250+Math.random()*130,w:25+Math.random()*18,h:30+Math.random()*30,passed:false});}
+ draw();
+ if(frame>0&&obstacles.every(o=>o.x<player.x-80)){showQuiz();return;}
+ requestAnimationFrame(loop);
+}
+function start(){level=0;score=0;lives=3;quizMode=false;paused=false;$('quiz').hidden=true;$('endScreen').classList.add('hidden');$('startScreen').classList.add('hidden');resetLevel();updateStats();running=true;loop();}
+$('startBtn').onclick=start;$('restartBtn').onclick=start;$('jumpBtn').onclick=jump;
+$('pauseBtn').onclick=()=>{if(!running)return;paused=!paused;$('pauseBtn').textContent=paused?'▶ Continuar':'⏸ Pausar';if(!paused)loop();};
+$('next').onclick=nextLevel;
+document.addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();if(!$('startScreen').classList.contains('hidden'))start();else jump();}});
+draw();updateStats();
+})();
+</script>
+</body>
+</html>
