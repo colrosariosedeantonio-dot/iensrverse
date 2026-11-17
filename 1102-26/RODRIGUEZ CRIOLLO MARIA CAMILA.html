@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#171b38">
+<title>Aventura Matemática</title>
+<style>
+:root{--bg:#171b38;--panel:#242b55;--pink:#ff78b7;--cyan:#73e5e8;--gold:#ffd166}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#303967,#151832 70%);color:#fff;font-family:system-ui,Segoe UI,sans-serif;display:flex;justify-content:center;align-items:center;padding:12px}
+.app{width:min(100%,900px);display:grid;gap:10px}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+h1{font-size:clamp(20px,4vw,30px);margin:0;color:#fff}
+.stats{display:flex;gap:7px;flex-wrap:wrap}
+.pill{background:var(--panel);border:1px solid #59649c;border-radius:20px;padding:7px 12px;font-weight:700;font-size:14px}
+.gamebox{position:relative;background:#10152e;border:3px solid #6572aa;border-radius:18px;overflow:hidden;box-shadow:0 12px 35px #0007}
+canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;touch-action:none}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:#20274d;padding:9px 12px}
+.hint{font-size:13px;color:#d9e2ff}
+.controls{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dpad{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(2,48px);gap:5px;touch-action:none}
+.ctrl{border:1px solid #7d8bc7;background:#303b70;color:white;border-radius:13px;font-size:22px;font-weight:800;box-shadow:0 4px 0 #171d40;touch-action:none;user-select:none}
+.ctrl:active,.ctrl.down{transform:translateY(3px);box-shadow:0 1px 0 #171d40;background:#5365ad}
+.up{grid-column:2}.left{grid-column:1;grid-row:2}.down{grid-column:2;grid-row:2}.right{grid-column:3;grid-row:2}
+.action{border:0;border-radius:12px;padding:12px 18px;background:var(--pink);color:#32132a;font-weight:900;font-size:15px}
+.overlay{position:absolute;inset:0;background:#10152eeF;display:flex;align-items:center;justify-content:center;padding:18px;text-align:center}
+.dialog{max-width:440px;width:100%;background:#252e5b;border:2px solid #7484c4;border-radius:18px;padding:20px;box-shadow:0 10px 35px #0008}
+.dialog h2{margin:0 0 8px;color:var(--gold)}
+.dialog p{line-height:1.45}
+.answer-row{display:flex;gap:8px;margin-top:14px}
+input{min-width:0;flex:1;border-radius:10px;border:2px solid #8998d4;padding:12px;font-size:18px;text-align:center}
+button{cursor:pointer}
+.feedback{min-height:22px;color:var(--gold);font-weight:700;margin-top:8px}
+@media(min-width:650px){.controls{justify-content:flex-end}.dpad{margin-right:auto}}
+@media(max-width:430px){body{padding:7px}.pill{font-size:12px;padding:6px 9px}.dpad{grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,43px)}.action{padding:11px 13px}}
+</style>
+</head>
+<body>
+<main class="app">
+<header><h1>🌟 Aventura Matemática</h1><div class="stats"><span class="pill" id="level">Nivel 1 / 10</span><span class="pill" id="lives">❤️❤️❤️</span><span class="pill" id="score">⭐ 0</span></div></header>
+<section class="gamebox">
+<canvas id="game" width="960" height="540" aria-label="Juego de aventura matemática"></canvas>
+<div class="overlay" id="overlay"><div class="dialog"><h2>¡Vamos a la aventura!</h2><p>Guía a la niña por el camino, esquiva a los oponentes y llega a la puerta. Para superar cada nivel, resuelve un reto de matemáticas.</p><p><b>Teclas:</b> flechas del teclado o cruceta táctil.</p><button class="action" id="start">Comenzar juego</button></div></div>
+</section>
+<div class="hud"><span class="hint">🎯 Objetivo: alcanza la puerta verde. ¡Evita a los rivales!</span><span class="hint" id="status">Usa las flechas para moverte.</span></div>
+<div class="controls">
+<div class="dpad" aria-label="Controles táctiles">
+<button class="ctrl up" data-dir="up" aria-label="Arriba">▲</button>
+<button class="ctrl left" data-dir="left" aria-label="Izquierda">◀</button>
+<button class="ctrl down" data-dir="down" aria-label="Abajo">▼</button>
+<button class="ctrl right" data-dir="right" aria-label="Derecha">▶</button>
+</div>
+<button class="action" id="pause">Ⅱ Pausar</button>
+</div>
+</main>
+<script>
+(()=>{
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const W=960,H=540, overlay=document.getElementById('overlay');
+const levelEl=document.getElementById('level'),livesEl=document.getElementById('lives'),scoreEl=document.getElementById('score'),statusEl=document.getElementById('status');
+let level=1,lives=3,score=0,running=false,paused=false,last=0,keys={},enemies=[],questionActive=false,invuln=0;
+const player={x:92,y:270,w:30,h:42,speed:250,walk:0};
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+function updateHud(){levelEl.textContent=`Nivel ${level} / 10`;livesEl.textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives);scoreEl.textContent='⭐ '+score}
+function setupLevel(){
+ player.x=92;player.y=270;enemies=[];
+ const count=Math.min(2+Math.floor((level-1)*.7),8);
+ for(let i=0;i<count;i++) enemies.push({x:rnd(300,850),y:rnd(75,465),r:17,speed:45+level*9+Math.random()*22,phase:Math.random()*6});
+ updateHud();statusEl.textContent=`Nivel ${level}: ¡encuentra la puerta!`;
+}
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
+function drawGirl(x,y,moving,t){
+ // Sombra y piernas: personaje original en pixel-art dibujado con rectángulos.
+ ctx.save();ctx.translate(Math.round(x),Math.round(y));
+ ctx.fillStyle='#090d20aa';ctx.beginPath();ctx.ellipse(0,20,17,5,0,0,Math.PI*2);ctx.fill();
+ const step=moving?Math.sin(t*13)*4:0;
+ rect(-10,5,8,13,'#f2b7a0');rect(3,5,8,13,'#f2b7a0');
+ rect(-12+step,16,10,5,'#392b62');rect(2-step,16,10,5,'#392b62');
+ // vestido
+ rect(-12,-4,24,17,'#ff78b7');rect(-15,-1,5,12,'#f2b7a0');rect(10,-1,5,12,'#f2b7a0');
+ // cabello largo crespo negro, detrás de la cara
+ rect(-14,-25,28,29,'#17121d');rect(-17,-20,7,22,'#17121d');rect(10,-20,7,23,'#17121d');
+ rect(-15,-29,8,8,'#17121d');rect(-8,-34,9,8,'#17121d');rect(1,-34,9,8,'#17121d');rect(8,-28,8,8,'#17121d');
+ // rostro
+ rect(-9,-26,18,18,'#f2b7a0');rect(-10,-22,3,7,'#f2b7a0');rect(7,-22,3,7,'#f2b7a0');
+ rect(-6,-19,3,3,'#251a24');rect(4,-19,3,3,'#251a24');rect(-2,-12,5,2,'#b94f68');
+ // mechones rizados y cabello que cae
+ rect(-15,-14,5,17,'#17121d');rect(-13,-3,5,8,'#17121d');rect(10,-12,5,18,'#17121d');rect(12,0,4,7,'#17121d');
+ ctx.restore();
+}
+function drawEnemy(e){
+ ctx.save();ctx.translate(e.x,e.y);
+ ctx.fillStyle='#ffcc5c';ctx.beginPath();ctx.arc(0,0,e.r,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#7c315c';ctx.fillRect(-10,-5,6,6);ctx.fillRect(4,-5,6,6);
+ ctx.fillStyle='#fff';ctx.fillRect(-8,-4,2,2);ctx.fillRect(6,-4,2,2);
+ ctx.fillStyle='#a93d65';ctx.fillRect(-6,7,12,3);
+ ctx.restore();
+}
+function draw(){
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#9adcf0');g.addColorStop(1,'#d5f5d8');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ // paisaje y camino
+ ctx.fillStyle='#7cc58b';ctx.fillRect(0,0,W,H);
+ for(let i=0;i<13;i++){let x=(i*89+30)%W,y=(i*137+30)%H;ctx.fillStyle='#5aa875';ctx.beginPath();ctx.arc(x,y,17,0,7);ctx.fill();ctx.fillStyle='#a7e5a0';ctx.beginPath();ctx.arc(x-5,y-5,8,0,7);ctx.fill()}
+ ctx.fillStyle='#e9d49a';ctx.fillRect(30,45,900,450);
+ ctx.strokeStyle='#d6bd7f';ctx.lineWidth=5;ctx.setLineDash([18,18]);ctx.strokeRect(45,60,870,420);ctx.setLineDash([]);
+ // puerta
+ ctx.fillStyle='#238b68';ctx.fillRect(875,225,42,90);ctx.fillStyle='#d8ffe9';ctx.fillRect(883,234,26,72);ctx.fillStyle='#ffd166';ctx.beginPath();ctx.arc(903,270,3,0,7);ctx.fill();
+ ctx.fillStyle='#174e3c';ctx.font='bold 17px system-ui';ctx.fillText('META',866,215);
+ // obstacles decorativos
+ for(let i=0;i<5;i++){let x=210+i*145,y=120+(i%2)*280;ctx.fillStyle='#c39b63';ctx.beginPath();ctx.arc(x,y,13,0,7);ctx.fill();ctx.fillStyle='#98734b';ctx.fillRect(x-5,y-5,10,10)}
+ enemies.forEach(drawEnemy);
+ drawGirl(player.x,player.y,Math.abs(player.vx||0)+Math.abs(player.vy||0)>0,player.walk);
+ ctx.fillStyle='#25315b';ctx.font='bold 17px system-ui';ctx.fillText('✦ Esquiva y avanza ✦',W/2-88,30);
+}
+function question(){
+ questionActive=true;running=false;
+ const type=level<=3?'sum':level<=6?'mix':'hard';let a,b,op,ans;
+ if(type==='sum'){a=rnd(2,12+level);b=rnd(2,12+level);op='+';ans=a+b}
+ else if(type==='mix'){a=rnd(3,12+level);b=rnd(2,9+level);op=level%2?'×':'−';ans=op==='×'?a*b:a-b}
+ else {op=level%3===0?'×':'+';a=rnd(8,15+level);b=rnd(5,14+level);ans=op==='×'?a*b:a+b}
+ overlay.innerHTML=`<div class="dialog"><h2>🧠 Reto del nivel ${level}</h2><p>¡La puerta está protegida! Resuelve esta operación para pasar:</p><h2 style="font-size:34px;color:#fff">${a} ${op} ${b} = ?</h2><form id="answerForm" class="answer-row"><input id="answer" inputmode="numeric" type="number" placeholder="Tu respuesta" required autocomplete="off"><button class="action" type="submit">Comprobar</button></form><div class="feedback" id="feedback"></div></div>`;
+ overlay.style.display='flex';
+ document.getElementById('answer').focus();
+ document.getElementById('answerForm').addEventListener('submit',e=>{
+  e.preventDefault();const val=Number(document.getElementById('answer').value),fb=document.getElementById('feedback');
+  if(val===ans){score+=100+level*20;questionActive=false;overlay.style.display='none';level++;if(level>10){win()}else{setupLevel();running=true;statusEl.textContent='¡Correcto! Nuevo nivel desbloqueado.'}}
+  else{fb.textContent='¡Inténtalo otra vez! Revisa la operación.';document.getElementById('answer').select()}
+ });
+}
+function win(){overlay.innerHTML=`<div class="dialog"><h2>🏆 ¡Lo lograste!</h2><p>¡Completaste los 10 niveles de Aventura Matemática!</p><p>Puntuación: <b>${score}</b></p><button class="action" id="again">Jugar de nuevo</button></div>`;overlay.style.display='flex';document.getElementById('again').onclick=restart}
+function gameOver(){running=false;overlay.innerHTML=`<div class="dialog"><h2>¡Fin de la partida!</h2><p>Has llegado al nivel ${level}. ¡Puedes intentarlo de nuevo!</p><button class="action" id="retry">Volver a jugar</button></div>`;overlay.style.display='flex';document.getElementById('retry').onclick=restart}
+function restart(){level=1;lives=3;score=0;questionActive=false;setupLevel();overlay.style.display='none';running=true;last=performance.now()}
+function loseLife(){if(invuln>0)return;lives--;invuln=1.3;updateHud();if(lives<=0)gameOver();else{player.x=92;player.y=270;statusEl.textContent='¡Cuidado! Perdiste una vida.'}}
+function update(dt){
+ let dx=0,dy=0;
+ if(keys.left||keys.ArrowLeft)dx--;if(keys.right||keys.ArrowRight)dx++;
+ if(keys.up||keys.ArrowUp)dy--;if(keys.down||keys.ArrowDown)dy++;
+ if(dx&&dy){dx*=.707;dy*=.707}
+ player.x=Math.max(60,Math.min(900,player.x+dx*player.speed*dt));
+ player.y=Math.max(85,Math.min(455,player.y+dy*player.speed*dt));
+ if(dx||dy)player.walk+=dt;
+ if(invuln>0)invuln-=dt;
+ enemies.forEach(e=>{
+  const vx=player.x-e.x,vy=player.y-e.y,d=Math.hypot(vx,vy)||1;
+  const chase=Math.min(.72,0.25+level*.035);
+  e.x+=vx/d*e.speed*dt*chase;e.y+=vy/d*e.speed*dt*chase;
+  if(d<e.r+18)loseLife();
+ });
+ if(player.x>850&&player.y>205&&player.y<335)question();
+}
+function loop(ts){let dt=Math.min((ts-last)/1000,.035);last=ts;if(running&&!paused&&!questionActive)update(dt);draw();requestAnimationFrame(loop)}
+document.getElementById('start').onclick=()=>{setupLevel();overlay.style.display='none';running=true;last=performance.now()};
+document.getElementById('pause').onclick=()=>{if(questionActive)return;paused=!paused;statusEl.textContent=paused?'Juego en pausa.':'¡Sigue avanzando!';document.getElementById('pause').textContent=paused?'▶ Continuar':'Ⅱ Pausar'};
+window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();keys[e.key]=true});
+window.addEventListener('keyup',e=>keys[e.key]=false);
+document.querySelectorAll('[data-dir]').forEach(btn=>{
+ const dir=btn.dataset.dir;
+ const down=e=>{e.preventDefault();keys[dir]=true;btn.classList.add('down')};
+ const up=e=>{e.preventDefault();keys[dir]=false;btn.classList.remove('down')};
+ btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointerleave',up);btn.addEventListener('pointercancel',up);
+});
+setupLevel();requestAnimationFrame(t=>{last=t;loop(t)});
+})();
+</script>
+</body>
+</html>

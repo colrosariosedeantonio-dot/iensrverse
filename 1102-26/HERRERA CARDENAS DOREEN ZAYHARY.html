@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Aventura Navideña - Doren Herrera</title>
+<style>
+:root{--night:#10213c;--panel:#1b3455;--ice:#dff7ff;--mint:#69e6c0;--gold:#ffd36a}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;padding:12px;background:linear-gradient(#10213c,#172c4b 60%,#0d1c32);color:#f7fbff;font-family:system-ui,Arial,sans-serif;display:flex;justify-content:center}
+main{width:min(900px,100%);display:grid;gap:11px;align-content:start}
+header{text-align:center}h1{font-size:clamp(1.35rem,5vw,2.25rem);margin:0;color:#aaf4e1}header p{margin:3px 0;color:#d5e8fa}
+.hud{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;background:var(--panel);padding:10px 14px;border:1px solid #416184;border-radius:14px;font-weight:750}.hud span{color:var(--gold)}
+.gamebox{position:relative;overflow:hidden;border:2px solid #6385a8;border-radius:16px;background:#bdeaff;box-shadow:0 12px 32px #0006}
+canvas{width:100%;height:auto;display:block;aspect-ratio:16/10;touch-action:none}
+.overlay{position:absolute;inset:0;background:#07172bdc;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center}
+.dialog{width:min(460px,100%);background:#1b3455;border:1px solid #83b9d9;border-radius:18px;padding:20px;box-shadow:0 12px 30px #0008}
+.dialog h2{color:var(--gold);margin:0 0 8px}.dialog p{line-height:1.45;color:#e2f1ff}
+button{border:0;border-radius:12px;padding:12px 17px;background:#79e8c7;color:#10283c;font-size:1rem;font-weight:850;cursor:pointer;touch-action:manipulation}
+button:active{transform:scale(.96)}button:disabled{opacity:.5}
+.controls{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);padding:11px 13px;border-radius:14px}
+.hint{font-size:.9rem;color:#d2e5f8;flex:1;min-width:190px}
+.pad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,43px);gap:5px}
+.pad button{padding:0;background:#e7f6ff;color:#17304c;font-size:1.25rem}.up{grid-column:2}.left{grid-column:1;grid-row:2}.down{grid-column:2;grid-row:2}.right{grid-column:3;grid-row:2}
+.quiz{display:none;text-align:center;background:#29486b;border:2px solid var(--gold);padding:13px;border-radius:14px}.quiz strong{display:block;color:#ffe08a;font-size:1.15rem;margin-bottom:9px}.answers{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.answers button{min-width:72px;background:#f0f8ff}
+footer{text-align:center;color:#a9c2dc;font-size:.8rem}
+@media(max-width:520px){body{padding:8px}.hint{text-align:center;flex-basis:100%}.pad{margin:auto}.hud{font-size:.88rem}}
+</style>
+</head>
+<body>
+<main>
+<header><h1>🎄 AVENTURA NAVIDEÑA ⛷️</h1><p>¡El gran descenso! Esquiva obstáculos, recoge regalos y conquista 10 montañas.</p><p style="color:#ffe08a;font-weight:800;margin-top:6px">Un juego de Doren Herrera</p></header>
+<div class="hud"><div>Nivel: <span id="level">1 / 10</span></div><div>Vidas: <span id="lives">❤️❤️❤️</span></div><div>Regalos: <span id="gifts">0</span></div><div>Velocidad: <span id="speed">1</span></div></div>
+<div class="gamebox">
+<canvas id="game" width="800" height="500" aria-label="Juego de esquí navideño"></canvas>
+<div class="overlay" id="overlay"><div class="dialog"><h2>🎅 ¡Prepárate para esquiar!</h2><p>Baja por montañas nevadas, esquiva pinos, rocas y muñecos de nieve. Recoge regalos para sumar puntos. Si chocas, tendrás que responder una pregunta de multiplicación para continuar.</p><button id="start">¡Comenzar aventura!</button></div></div>
+</div>
+<div class="quiz" id="quiz"><strong id="question">¿Cuánto es 4 × 5?</strong><div class="answers" id="answers"></div></div>
+<div class="controls"><div class="hint">⌨️ Usa ← → o A / D para esquiar. En celular, usa la cruceta. ¡No te salgas de la pista!</div>
+<div class="pad"><button class="up" data-dir="up">▲</button><button class="left" data-dir="left">◀</button><button class="down" data-dir="down">▼</button><button class="right" data-dir="right">▶</button></div></div>
+<footer>Juego educativo · Navidad · Esquí · 10 niveles</footer>
+</main>
+<script>
+(()=>{
+const c=document.getElementById('game'),g=c.getContext('2d'),W=800,H=500;
+const $=id=>document.getElementById(id);
+let level=1,lives=3,gifts=0,running=false,paused=false,frame=0,obstacles=[],presents=[],flakes=[],keys={},distance=0,quizAnswer=0;
+const skier={x:400,y:360,w:34,h:54,lean:0};
+const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const speed=()=>2.3+level*.48;
+function hud(){$('level').textContent=level+' / 10';$('lives').textContent='❤️'.repeat(lives)+'♡'.repeat(3-lives);$('gifts').textContent=gifts;$('speed').textContent=(1+(level-1)*.25).toFixed(1)+'x'}
+function resetLevel(){distance=0;obstacles=[];presents=[];skier.x=400;skier.y=360;frame=0;hud()}
+function snowBackground(){
+ let grad=g.createLinearGradient(0,0,0,H);grad.addColorStop(0,'#8bd0f2');grad.addColorStop(.52,'#d7f3ff');grad.addColorStop(1,'#f7fdff');g.fillStyle=grad;g.fillRect(0,0,W,H);
+ // montañas lejanas
+ g.fillStyle='#9bcce5';g.beginPath();g.moveTo(0,160);for(let x=0;x<=W;x+=100)g.lineTo(x,rand(70,155));g.lineTo(W,0);g.lineTo(0,0);g.fill();
+ g.fillStyle='#fff';g.beginPath();g.moveTo(0,155);for(let x=0;x<=W;x+=90)g.lineTo(x,rand(105,175));g.lineTo(W,0);g.lineTo(0,0);g.fill();
+ // pista con bordes curvos
+ g.fillStyle='#effbff';g.beginPath();g.moveTo(115,0);g.bezierCurveTo(190,170,60,330,135,500);g.lineTo(680,500);g.bezierCurveTo(740,330,620,160,700,0);g.closePath();g.fill();
+ g.strokeStyle='#b7dff1';g.lineWidth=8;g.beginPath();g.moveTo(115,0);g.bezierCurveTo(190,170,60,330,135,500);g.moveTo(700,0);g.bezierCurveTo(620,160,740,330,680,500);g.stroke();
+ // pinos al fondo
+ for(let i=0;i<12;i++){let x=(i*83+35)%800,y=(i*71+30)%480;tree(x,y,0.65)}
+}
+function tree(x,y,s=1){
+ g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#805333';g.fillRect(-4,15,8,17);
+ for(let i=0;i<3;i++){g.fillStyle=i%2?'#08734e':'#0b8758';g.beginPath();g.moveTo(0,-30+i*13);g.lineTo(-19,8+i*10);g.lineTo(19,8+i*10);g.closePath();g.fill()}
+ g.fillStyle='#fff';g.beginPath();g.moveTo(0,-30);g.lineTo(-8,-14);g.lineTo(8,-14);g.fill();g.restore()
+}
+function drawSkier(){
+ // esquís y bastones
+ g.save();g.translate(skier.x,skier.y);g.rotate(skier.lean*.12);
+ g.lineCap='round';g.strokeStyle='#e23d4f';g.lineWidth=5;g.beginPath();g.moveTo(-18,25);g.lineTo(18,29);g.stroke();
+ g.strokeStyle='#273d59';g.lineWidth=3;g.beginPath();g.moveTo(-18,3);g.lineTo(-30,35);g.moveTo(17,3);g.lineTo(29,35);g.stroke();
+ // piernas
+ g.strokeStyle='#243c70';g.lineWidth=8;g.beginPath();g.moveTo(-5,8);g.lineTo(-11,23);g.moveTo(5,8);g.lineTo(11,23);g.stroke();
+ // chaqueta roja
+ g.fillStyle='#d9364c';g.fillRect(-13,-8,26,22);g.fillStyle='#fff';g.fillRect(-3,-7,6,21);
+ // brazos
+ g.strokeStyle='#d9364c';g.lineWidth=7;g.beginPath();g.moveTo(-10,-4);g.lineTo(-22,8);g.moveTo(10,-4);g.lineTo(22,8);g.stroke();
+ // cabeza, gorro y gafas
+ g.fillStyle='#f1c49b';g.beginPath();g.arc(0,-18,11,0,Math.PI*2);g.fill();
+ g.fillStyle='#b51f35';g.fillRect(-12,-29,24,7);g.fillRect(-8,-35,16,7);g.fillStyle='#fff';g.beginPath();g.arc(9,-34,4,0,7);g.fill();
+ g.fillStyle='#16334f';g.fillRect(-8,-21,16,4);g.restore();
+}
+function obstacleDraw(o){
+ if(o.type==='tree'){tree(o.x,o.y,1.05);g.fillStyle='#ffdf68';g.beginPath();g.arc(o.x,o.y-29,4,0,7);g.fill()}
+ else if(o.type==='rock'){g.fillStyle='#738da4';g.beginPath();g.ellipse(o.x,o.y,20,13,0,0,7);g.fill();g.fillStyle='#dceaf3';g.beginPath();g.ellipse(o.x-5,o.y-5,7,3,-.3,0,7);g.fill()}
+ else{g.fillStyle='#fff';g.beginPath();g.arc(o.x,o.y+4,17,0,7);g.arc(o.x,o.y-17,12,0,7);g.fill();g.fillStyle='#e34c5b';g.fillRect(o.x-14,o.y-30,28,5);g.fillRect(o.x-10,o.y-39,20,9);g.fillStyle='#263b52';g.fillRect(o.x-5,o.y-20,3,3);g.fillRect(o.x+4,o.y-20,3,3);g.strokeStyle='#9a6842';g.lineWidth=3;g.beginPath();g.moveTo(o.x-14,o.y);g.lineTo(o.x-27,o.y-9);g.moveTo(o.x+14,o.y);g.lineTo(o.x+27,o.y-9);g.stroke()}
+}
+function drawPresent(p){g.fillStyle='#c92f48';g.fillRect(p.x-10,p.y-9,20,18);g.fillStyle='#ffdf72';g.fillRect(p.x-3,p.y-9,6,18);g.fillRect(p.x-10,p.y-2,20,5);g.beginPath();g.arc(p.x-4,p.y-11,5,Math.PI,0);g.arc(p.x+4,p.y-11,5,Math.PI,0);g.fill()}
+function draw(){
+ snowBackground();
+ obstacles.forEach(obstacleDraw);presents.forEach(drawPresent);drawSkier();
+ // copos decorativos
+ g.fillStyle='#fff';for(let i=0;i<35;i++){let x=(i*137+frame*.35)%800,y=(i*79+frame*1.7)%500;g.globalAlpha=.8;g.beginPath();g.arc(x,y,1.7,0,7);g.fill()}g.globalAlpha=1;
+ g.fillStyle='#183b59';g.font='bold 15px system-ui';g.fillText('🏔️ DESCENSO NAVIDEÑO',18,27);
+ g.fillStyle='#fff';g.fillRect(15,42,150,9);g.fillStyle='#42c99d';g.fillRect(15,42,150*Math.min(1,distance/950),9);
+}
+function spawn(){
+ if(frame%Math.max(24,72-level*4)===0){let type=['tree','rock','snowman'][rand(0,2)];obstacles.push({x:rand(180,620),y:-35,type,r:type==='tree'?20:18})}
+ if(frame%90===0)presents.push({x:rand(190,610),y:-20});
+}
+function collision(o){return Math.abs(skier.x-o.x)<(o.r||19)+14&&Math.abs(skier.y-o.y)<30}
+function crash(){
+ if(paused||!running)return;paused=true;
+ const a=rand(2,12),b=rand(2,12);quizAnswer=a*b;
+ const choices=new Set([quizAnswer]);while(choices.size<3)choices.add(Math.max(2,quizAnswer+rand(-12,12)));
+ $('question').textContent=`¡Choque! Para seguir esquiando: ¿cuánto es ${a} × ${b}?`;
+ $('answers').innerHTML='';[...choices].sort(()=>Math.random()-.5).forEach(v=>{let btn=document.createElement('button');btn.textContent=v;btn.onclick=()=>{if(v===quizAnswer){gifts+=5;paused=false;obstacles=obstacles.filter(o=>o.y<skier.y-70);$('quiz').style.display='none';hud()}else{lives--;hud();if(lives<=0){$('quiz').style.display='none';running=false;show('¡Se acabaron las vidas!','Practica las tablas y vuelve a intentarlo.','Volver a jugar',restart)}else{btn.disabled=true;btn.textContent='Intenta otra vez';}}};$('answers').appendChild(btn)});
+ $('quiz').style.display='block';
+}
+function show(title,msg,label,fn){$('overlay').innerHTML=`<div class="dialog"><h2>${title}</h2><p>${msg}</p><button id="again">${label}</button></div>`;$('overlay').style.display='flex';$('again').onclick=()=>{$('overlay').style.display='none';fn()}}
+function restart(){level=1;lives=3;gifts=0;resetLevel();running=true;loop()}
+function update(){
+ frame++;distance+=speed();spawn();
+ let dx=0,dy=0;if(keys.ArrowLeft||keys.a)dx-=4.2;if(keys.ArrowRight||keys.d)dx+=4.2;if(keys.ArrowUp||keys.w)dy-=2.5;if(keys.ArrowDown||keys.s)dy+=2.5;
+ skier.x=Math.max(145,Math.min(655,skier.x+dx));skier.y=Math.max(250,Math.min(430,skier.y+dy));skier.lean=dx;
+ obstacles.forEach(o=>o.y+=speed());presents.forEach(p=>p.y+=speed()+.4);
+ obstacles=obstacles.filter(o=>o.y<550);presents=presents.filter(p=>p.y<540);
+ for(let i=obstacles.length-1;i>=0;i--)if(collision(obstacles[i])){crash();break}
+ for(let i=presents.length-1;i>=0;i--)if(Math.abs(skier.x-presents[i].x)<25&&Math.abs(skier.y-presents[i].y)<30){presents.splice(i,1);gifts++;hud()}
+ if(distance>=950){if(level===10){running=false;show('🏆 ¡Rey o reina de la nieve!','¡Completaste los 10 niveles y recogiste '+gifts+' regalos!','Jugar otra vez',restart)}else{level++;resetLevel()}}
+}
+function loop(){if(!running)return;if(!paused)update();draw();requestAnimationFrame(loop)}
+$('start').onclick=()=>{$('overlay').style.display='none';resetLevel();running=true;loop()};
+document.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key))e.preventDefault();keys[e.key]=true});
+document.addEventListener('keyup',e=>keys[e.key]=false);
+const map={left:'ArrowLeft',right:'ArrowRight',up:'ArrowUp',down:'ArrowDown'};
+document.querySelectorAll('[data-dir]').forEach(btn=>{let k=map[btn.dataset.dir];const down=e=>{e.preventDefault();keys[k]=true},up=e=>{e.preventDefault();keys[k]=false};btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointerleave',up);btn.addEventListener('pointercancel',up)});
+for(let i=0;i<45;i++)flakes.push({x:rand(0,W),y:rand(0,H)});
+hud();draw();
+})();
+</script>
+</body>
+</html>
