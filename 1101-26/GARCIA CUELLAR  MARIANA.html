@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BioQuest Pixel - Ciencias Naturales (10 Niveles)</title>
+  <style>
+    :root {
+      --bg-color: #0d1b1e;
+      --panel-bg: #172a2e;
+      --accent: #7ae582;
+      --highlight: #f4f1de;
+      --btn-bg: #244247;
+      --btn-active: #7ae582;
+      --danger: #e63946;
+      --success: #2ec4b6;
+      --gold: #ffbe0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--highlight);
+      font-family: 'Courier New', Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 100dvh;
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    header {
+      width: 100%;
+      max-width: 760px;
+      background: var(--panel-bg);
+      border: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 8px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    .hud-group {
+      display: flex;
+      gap: 14px;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    .science-banner {
+      background: #0d1b1e;
+      border: 2px solid var(--accent);
+      color: var(--gold);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.98rem;
+      font-weight: bold;
+      text-align: center;
+      flex-grow: 1;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 760px;
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 8px 0;
+    }
+
+    canvas {
+      background-color: #132428;
+      border: 4px solid var(--accent);
+      border-radius: 8px;
+      width: 100%;
+      height: auto;
+      max-height: 55dvh;
+      aspect-ratio: 16 / 10;
+      image-rendering: pixelated;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+    }
+
+    .dpad-container {
+      display: grid;
+      grid-template-columns: repeat(3, 56px);
+      grid-template-rows: repeat(3, 52px);
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .dpad-btn {
+      background-color: var(--btn-bg);
+      border: 2px solid var(--accent);
+      border-radius: 10px;
+      color: var(--highlight);
+      font-size: 1.4rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #091315;
+      transition: transform 0.05s, background-color 0.1s;
+    }
+
+    .dpad-btn:active,
+    .dpad-btn.pressed {
+      background-color: var(--btn-active);
+      color: #0d1b1e;
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #091315;
+    }
+
+    .up { grid-column: 2; grid-row: 1; }
+    .left { grid-column: 1; grid-row: 2; }
+    .right { grid-column: 3; grid-row: 2; }
+    .down { grid-column: 2; grid-row: 3; }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(13, 27, 30, 0.93);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      gap: 14px;
+      z-index: 10;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .overlay h2 {
+      font-size: 1.7rem;
+      color: var(--gold);
+    }
+
+    .overlay p {
+      font-size: 1rem;
+      max-width: 460px;
+      line-height: 1.45;
+    }
+
+    .action-btn {
+      background: var(--accent);
+      color: #0d1b1e;
+      border: none;
+      padding: 10px 22px;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #3a7d44;
+    }
+
+    .action-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #3a7d44;
+    }
+
+    @media (min-width: 769px) {
+      .dpad-container {
+        grid-template-columns: repeat(3, 48px);
+        grid-template-rows: repeat(3, 44px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="hud-group">
+      <span>NIVEL: <strong id="ui-level">1</strong>/10</span>
+      <span>VIDAS: <strong id="ui-lives">3</strong></span>
+      <span>MUESTRA: <strong id="ui-key" style="color:#e63946;">🔒</strong></span>
+    </div>
+    <div class="science-banner" id="ui-problem">Cargando pregunta de ciencias...</div>
+  </header>
+
+  <div class="canvas-wrapper">
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+    <div id="overlay" class="overlay hidden">
+      <h2 id="overlay-title">¡Nivel Completado!</h2>
+      <p id="overlay-msg">Prepárate para el siguiente reto de ciencias naturales.</p>
+      <button id="overlay-btn" class="action-btn">Continuar</button>
+    </div>
+  </div>
+
+  <div class="dpad-container" aria-label="Controles táctiles">
+    <button class="dpad-btn up" data-dir="up">▲</button>
+    <button class="dpad-btn left" data-dir="left">◄</button>
+    <button class="dpad-btn right" data-dir="right">►</button>
+    <button class="dpad-btn down" data-dir="down">▼</button>
+  </div>
+
+  <script>
+    /**
+     * SPRITES INLINE EN SVG PURO (shape-rendering="crispEdges")
+     * Personaje: Explorador / Científico Naturalista en Pixel Art
+     * 3 estados:
+     * - idle: De pie de frente con bata de laboratorio y visor
+     * - walk1: Ciclo de caminata paso 1 (pierna izquierda adelantada)
+     * - walk2: Ciclo de caminata paso 2 (pierna derecha adelantada)
+     */
+    const SVG_SPRITES = {
+      idle: `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+          <!-- Cabello castaño -->
+          <rect x="4" y="1" width="8" height="2" fill="#6f4e37"/>
+          <rect x="3" y="2" width="10" height="2" fill="#6f4e37"/>
+          <!-- Rostro -->
+          <rect x="4" y="4" width="8" height="4" fill="#ffcdb2"/>
+          <!-- Gafas de laboratorio -->
+          <rect x="4" y="5" width="3" height="2" fill="#00b4d8"/>
+          <rect x="9" y="5" width="3" height="2" fill="#00b4d8"/>
+          <rect x="7" y="5" width="2" height="1" fill="#1d3557"/>
+          <!-- Bata blanca de científico + camisa verde -->
+          <rect x="3" y="8" width="10" height="5" fill="#f1faee"/>
+          <rect x="7" y="8" width="2" height="5" fill="#52b788"/>
+          <!-- Guantes / manos -->
+          <rect x="2" y="9" width="1" height="3" fill="#48cae4"/>
+          <rect x="13" y="9" width="1" height="3" fill="#48cae4"/>
+          <!-- Pantalones -->
+          <rect x="4" y="13" width="3" height="2" fill="#1d3557"/>
+          <rect x="9" y="13" width="3" height="2" fill="#1d3557"/>
+          <!-- Botas -->
+          <rect x="4" y="15" width="3" height="1" fill="#e63946"/>
+          <rect x="9" y="15" width="3" height="1" fill="#e63946"/>
+        </svg>`,
+
+      walk1: `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+          <!-- Cabello (leve rebote) -->
+          <rect x="4" y="0" width="8" height="2" fill="#6f4e37"/>
+          <rect x="3" y="1" width="10" height="2" fill="#6f4e37"/>
+          <!-- Rostro -->
+          <rect x="4" y="3" width="8" height="4" fill="#ffcdb2"/>
+          <!-- Gafas -->
+          <rect x="5" y="4" width="3" height="2" fill="#00b4d8"/>
+          <rect x="10" y="4" width="2" height="2" fill="#00b4d8"/>
+          <rect x="8" y="4" width="2" height="1" fill="#1d3557"/>
+          <!-- Bata -->
+          <rect x="3" y="7" width="10" height="5" fill="#f1faee"/>
+          <rect x="7" y="7" width="2" height="5" fill="#52b788"/>
+          <!-- Brazos alternados -->
+          <rect x="1" y="7" width="2" height="3" fill="#48cae4"/>
+          <rect x="13" y="9" width="2" height="3" fill="#48cae4"/>
+          <!-- Piernas alternadas (paso 1) -->
+          <rect x="3" y="12" width="3" height="3" fill="#1d3557"/>
+          <rect x="10" y="12" width="3" height="1" fill="#1d3557"/>
+          <!-- Botas -->
+          <rect x="3" y="15" width="3" height="1" fill="#e63946"/>
+          <rect x="10" y="13" width="3" height="1" fill="#e63946"/>
+        </svg>`,
+
+      walk2: `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+          <!-- Cabello -->
+          <rect x="4" y="0" width="8" height="2" fill="#6f4e37"/>
+          <rect x="3" y="1" width="10" height="2" fill="#6f4e37"/>
+          <!-- Rostro -->
+          <rect x="4" y="3" width="8" height="4" fill="#ffcdb2"/>
+          <!-- Gafas -->
+          <rect x="4" y="4" width="2" height="2" fill="#00b4d8"/>
+          <rect x="8" y="4" width="3" height="2" fill="#00b4d8"/>
+          <rect x="6" y="4" width="2" height="1" fill="#1d3557"/>
+          <!-- Bata -->
+          <rect x="3" y="7" width="10" height="5" fill="#f1faee"/>
+          <rect x="7" y="7" width="2" height="5" fill="#52b788"/>
+          <!-- Brazos alternados -->
+          <rect x="1" y="9" width="2" height="3" fill="#48cae4"/>
+          <rect x="13" y="7" width="2" height="3" fill="#48cae4"/>
+          <!-- Piernas alternadas (paso 2) -->
+          <rect x="3" y="12" width="3" height="1" fill="#1d3557"/>
+          <rect x="10" y="12" width="3" height="3" fill="#1d3557"/>
+          <!-- Botas -->
+          <rect x="3" y="13" width="3" height="1" fill="#e63946"/>
+          <rect x="10" y="15" width="3" height="1" fill="#e63946"/>
+        </svg>`
+    };
+
+    const playerSprites = {};
+    for (const [key, svgCode] of Object.entries(SVG_SPRITES)) {
+      const img = new Image();
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgCode.trim())}`;
+      playerSprites[key] = img;
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    const uiLevel = document.getElementById('ui-level');
+    const uiLives = document.getElementById('ui-lives');
+    const uiKey = document.getElementById('ui-key');
+    const uiProblem = document.getElementById('ui-problem');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayMsg = document.getElementById('overlay-msg');
+    const overlayBtn = document.getElementById('overlay-btn');
+
+    /**
+     * BANCO DE RETOS DE CIENCIAS NATURALES (NIVELES 1 AL 10 - PROGRESIVOS)
+     */
+    const SCIENCE_LEVELS = [
+      {
+        level: 1,
+        question: "Gas vital que respiramos:",
+        correct: "O₂",
+        distractors: ["CO₂", "He"]
+      },
+      {
+        level: 2,
+        question: "Estado del agua al hervir (100 °C):",
+        correct: "Gas",
+        distractors: ["Sólido", "Plasma"]
+      },
+      {
+        level: 3,
+        question: "Órgano que bombea la sangre:",
+        correct: "Corazón",
+        distractors: ["Pulmón", "Hígado"]
+      },
+      {
+        level: 4,
+        question: "Proceso por el que las plantas crean alimento:",
+        correct: "Fotosíntesis",
+        distractors: ["Mitosis", "Ósmosis"]
+      },
+      {
+        level: 5,
+        question: "Planeta más grande del Sistema Solar:",
+        correct: "Júpiter",
+        distractors: ["Saturno", "Marte"]
+      },
+      {
+        level: 6,
+        question: "Símbolo químico del Hierro:",
+        correct: "Fe",
+        distractors: ["Hi", "Ir"]
+      },
+      {
+        level: 7,
+        question: "Organelo celular que produce energía (ATP):",
+        correct: "Mitocondria",
+        distractors: ["Ribosoma", "Vacuola"]
+      },
+      {
+        level: 8,
+        question: "Capa atmosférica que filtra rayos UV:",
+        correct: "Ozono",
+        distractors: ["Nitrógeno", "Metano"]
+      },
+      {
+        level: 9,
+        question: "Partícula subatómica con carga negativa:",
+        correct: "Electrón",
+        distractors: ["Protón", "Neutrón"]
+      },
+      {
+        level: 10,
+        question: "Base nitrogenada exclusiva del ARN (no ADN):",
+        correct: "Uracilo",
+        distractors: ["Timina", "Guanina"]
+      }
+    ];
+
+    const MAX_LEVELS = 10;
+    let currentLevel = 1;
+    let lives = 3;
+    let isPaused = false;
+    let hasKey = false;
+    let currentChallenge = null;
+
+    const player = {
+      x: 36,
+      y: 232,
+      size: 36,
+      speed: 4.2,
+      isMoving: false,
+      facingLeft: false,
+      animTimer: 0,
+      currentFrame: 'idle'
+    };
+
+    const goal = {
+      x: 716,
+      y: 210,
+      w: 54,
+      h: 76
+    };
+
+    let scienceNodes = [];
+    let enemies = [];
+    let obstacles = [];
+
+    const keys = {
+      up: false,
+      down: false,
+      left: false,
+      right: false
+    };
+
+    function initLevel(lvl) {
+      currentLevel = lvl;
+      hasKey = false;
+      player.x = 36;
+      player.y = 232;
+      player.currentFrame = 'idle';
+
+      const data = SCIENCE_LEVELS[lvl - 1];
+      const allOptions = [data.correct, ...data.distractors].sort(() => Math.random() - 0.5);
+      currentChallenge = {
+        question: data.question,
+        correct: data.correct,
+        choices: allOptions
+      };
+
+      uiLevel.textContent = lvl;
+      uiLives.textContent = lives;
+      uiKey.textContent = '🔒';
+      uiKey.style.color = '#e63946';
+      uiProblem.textContent = `Nv.${lvl}: ${currentChallenge.question}`;
+
+      // Muros progresivos
+      obstacles = [];
+      if (lvl >= 2) {
+        obstacles.push({ x: 225, y: 85, w: 26, h: 130 });
+        obstacles.push({ x: 225, y: 285, w: 26, h: 130 });
+      }
+      if (lvl >= 5) {
+        obstacles.push({ x: 485, y: 40, w: 26, h: 135 });
+        obstacles.push({ x: 485, y: 325, w: 26, h: 135 });
+      }
+      if (lvl >= 8) {
+        obstacles.push({ x: 355, y: 185, w: 26, h: 130 });
+      }
+
+      // Fichas con opciones científicas
+      const nodePositions = [
+        { x: 120, y: 55 },
+        { x: 335, y: 415 },
+        { x: 550, y: 75 }
+      ];
+
+      scienceNodes = currentChallenge.choices.map((label, idx) => {
+        const boxWidth = Math.max(58, label.length * 10 + 18);
+        return {
+          x: nodePositions[idx].x,
+          y: nodePositions[idx].y,
+          w: boxWidth,
+          h: 40,
+          label: label,
+          isCorrect: label === currentChallenge.correct,
+          collected: false
+        };
+      });
+
+      // Oponentes (virus/toxinas) más rápidos y numerosos por nivel
+      enemies = [];
+      const enemyCount = Math.min(1 + Math.floor(lvl * 0.7), 7);
+      const baseSpeed = 2.0 + (lvl * 0.38);
+
+      for (let i = 0; i < enemyCount; i++) {
+        const isVertical = i % 2 === 0;
+        const laneX = 160 + ((i + 1) * (490 / (enemyCount + 1)));
+        const laneY = 70 + ((i * 68) % 340);
+
+        enemies.push({
+          x: laneX,
+          y: laneY,
+          size: 32,
+          vx: isVertical ? 0 : (i % 4 === 1 ? baseSpeed : -baseSpeed),
+          vy: isVertical ? (i % 4 === 0 ? baseSpeed : -baseSpeed) : 0
+        });
+      }
+    }
+
+    function rectsOverlap(a, b) {
+      return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+      );
+    }
+
+    function hurtPlayer(reason) {
+      lives--;
+      uiLives.textContent = lives;
+      if (lives <= 0) {
+        showOverlay(
+          '¡Experimento Fallido!',
+          `${reason} Te quedaste sin vidas en el Nivel ${currentLevel}.`,
+          'Reiniciar desde Nivel 1',
+          () => {
+            lives = 3;
+            initLevel(1);
+          }
+        );
+      } else {
+        player.x = 36;
+        player.y = 232;
+      }
+    }
+
+    function showOverlay(title, msg, btnText, callback) {
+      isPaused = true;
+      overlayTitle.textContent = title;
+      overlayMsg.textContent = msg;
+      overlayBtn.textContent = btnText;
+      overlay.classList.remove('hidden');
+
+      overlayBtn.onclick = () => {
+        overlay.classList.add('hidden');
+        isPaused = false;
+        callback();
+      };
+    }
+
+    function update() {
+      if (isPaused) return;
+
+      let dx = 0;
+      let dy = 0;
+
+      if (keys.up) dy -= player.speed;
+      if (keys.down) dy += player.speed;
+      if (keys.left) {
+        dx -= player.speed;
+        player.facingLeft = true;
+      }
+      if (keys.right) {
+        dx += player.speed;
+        player.facingLeft = false;
+      }
+
+      if (dx !== 0 && dy !== 0) {
+        const factor = Math.SQRT1_2;
+        dx *= factor;
+        dy *= factor;
+      }
+
+      player.isMoving = dx !== 0 || dy !== 0;
+
+      // Alternar dinámicamente los fotogramas SVG
+      if (player.isMoving) {
+        player.animTimer++;
+        if (player.animTimer >= 9) {
+          player.animTimer = 0;
+          player.currentFrame = player.currentFrame === 'walk1' ? 'walk2' : 'walk1';
+        }
+      } else {
+        player.animTimer = 0;
+        player.currentFrame = 'idle';
+      }
+
+      let nextX = Math.max(8, Math.min(canvas.width - player.size - 8, player.x + dx));
+      const boxX = { x: nextX, y: player.y, w: player.size, h: player.size };
+      if (!obstacles.some(obs => rectsOverlap(boxX, obs))) {
+        player.x = nextX;
+      }
+
+      let nextY = Math.max(8, Math.min(canvas.height - player.size - 8, player.y + dy));
+      const boxY = { x: player.x, y: nextY, w: player.size, h: player.size };
+      if (!obstacles.some(obs => rectsOverlap(boxY, obs))) {
+        player.y = nextY;
+      }
+
+      const playerRect = { x: player.x, y: player.y, w: player.size, h: player.size };
+
+      // Verificar muestras científicas
+      for (const node of scienceNodes) {
+        if (node.collected) continue;
+        const nodeRect = { x: node.x, y: node.y, w: node.w, h: node.h };
+        if (rectsOverlap(playerRect, nodeRect)) {
+          node.collected = true;
+          if (node.isCorrect) {
+            hasKey = true;
+            uiKey.textContent = '🧪';
+            uiKey.style.color = '#7ae582';
+            uiProblem.textContent = `¡Correcto (${node.label})! Ve al portal verde →`;
+          } else {
+            hurtPlayer(`¡Muestra errónea (${node.label})!`);
+            return;
+          }
+        }
+      }
+
+      // Actualizar oponentes
+      for (const enemy of enemies) {
+        enemy.x += enemy.vx;
+        enemy.y += enemy.vy;
+
+        if (enemy.x <= 12 || enemy.x + enemy.size >= canvas.width - 12) enemy.vx *= -1;
+        if (enemy.y <= 12 || enemy.y + enemy.size >= canvas.height - 12) enemy.vy *= -1;
+
+        const enemyRect = { x: enemy.x + 4, y: enemy.y + 4, w: enemy.size - 8, h: enemy.size - 8 };
+        if (rectsOverlap(playerRect, enemyRect)) {
+          hurtPlayer('¡Te infectó un patógeno!');
+          return;
+        }
+      }
+
+      // Llegada a la meta
+      if (rectsOverlap(playerRect, goal)) {
+        if (!hasKey) {
+          player.x = goal.x - player.size - 4;
+        } else if (currentLevel < MAX_LEVELS) {
+          showOverlay(
+            `¡Nivel ${currentLevel} Completado!`,
+            'Los patógenos serán más rápidos y el reto científico será más avanzado.',
+            `Ir al Nivel ${currentLevel + 1}`,
+            () => initLevel(currentLevel + 1)
+          );
+        } else {
+          showOverlay(
+            '🏆 ¡PREMIO NOBEL DE CIENCIAS! 🏆',
+            'Superaste los 10 niveles de Biología, Química, Física y Astronomía.',
+            'Jugar de nuevo',
+            () => {
+              lives = 3;
+              initLevel(1);
+            }
+          );
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Cuadrícula de laboratorio
+      ctx.strokeStyle = 'rgba(122, 229, 130, 0.05)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Muros de contención
+      ctx.fillStyle = '#244247';
+      ctx.strokeStyle = '#7ae582';
+      ctx.lineWidth = 2;
+      for (const obs of obstacles) {
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+      }
+
+      // Meta / Portal
+      ctx.fillStyle = hasKey ? '#7ae582' : '#3b5257';
+      ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+      ctx.strokeStyle = '#f4f1de';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
+
+      ctx.fillStyle = '#0d1b1e';
+      ctx.font = 'bold 13px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(hasKey ? 'META' : '🔒', goal.x + goal.w / 2, goal.y + goal.h / 2 + 4);
+
+      // Muestras científicas (opciones)
+      for (const node of scienceNodes) {
+        if (node.collected) continue;
+        ctx.fillStyle = '#ffbe0b';
+        ctx.fillRect(node.x, node.y, node.w, node.h);
+        ctx.strokeStyle = '#f4f1de';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(node.x, node.y, node.w, node.h);
+
+        ctx.fillStyle = '#0d1b1e';
+        ctx.font = 'bold 13px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText(node.label, node.x + node.w / 2, node.y + node.h / 2 + 5);
+      }
+
+      // Oponentes (Patógenos Pixel Art)
+      for (const enemy of enemies) {
+        ctx.fillStyle = '#e63946';
+        ctx.fillRect(enemy.x + 4, enemy.y + 4, enemy.size - 8, enemy.size - 8);
+        // Espículas del virus
+        ctx.fillRect(enemy.x + 13, enemy.y, 6, 4);
+        ctx.fillRect(enemy.x + 13, enemy.y + enemy.size - 4, 6, 4);
+        ctx.fillRect(enemy.x, enemy.y + 13, 4, 6);
+        ctx.fillRect(enemy.x + enemy.size - 4, enemy.y + 13, 4, 6);
+        // Ojos
+        ctx.fillStyle = '#f4f1de';
+        ctx.fillRect(enemy.x + 8, enemy.y + 10, 5, 5);
+        ctx.fillRect(enemy.x + 19, enemy.y + 10, 5, 5);
+        ctx.fillStyle = '#0d1b1e';
+        ctx.fillRect(enemy.x + 10, enemy.y + 12, 2, 2);
+        ctx.fillRect(enemy.x + 21, enemy.y + 12, 2, 2);
+      }
+
+      // Jugador (SVG pixel art dinámico)
+      const spriteImg = playerSprites[player.currentFrame];
+      if (spriteImg && spriteImg.complete) {
+        ctx.save();
+        if (player.facingLeft) {
+          ctx.translate(player.x + player.size, player.y);
+          ctx.scale(-1, 1);
+          ctx.drawImage(spriteImg, 0, 0, player.size, player.size);
+        } else {
+          ctx.drawImage(spriteImg, player.x, player.y, player.size, player.size);
+        }
+        ctx.restore();
+      }
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'w', 'W'].includes(e.key)) { keys.up = true; e.preventDefault(); }
+      if (['ArrowDown', 's', 'S'].includes(e.key)) { keys.down = true; e.preventDefault(); }
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) { keys.left = true; e.preventDefault(); }
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) { keys.right = true; e.preventDefault(); }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['ArrowUp', 'w', 'W'].includes(e.key)) keys.up = false;
+      if (['ArrowDown', 's', 'S'].includes(e.key)) keys.down = false;
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) keys.left = false;
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) keys.right = false;
+    });
+
+    document.querySelectorAll('.dpad-btn').forEach((btn) => {
+      const dir = btn.dataset.dir;
+
+      const startPress = (e) => {
+        e.preventDefault();
+        keys[dir] = true;
+        btn.classList.add('pressed');
+      };
+
+      const endPress = (e) => {
+        e.preventDefault();
+        keys[dir] = false;
+        btn.classList.remove('pressed');
+      };
+
+      btn.addEventListener('touchstart', startPress, { passive: false });
+      btn.addEventListener('touchend', endPress, { passive: false });
+      btn.addEventListener('touchcancel', endPress, { passive: false });
+      btn.addEventListener('mousedown', startPress);
+      btn.addEventListener('mouseup', endPress);
+      btn.addEventListener('mouseleave', endPress);
+    });
+
+    initLevel(1);
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
