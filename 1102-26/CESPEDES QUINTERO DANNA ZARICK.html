@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Yuletide Rampage: Ultimate Chaos Edition</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Quicksand:wght@500;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      background: radial-gradient(circle at center, #141e30 0%, #090d16 100%);
+      color: #fff;
+      font-family: 'Quicksand', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100dvh;
+      width: 100vw;
+      overflow: hidden;
+      padding: 8px;
+    }
+
+    #game-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 960px;
+      height: min(94dvh, 620px);
+      background: #0b132b;
+      border: 3px solid #d4af37;
+      border-radius: 14px;
+      box-shadow: 0 0 40px rgba(212, 175, 55, 0.35), inset 0 0 30px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 0;
+      }
+
+      #game-wrapper {
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+        border: none;
+      }
+    }
+
+    #canvas-area {
+      position: relative;
+      flex: 1 1 auto;
+      width: 100%;
+      min-height: 0;
+      overflow: hidden;
+      background: #091124;
+    }
+
+    canvas#gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #top-settings {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      z-index: 40;
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: rgba(15, 23, 42, 0.9);
+      border: 2px solid #d4af37;
+      color: #ffd700;
+      border-radius: 50px;
+      padding: 7px 13px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      transition: transform 0.15s, background 0.2s;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.93);
+    }
+
+    .icon-btn.off {
+      border-color: #64748b;
+      color: #94a3b8;
+      opacity: 0.8;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 12, 24, 0.88);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 42px 16px 18px 16px;
+      z-index: 30;
+      overflow-y: auto;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    #start-screen {
+      background: linear-gradient(180deg, rgba(10, 18, 36, 0.42) 0%, rgba(10, 15, 28, 0.88) 70%, rgba(8, 12, 22, 0.96) 100%);
+      justify-content: space-evenly;
+    }
+
+    .game-title {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(1.5rem, 4vw, 2.8rem);
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.7), 0 4px 0 #7f1d1d, 0 6px 15px #000;
+      letter-spacing: 2px;
+    }
+
+    .game-subtitle {
+      font-size: clamp(0.75rem, 1.6vw, 0.95rem);
+      color: #bae6fd;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .char-select-box {
+      background: rgba(15, 23, 42, 0.88);
+      border: 2px solid #b91c1c;
+      border-radius: 14px;
+      padding: 10px 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      max-width: 96%;
+    }
+
+    .char-select-title {
+      font-size: 0.88rem;
+      color: #fde047;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .char-options {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .char-card {
+      background: linear-gradient(145deg, #1e293b, #0f172a);
+      border: 2px solid #475569;
+      border-radius: 12px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .char-card.selected {
+      border-color: #ffd700;
+      background: linear-gradient(145deg, #450a0a, #1e1b4b);
+      box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
+      transform: translateY(-2px);
+    }
+
+    .char-card h4 {
+      color: #fff;
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    .char-card p {
+      color: #cbd5e1;
+      font-size: 0.68rem;
+      margin-top: 2px;
+    }
+
+    .main-btn {
+      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+      color: #fff;
+      border: 2px solid #ffd700;
+      border-radius: 50px;
+      padding: 11px 28px;
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(0.9rem, 2vw, 1.2rem);
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+      transition: transform 0.15s, box-shadow 0.2s;
+      letter-spacing: 1px;
+    }
+
+    .main-btn:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 25px rgba(255, 215, 0, 0.6);
+    }
+
+    .main-btn:active {
+      transform: scale(0.96);
+    }
+
+    .intro-card {
+      background: linear-gradient(145deg, #1e1b4b 0%, #0f172a 100%);
+      border: 2px solid #ffd700;
+      border-radius: 16px;
+      padding: 18px 22px;
+      max-width: 560px;
+      width: 94%;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.85);
+    }
+
+    .intro-badge {
+      display: inline-block;
+      background: #b91c1c;
+      color: #ffd700;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      border: 1px solid #ffd700;
+    }
+
+    .intro-card h2 {
+      font-family: 'Cinzel Decorative', serif;
+      color: #ffd700;
+      font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+      margin-bottom: 6px;
+    }
+
+    .intro-story {
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .controls-guide {
+      background: rgba(0, 0, 0, 0.45);
+      border-radius: 10px;
+      padding: 8px;
+      margin-bottom: 12px;
+      font-size: 0.75rem;
+      color: #bae6fd;
+      border: 1px solid rgba(186, 230, 253, 0.25);
+    }
+
+    /* Trivia Modal Styles */
+    .trivia-card {
+      background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 100%);
+      border: 3px solid #ffd700;
+      border-radius: 16px;
+      padding: 20px 24px;
+      max-width: 620px;
+      width: 95%;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
+      text-align: left;
+    }
+
+    .trivia-subject-badge {
+      background: #0284c7;
+      color: #e0f2fe;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-block;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: 1px solid #38bdf8;
+    }
+
+    .trivia-question {
+      font-size: 1rem;
+      color: #fff;
+      font-weight: 700;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    .trivia-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .trivia-option-btn {
+      background: rgba(30, 41, 59, 0.9);
+      border: 2px solid #475569;
+      color: #e2e8f0;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-family: 'Quicksand', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .trivia-option-btn:hover {
+      background: rgba(51, 65, 85, 0.95);
+      border-color: #ffd700;
+      color: #ffd700;
+    }
+
+    .trivia-option-btn.correct {
+      background: #15803d !important;
+      border-color: #4ade80 !important;
+      color: #fff !important;
+    }
+
+    .trivia-option-btn.incorrect {
+      background: #b91c1c !important;
+      border-color: #f87171 !important;
+      color: #fff !important;
+    }
+
+    .trivia-feedback {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      min-height: 22px;
+    }
+
+    /* Controls Dock */
+    #controls-dock {
+      flex: 0 0 auto;
+      width: 100%;
+      background: linear-gradient(180deg, #0f172a 0%, #090d16 100%);
+      border-top: 2px solid #d4af37;
+      padding: 10px 18px calc(12px + env(safe-area-inset-bottom, 0px)) 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 25;
+    }
+
+    .touch-group {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .touch-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 2.5px solid #ffd700;
+      color: #ffd700;
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 5px 0 #78350f, 0 8px 15px rgba(0, 0, 0, 0.6);
+      cursor: pointer;
+      touch-action: none;
+      transition: transform 0.08s, box-shadow 0.08s, background 0.1s;
+    }
+
+    .touch-btn span.key-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .touch-btn:active,
+    .touch-btn.pressed {
+      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+      color: #fff;
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #78350f, 0 3px 8px rgba(0, 0, 0, 0.6);
+    }
+
+    .touch-btn.jump-btn {
+      border-color: #38bdf8;
+      color: #38bdf8;
+      box-shadow: 0 5px 0 #0369a1, 0 8px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .touch-btn.jump-btn:active,
+    .touch-btn.jump-btn.pressed {
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      box-shadow: 0 1px 0 #0369a1;
+    }
+
+    .touch-btn.attack-btn {
+      width: 72px;
+      height: 64px;
+      background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%);
+      border-color: #ffd700;
+      color: #ffd700;
+      box-shadow: 0 5px 0 #450a0a, 0 8px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .touch-btn.attack-btn:active,
+    .touch-btn.attack-btn.pressed {
+      background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+      color: #fff;
+      box-shadow: 0 1px 0 #450a0a;
+    }
+
+    @media (max-width: 420px) {
+      #controls-dock {
+        padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px;
+      }
+
+      .touch-group {
+        gap: 10px;
+      }
+
+      .touch-btn {
+        width: 58px;
+        height: 58px;
+        font-size: 21px;
+      }
+
+      .touch-btn.attack-btn {
+        width: 64px;
+        height: 58px;
+      }
+    }
+
+    .level-strip {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .lvl-pill {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 1px solid #64748b;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .lvl-pill.active {
+      background: #b91c1c;
+      border-color: #ffd700;
+      color: #ffd700;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="game-wrapper">
+    <div id="canvas-area"> <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+      <div id="top-settings"> <button id="btn-music" class="icon-btn" title="Activar/Desactivar Música">🎵 Música:
+          ON</button> <button id="btn-vibe" class="icon-btn" title="Activar/Desactivar Vibración">📳 Vibrar: ON</button>
+      </div>
+
+      <!-- START SCREEN -->
+      <div id="start-screen" class="overlay">
+        <div>
+          <div class="game-title">Yuletide Rampage</div>
+          <div class="game-subtitle">Ultimate Chaos Edition • ¡Monstruos Armados y Rival Cazador!</div>
+        </div>
+
+        <div class="char-select-box">
+          <div class="char-select-title">⚔️ Elige tu Campeón Navideño</div>
+          <div class="char-options">
+            <div class="char-card selected" id="select-male" onclick="selectHero('male')"> <canvas id="preview-male"
+                width="64" height="64"></canvas>
+              <h4>Sir Noel (Hombre)</h4>
+              <p>Paladín Bastón de Caramelo</p>
+            </div>
+            <div class="char-card" id="select-female" onclick="selectHero('female')"> <canvas id="preview-female"
+                width="64" height="64"></canvas>
+              <h4>Lady Aurora (Mujer)</h4>
+              <p>Maga Estrella Polar</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="level-strip" id="level-selector" title="Selecciona nivel inicial"></div> <button class="main-btn"
+            onclick="openLevelIntro()">🎄 INICIAR CAOS 🎄</button>
+        </div>
+      </div>
+
+      <!-- LEVEL INTRO OVERLAY -->
+      <div id="intro-screen" class="overlay hidden">
+        <div class="intro-card">
+          <div class="intro-badge" id="intro-badge">NIVEL 1 DE 10</div>
+          <h2 id="intro-title">El Bosque de Escarcha</h2>
+          <p class="intro-story" id="intro-desc"> ¡Cuidado! Los monstruos ahora portan armamento letal y Malakor, el
+            Cazador Traidor, te persigue para ayudarles a destruirte. Al completar el nivel, superarás tu trivia
+            educativa. </p>
+          <div class="controls-guide"> <strong>Controles:</strong> 📱 Botones inferiores: <b>IZQ / DER</b> moverse •
+            <b>SALTAR</b> (Doble salto) • <b>MAGIA</b> atacar 💻 Teclado PC: <b>A / D</b> o <b>Flechas</b> • <b>W /
+              Espacio</b> Saltar • <b>Z / J</b> Disparar </div> <button class="main-btn"
+            onclick="startCurrentLevel()">⚔️ ¡ENTRAR AL COMBATE!</button>
+        </div>
+      </div>
+
+      <!-- TRIVIA CHALLENGE OVERLAY -->
+      <div id="trivia-screen" class="overlay hidden">
+        <div class="trivia-card">
+          <div class="trivia-subject-badge" id="trivia-subject">MATEMÁTICAS</div>
+          <h3 style="font-family:'Cinzel Decorative',serif; color:#ffd700; font-size:1.1rem; margin-bottom:6px;">🧠
+            Desafío Educativo de Nivel</h3>
+          <p class="trivia-question" id="trivia-q-text">¿Pregunta de prueba?</p>
+          <div class="trivia-options" id="trivia-options-container"> <!-- Opciones inyectadas por JS --> </div>
+          <div class="trivia-feedback" id="trivia-feedback"></div> <button class="main-btn hidden" id="trivia-next-btn"
+            onclick="finishTriviaStep()">➡️ CONTINUAR AVENTURA</button>
+        </div>
+      </div>
+
+      <!-- GAME OVER / VICTORY OVERLAY -->
+      <div id="end-screen" class="overlay hidden">
+        <div class="intro-card">
+          <div class="intro-badge" id="end-badge">FIN DE PARTIDA</div>
+          <h2 id="end-title">¡Has sido derrotado!</h2>
+          <p class="intro-story" id="end-desc">Malakor y los monstruos armados te han vencido, ¡pero tu sabiduría
+            prevalecerá!</p>
+          <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;"> <button class="main-btn"
+              id="end-action-btn" onclick="retryOrNext()">🔄 REINTENTAR</button> <button class="icon-btn"
+              style="padding:12px 20px; font-size:14px;" onclick="returnToMenu()">🏠 MENÚ</button> </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLS DOCK -->
+    <div id="controls-dock" class="hidden">
+      <div class="touch-group"> <button type="button" class="touch-btn" id="touch-left" aria-label="Izquierda"> ◀ <span
+            class="key-label">IZQ</span> </button> <button type="button" class="touch-btn" id="touch-right"
+          aria-label="Derecha"> ▶ <span class="key-label">DER</span> </button> </div>
+      <div class="touch-group"> <button type="button" class="touch-btn jump-btn" id="touch-jump" aria-label="Saltar"> ▲
+          <span class="key-label">SALTAR</span> </button> <button type="button" class="touch-btn attack-btn"
+          id="touch-attack" aria-label="Atacar"> ✨ <span class="key-label">MAGIA</span> </button> </div>
+    </div>
+  </div>
+
+  <script>
+/*
+YULETIDE RAMPAGE: ULTIMATE CHAOS EDITION
+Incluye monstruos con armamento, segundo personaje enemigo (Malakor el Cazador) y trivia educativa.
+*/
+    const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d'); const W = 960; const H = 540;
+
+    let musicEnabled = true; let vibrationEnabled = true; let selectedGender = 'male'; let currentLevel = 1; const maxLevels = 10; let gameState = 'START'; let score = 0;
+
+    // Banco de Preguntas Educativas por Nivel (1 al 10)
+    const educationalTrivia = [ { level: 1, subject: "Matemáticas", question: "Si Santa reparte 120 regalos en 4 trineos de forma equitativa, ¿cuántos regalos lleva cada trineo?", options: ["25 regalos", "30 regalos", "40 regalos", "35 regalos"], correct: 1 }, { level: 2, subject: "Inglés", question: "Choose the correct translation for: 'The snow is falling heavily on Christmas Eve.'", options: ["La nieve cae pesadamente en Nochebuena.", "El sol brilla en Navidad.", "Los renos vuelan alto.", "Hace mucho calor."], correct: 0 }, { level: 3, subject: "Lectura Crítica", question: "En una fábula navideña, un duende egoísta aprende que 'compartir el doble multiplica la alegría'. ¿Cuál es la enseñanza principal?", options: ["Los juguetes son caros.", "La generosidad y el altruismo enriquecen el espíritu comunitario.", "El invierno siempre es frío.", "Trabajar solo es más rápido."], correct: 1 }, { level: 4, subject: "Sociales", question: "¿En qué región geográfica tradicionalmente se ubica el imaginario popular del Polo Norte y el taller de Santa?", options: ["En el Océano Antártico", "En el círculo polar ártico (cerca de Groenlandia/Canadá)", "En los Alpes Suizos", "En la sabana africana"], correct: 1 }, { level: 5, subject: "Matemáticas", question: "Un duende fabrica 15 juguetes por hora. Si trabaja durante 6 horas y media, ¿cuántos juguetes habrá fabricado?", options: ["90 juguetes", "95.5 juguetes", "97.5 juguetes", "100 juguetes"], correct: 2 }, { level: 6, subject: "Inglés", question: "What is the past tense of the verb 'to give' in the sentence: 'Santa _____ many presents yesterday.'", options: ["given", "gave", "gives", "giving"], correct: 1 }, { level: 7, subject: "Lectura Crítica", question: "Si un texto argumentativo sostiene que 'las tradiciones decembrinas fortalecen los lazos familiares frente al individualismo moderno', el autor asume principalmente que:", options: ["La modernidad destruye todas las familias.", "Las reuniones navideñas generan cohesión y bienestar social.", "Nadie celebra fiestas hoy en día.", "La tecnología es mala."], correct: 1 }, { level: 8, subject: "Sociales", question: "¿Cuál es el propósito histórico y cultural de las celebraciones de solsticio de invierno en diversas civilizaciones antiguas?", options: ["Rogar por cosechas abundantes en pleno verano.", "Celebrar el renacimiento de la luz y el incremento gradual de las horas diurnas.", "Conmemorar descubrimientos geográficos.", "Organizar guerras de invierno."], correct: 1 }, { level: 9, subject: "Matemáticas", question: "Si el precio original de un árbol navideño mágico es de $200 y tiene un descuento del 30% por temporada navideña, ¿cuál es su precio final?", options: ["$140", "$150", "$130", "$160"], correct: 0 }, { level: 10, subject: "Inglés & Lectura", question: "Complete the idiom in English: 'To keep the Christmas spirit alive through difficult times is a true test of _____.'", options: ["resilience and hope", "cold weather", "fast running", "heavy snow"], correct: 0 } ];
+
+    // Web Audio API
+    let audioCtx = null;
+    let bgmInterval = null;
+    let noteIndex = 0;
+
+    const christmasMelody = [329.63, 392.00, 440.00, 493.88, 523.25, 493.88, 440.00, 392.00, 329.63, 293.66, 329.63, 392.00, 329.63, 293.66, 246.94, 293.66, 329.63, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 587.33, 523.25, 493.88, 440.00, 392.00, 329.63, 293.66, 329.63, 329.63];
+
+    function initAudio() { if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } if (audioCtx.state === 'suspended') { audioCtx.resume(); } }
+
+    function playSoftMusicNote() {
+      if (!musicEnabled || !audioCtx) return; const freq = christmasMelody[noteIndex % christmasMelody.length]; noteIndex++;
+
+      const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+      gain.gain.setValueAtTime(0.001, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.045, audioCtx.currentTime + 0.08); gain.gain.exponentialRampToValueAtTime(0.0008, audioCtx.currentTime + 0.65);
+
+      osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.68);
+    }
+
+    function startBGM() { initAudio(); if (bgmInterval) clearInterval(bgmInterval); bgmInterval = setInterval(() => { if (musicEnabled) playSoftMusicNote(); }, 520); }
+
+    function playSFX(type) {
+      if (!musicEnabled || !audioCtx) return; const now = audioCtx.currentTime; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+
+      if (type === 'shoot') { osc.type = 'triangle'; osc.frequency.setValueAtTime(620, now); osc.frequency.exponentialRampToValueAtTime(180, now + 0.16); gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.17); } else if (type === 'jump') { osc.type = 'sine'; osc.frequency.setValueAtTime(240, now); osc.frequency.exponentialRampToValueAtTime(520, now + 0.15); gain.gain.setValueAtTime(0.07, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.16); } else if (type === 'coin') { osc.type = 'sine'; osc.frequency.setValueAtTime(987.77, now); osc.frequency.setValueAtTime(1318.51, now + 0.07); gain.gain.setValueAtTime(0.07, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.23); } else if (type === 'hit') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(55, now + 0.18); gain.gain.setValueAtTime(0.09, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.2); } else if (type === 'portal') { osc.type = 'sine'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.35); gain.gain.setValueAtTime(0.09, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.37); }
+    }
+
+    function triggerVibration(pattern) { if (vibrationEnabled && navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) { } } }
+
+    const btnMusic = document.getElementById('btn-music'); const btnVibe = document.getElementById('btn-vibe');
+
+    btnMusic.addEventListener('click', () => { initAudio(); musicEnabled = !musicEnabled; btnMusic.textContent = musicEnabled ? '🎵 Música: ON' : '🔇 Música: OFF'; btnMusic.classList.toggle('off', !musicEnabled); if (musicEnabled && !bgmInterval) startBGM(); });
+
+    btnVibe.addEventListener('click', () => { vibrationEnabled = !vibrationEnabled; btnVibe.textContent = vibrationEnabled ? '📳 Vibrar: ON' : '📴 Vibrar: OFF'; btnVibe.classList.toggle('off', !vibrationEnabled); if (vibrationEnabled) triggerVibration(40); });
+
+    const levelData = [{ num: 1, title: "Las Puertas del Taller Nevado", desc: "Monstruos con ballestas de hielo y la sombra de Malakor te acechan.", theme: { skyTop: "#0f172a", skyBot: "#1e3a5f", stone: "#334155", trim: "#38bdf8" } }, { num: 2, title: "Sendero de Carámbanos", desc: "Cuidado con las trampas y el armamento pesado de los duendes.", theme: { skyTop: "#0c192c", skyBot: "#1d4ed8", stone: "#1e293b", trim: "#7dd3fc" } }, { num: 3, title: "Cripta de los Juguetes Rotos", desc: "Malakor te persigue implacablemente apoyando a los enemigos.", theme: { skyTop: "#1a1025", skyBot: "#3b1d5e", stone: "#2e1065", trim: "#c084fc" } }, { num: 4, title: "Puente del Reno Espectral", desc: "Los disparos enemigos cruzan todo el abismo.", theme: { skyTop: "#091e2c", skyBot: "#134e4a", stone: "#115e59", trim: "#2dd4bf" } }, { num: 5, title: "Bóveda del Oro Festivo", desc: "¡Mitad del camino! Los guardianes armados defienden el tesoro.", theme: { skyTop: "#27170c", skyBot: "#78350f", stone: "#451a03", trim: "#fbbf24" } }, { num: 6, title: "Catacumbas de Muérdago Oscuro", desc: "Malakor y sus aliados refuerzan sus ataques a distancia.", theme: { skyTop: "#052e16", skyBot: "#14532d", stone: "#064e3b", trim: "#4ade80" } }, { num: 7, title: "Torre del Reloj de Medianoche", desc: "Proyectiles mágicos y ballestas enemigas por doquier.", theme: { skyTop: "#1e1b4b", skyBot: "#312e81", stone: "#1e1b4b", trim: "#818cf8" } }, { num: 8, title: "Forja del Carbón Ardiente", desc: "El fuego oscuro y las armas pesadas queman el camino.", theme: { skyTop: "#2c0b0e", skyBot: "#7f1d1d", stone: "#450a0a", trim: "#f87171" } }, { num: 9, title: "Antesala del Trono Invernal", desc: "Malakor lidera el ataque combinado junto a la guardia.", theme: { skyTop: "#170f2e", skyBot: "#4c1d95", stone: "#2e1065", trim: "#f472b6" } }, { num: 10, title: "El Trono del Rey Krampus (FINAL)", desc: "¡Krampus, Malakor y sus ejércitos armados en la batalla definitiva!", theme: { skyTop: "#1a0505", skyBot: "#450a0a", stone: "#290808", trim: "#ffd700" } }];
+
+    const levelSelectorEl = document.getElementById('level-selector'); function renderLevelPills() { levelSelectorEl.innerHTML = ''; for (let i = 1; i <= maxLevels; i++) { const pill = document.createElement('div'); pill.className = 'lvl-pill' + (i === currentLevel ? ' active' : ''); pill.textContent = i; pill.onclick = () => { currentLevel = i; renderLevelPills(); }; levelSelectorEl.appendChild(pill); } } renderLevelPills();
+
+    function drawHeroCharacter(context, x, y, w, h, gender, facing, animFrame, isAttacking, invulnTimer) {
+      if (invulnTimer > 0 && Math.floor(invulnTimer * 15) % 2 === 0) return;
+
+      context.save(); context.translate(x + w / 2, y + h / 2); if (facing < 0) context.scale(-1, 1);
+
+      const bob = Math.sin(animFrame * 0.25) * 2.5; const legSwing = Math.sin(animFrame * 0.35) * 6;
+
+      context.fillStyle = gender === 'male' ? '#991b1b' : '#6d28d9'; context.beginPath(); context.moveTo(-8, -6 + bob); context.lineTo(-22 - Math.abs(legSwing) * 0.5, 16 + bob); context.lineTo(-4, 18 + bob); context.closePath(); context.fill();
+
+      context.fillStyle = '#1e293b'; context.fillRect(-10 + legSwing, 12, 8, 12); context.fillRect(2 - legSwing, 12, 8, 12); context.fillStyle = '#ffd700'; context.fillRect(-10 + legSwing, 12, 8, 3); context.fillRect(2 - legSwing, 12, 8, 3);
+
+      context.fillStyle = gender === 'male' ? '#dc2626' : '#7c3aed'; context.beginPath(); context.roundRect(-12, -8 + bob, 24, 22, 6); context.fill(); context.strokeStyle = '#ffd700'; context.lineWidth = 2; context.stroke();
+
+      context.fillStyle = '#0f172a'; context.fillRect(-12, 5 + bob, 24, 5); context.fillStyle = '#ffd700'; context.fillRect(-4, 4 + bob, 8, 7);
+
+      context.fillStyle = '#1e1b4b'; context.beginPath(); context.arc(0, -16 + bob, 13, 0, Math.PI * 2); context.fill(); context.strokeStyle = '#ffd700'; context.lineWidth = 1.8; context.stroke();
+
+      if (gender === 'female') { context.fillStyle = '#fde047'; context.beginPath(); context.moveTo(-10, -20 + bob); context.quadraticCurveTo(-22, -10 + bob, -18, 6 + bob); context.quadraticCurveTo(-12, 2 + bob, -10, -12 + bob); context.fill(); }
+
+      context.fillStyle = gender === 'male' ? '#ef4444' : '#8b5cf6'; context.beginPath(); context.moveTo(-13, -21 + bob); context.quadraticCurveTo(-2, -39 + bob, 14, -27 + bob); context.lineTo(11, -20 + bob); context.closePath(); context.fill();
+
+      context.fillStyle = '#ffffff'; context.beginPath(); context.roundRect(-14, -24 + bob, 27, 6, 3); context.fill(); context.beginPath(); context.arc(15, -26 + bob, 4.5, 0, Math.PI * 2); context.fill();
+
+      context.fillStyle = gender === 'male' ? '#38bdf8' : '#f472b6'; context.shadowColor = gender === 'male' ? '#38bdf8' : '#f472b6'; context.shadowBlur = 8; context.beginPath(); context.ellipse(4, -15 + bob, 3, 2, 0, 0, Math.PI * 2); context.ellipse(10, -15 + bob, 2.5, 2, 0, 0, Math.PI * 2); context.fill(); context.shadowBlur = 0;
+
+      context.save(); context.translate(8, 0 + bob); const swingAngle = isAttacking ? 0.8 : -0.25; context.rotate(swingAngle);
+
+      if (gender === 'male') { context.fillStyle = '#ffffff'; context.fillRect(-2, -24, 5, 26); context.fillStyle = '#ef4444'; context.fillRect(-2, -20, 5, 4); context.fillRect(-2, -12, 5, 4); context.fillRect(-2, -4, 5, 4); context.fillStyle = '#ffd700'; context.fillRect(-6, 0, 13, 4); } else { context.fillStyle = '#d97706'; context.fillRect(-1.5, -24, 3.5, 30); context.fillStyle = '#fde047'; context.shadowColor = '#fde047'; context.shadowBlur = 10; context.beginPath(); context.arc(0, -26, 6, 0, Math.PI * 2); context.fill(); context.shadowBlur = 0; } context.restore();
+
+      context.restore();
+    }
+
+    function renderHeroPreviews() {
+      const cMale = document.getElementById('preview-male').getContext('2d'); cMale.clearRect(0, 0, 64, 64); drawHeroCharacter(cMale, 14, 14, 36, 44, 'male', 1, 0, false, 0);
+
+      const cFemale = document.getElementById('preview-female').getContext('2d'); cFemale.clearRect(0, 0, 64, 64); drawHeroCharacter(cFemale, 14, 14, 36, 44, 'female', 1, 0, false, 0);
+    } renderHeroPreviews();
+
+    function selectHero(gender) { selectedGender = gender; document.getElementById('select-male').classList.toggle('selected', gender === 'male'); document.getElementById('select-female').classList.toggle('selected', gender === 'female'); initAudio(); playSFX('coin'); triggerVibration(30); }
+
+    const snowflakes = Array.from({ length: 75 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 3 + 1, speedY: Math.random() * 1.2 + 0.4, speedX: (Math.random() - 0.5) * 0.6 }));
+
+    function updateAndDrawSnow() { ctx.fillStyle = 'rgba(255, 255, 255, 0.78)'; for (const s of snowflakes) { s.y += s.speedY; s.x += s.speedX; if (s.y > H) { s.y = -5; s.x = Math.random() * W; } if (s.x > W) s.x = 0; if (s.x < 0) s.x = W; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); } }
+
+    let startAnimTick = 0; function drawStartScreenArt() {
+      startAnimTick++; const grad = ctx.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, '#091124'); grad.addColorStop(0.55, '#1e3a5f'); grad.addColorStop(1, '#0f172a'); ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+
+      ctx.save(); ctx.fillStyle = 'rgba(52, 211, 153, 0.14)'; ctx.beginPath(); ctx.ellipse(W * 0.5, 110, 420, 65, -0.08, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#fef08a'; ctx.shadowColor = '#fde047'; ctx.shadowBlur = 35; ctx.beginPath(); ctx.arc(170, 105, 42, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+
+      ctx.fillStyle = '#0b132b'; ctx.fillRect(70, 260, 90, 240); ctx.fillRect(780, 240, 110, 260); ctx.beginPath(); ctx.moveTo(60, 260); ctx.lineTo(115, 190); ctx.lineTo(170, 260); ctx.fill(); ctx.beginPath(); ctx.moveTo(770, 240); ctx.lineTo(835, 165); ctx.lineTo(900, 240); ctx.fill();
+
+      ctx.fillStyle = '#fbbf24'; ctx.fillRect(105, 290, 18, 28); ctx.fillRect(825, 275, 20, 32);
+
+      ctx.fillStyle = '#064e3b'; ctx.beginPath(); ctx.moveTo(140, 470); ctx.lineTo(210, 320); ctx.lineTo(280, 470); ctx.fill(); ctx.beginPath(); ctx.moveTo(155, 400); ctx.lineTo(210, 270); ctx.lineTo(265, 400); ctx.fill(); ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(210, 262, 10, 0, Math.PI * 2); ctx.fill();
+
+      const lightColors = ['#ef4444', '#38bdf8', '#fde047', '#f472b6']; for (let i = 0; i < 12; i++) { ctx.fillStyle = lightColors[(i + Math.floor(startAnimTick / 20)) % lightColors.length]; ctx.beginPath(); ctx.arc(185 + (i % 4) * 17, 320 + Math.floor(i / 4) * 42, 4, 0, Math.PI * 2); ctx.fill(); }
+
+      ctx.fillStyle = '#e2e8f0'; ctx.fillRect(0, 470, W, 70); ctx.fillStyle = '#94a3b8'; ctx.fillRect(0, 488, W, 52);
+
+      drawHeroCharacter(ctx, 710, 418, 38, 48, selectedGender, -1, startAnimTick * 0.4, false, 0);
+
+      updateAndDrawSnow();
+    }
+
+    let player = {}; let platforms = []; let spikes = []; let enemies = []; let malakor = {}; let projectiles = []; let collectibles = []; let particles = []; let portal = {}; let cameraX = 0; let levelWidth = 2600;
+
+    const keys = { left: false, right: false, up: false, attack: false };
+
+    window.addEventListener('keydown', (e) => { if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true; if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true; if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') { if (!keys.up && gameState === 'PLAYING') playerJump(); keys.up = true; } if (e.code === 'KeyZ' || e.code === 'KeyJ' || e.code === 'Enter') { if (gameState === 'PLAYING') playerShoot(); } });
+
+    window.addEventListener('keyup', (e) => { if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false; if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false; if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') keys.up = false; });
+
+    canvas.addEventListener('mousedown', () => { if (gameState === 'PLAYING') playerShoot(); });
+
+    function bindControlBtn(id, keyName, actionFn) { const el = document.getElementById(id); const pressStart = (e) => { if (e.cancelable) e.preventDefault(); keys[keyName] = true; el.classList.add('pressed'); if (actionFn) actionFn(); }; const pressEnd = (e) => { if (e.cancelable) e.preventDefault(); keys[keyName] = false; el.classList.remove('pressed'); }; el.addEventListener('touchstart', pressStart, { passive: false }); el.addEventListener('touchend', pressEnd, { passive: false }); el.addEventListener('touchcancel', pressEnd, { passive: false }); el.addEventListener('mousedown', pressStart); el.addEventListener('mouseup', pressEnd); el.addEventListener('mouseleave', pressEnd); }
+
+    bindControlBtn('touch-left', 'left'); bindControlBtn('touch-right', 'right'); bindControlBtn('touch-jump', 'up', () => { if (gameState === 'PLAYING') playerJump(); }); bindControlBtn('touch-attack', 'attack', () => { if (gameState === 'PLAYING') playerShoot(); });
+
+    function buildLevel(lvl) {
+      platforms = []; spikes = []; enemies = []; projectiles = []; collectibles = []; particles = []; cameraX = 0;
+
+      levelWidth = 2200 + lvl * 320; const enemyCount = 4 + lvl * 2; const enemyHPBase = 20 + lvl * 12; const enemySpeedBase = 1.1 + lvl * 0.18;
+
+      player = { x: 80, y: 340, w: 34, h: 46, vx: 0, vy: 0, speed: 4.6, jumpForce: -11.8, jumpsLeft: 2, grounded: false, facing: 1, hp: 100, maxHp: 100, invuln: 0, shootCooldown: 0, attackAnim: 0, animFrame: 0 };
+
+      malakor = { x: 250, y: 340, w: 36, h: 50, vx: 0, vy: 0, speed: 2.3 + lvl * 0.1, hp: 150 + lvl * 25, maxHp: 150 + lvl * 25, shootTimer: 60, facing: 1 };
+
+      platforms.push({ x: 0, y: 450, w: 420, h: 90 });
+
+      let cursorX = 420; let lastY = 450;
+
+      while (cursorX < levelWidth - 450) {
+        const gap = Math.min(165, 65 + Math.random() * (45 + lvl * 7)); cursorX += gap;
+
+        const platW = Math.max(150, 320 - lvl * 10 + Math.random() * 140); let nextY = lastY + (Math.random() * 130 - 65); nextY = Math.max(230, Math.min(460, nextY));
+
+        platforms.push({ x: cursorX, y: nextY, w: platW, h: 540 - nextY });
+
+        if (Math.random() < 0.65) { const floatW = 120 + Math.random() * 80; const floatY = nextY - 115; if (floatY > 120) { platforms.push({ x: cursorX + 20, y: floatY, w: floatW, h: 22, floating: true }); collectibles.push({ x: cursorX + 20 + floatW / 2 - 12, y: floatY - 30, w: 24, h: 24, type: Math.random() < 0.3 ? 'potion' : 'gift', bob: Math.random() * 6 }); } }
+
+        if (platW > 210 && Math.random() < 0.35 + lvl * 0.04) { spikes.push({ x: cursorX + platW * 0.45, y: nextY - 16, w: 44, h: 16 }); }
+
+        collectibles.push({ x: cursorX + platW * 0.3, y: nextY - 28, w: 22, h: 22, type: 'gift', bob: Math.random() * 5 });
+
+        if (enemies.length < enemyCount) { const isRanged = Math.random() < 0.6; enemies.push({ x: cursorX + platW * 0.6, y: nextY - 46, w: 36, h: 46, minX: cursorX + 10, maxX: cursorX + platW - 46, vx: (Math.random() < 0.5 ? 1 : -1) * enemySpeedBase, hp: enemyHPBase, maxHp: enemyHPBase, type: isRanged ? 'armed_goblin' : 'snowman', shootTimer: 70 + Math.random() * 70, isBoss: false }); }
+
+        cursorX += platW; lastY = nextY;
+      }
+
+      const finalX = cursorX + 80; platforms.push({ x: finalX, y: 440, w: 460, h: 100 });
+
+      if (lvl === 10 || lvl === 5) { const bossHP = lvl === 10 ? 360 : 180; enemies.push({ x: finalX + 220, y: 372, w: 54, h: 68, minX: finalX + 40, maxX: finalX + 360, vx: 2.1, hp: bossHP, maxHp: bossHP, type: 'krampus', shootTimer: 60, isBoss: true }); }
+
+      portal = { x: finalX + 370, y: 355, w: 52, h: 85, angle: 0 };
+    }
+
+    function playerJump() { if (player.jumpsLeft > 0) { player.vy = player.jumpForce; player.jumpsLeft--; player.grounded = false; playSFX('jump'); spawnParticles(player.x + player.w / 2, player.y + player.h, '#bae6fd', 8); } }
+
+    function playerShoot() {
+      if (player.shootCooldown > 0) return; player.shootCooldown = selectedGender === 'female' ? 14 : 18; player.attackAnim = 10;
+
+      const isFemale = selectedGender === 'female'; projectiles.push({ x: player.facing > 0 ? player.x + player.w : player.x - 16, y: player.y + 18, vx: player.facing * (isFemale ? 10.5 : 8.8), vy: 0, r: isFemale ? 8 : 10, damage: isFemale ? 18 + currentLevel * 2 : 24 + currentLevel * 2.5, fromPlayer: true, color: isFemale ? '#f472b6' : '#38bdf8' });
+
+      playSFX('shoot'); triggerVibration(18);
+    }
+
+    function spawnParticles(x, y, color, count) { for (let i = 0; i < count; i++) { particles.push({ x, y, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6 - 1, life: 24 + Math.random() * 14, color, size: Math.random() * 4 + 2 }); } }
+
+    function damagePlayer(amount) {
+      if (player.invuln > 0) return; player.hp -= amount; player.invuln = 1.1; playSFX('hit'); triggerVibration([70, 40, 70]); spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#ef4444', 14);
+
+      if (player.hp <= 0) { player.hp = 0; gameState = 'GAME_OVER'; document.getElementById('controls-dock').classList.add('hidden'); document.getElementById('end-badge').textContent = `NIVEL ${currentLevel} FALLIDO`; document.getElementById('end-title').textContent = '¡Has Caído en Batalla!'; document.getElementById('end-desc').textContent = 'Malakor y el armamento enemigo te han vencido. ¡Inténtalo de nuevo!'; document.getElementById('end-action-btn').textContent = '🔄 REINTENTAR NIVEL'; document.getElementById('end-screen').classList.remove('hidden'); }
+    }
+
+    function updateGame() {
+      if (gameState !== 'PLAYING') return;
+
+      if (keys.left) { player.vx = -player.speed; player.facing = -1; player.animFrame++; } else if (keys.right) { player.vx = player.speed; player.facing = 1; player.animFrame++; } else { player.vx *= 0.78; if (Math.abs(player.vx) < 0.2) player.vx = 0; }
+
+      player.vy += 0.56; player.x += player.vx; if (player.x < 0) player.x = 0;
+
+      for (const p of platforms) { if (p.floating) continue; if (rectIntersect(player.x, player.y, player.w, player.h, p.x, p.y, p.w, p.h)) { if (player.vx > 0) player.x = p.x - player.w; else if (player.vx < 0) player.x = p.x + p.w; } }
+
+      player.y += player.vy; player.grounded = false;
+
+      for (const p of platforms) { if (p.floating) { if (player.vy >= 0 && player.y + player.h - player.vy <= p.y + 8 && rectIntersect(player.x, player.y, player.w, player.h, p.x, p.y, p.w, p.h)) { player.y = p.y - player.h; player.vy = 0; player.grounded = true; player.jumpsLeft = 2; } } else { if (rectIntersect(player.x, player.y, player.w, player.h, p.x, p.y, p.w, p.h)) { if (player.vy > 0) { player.y = p.y - player.h; player.vy = 0; player.grounded = true; player.jumpsLeft = 2; } else if (player.vy < 0) { player.y = p.y + p.h; player.vy = 0; } } } }
+
+      if (player.y > H + 40) damagePlayer(100);
+
+      if (player.invuln > 0) player.invuln -= 1 / 60; if (player.shootCooldown > 0) player.shootCooldown--; if (player.attackAnim > 0) player.attackAnim--;
+
+      if (malakor) {
+        if (malakor.x < player.x) { malakor.vx = malakor.speed; malakor.facing = 1; } else { malakor.vx = -malakor.speed; malakor.facing = -1; } malakor.x += malakor.vx; malakor.vy += 0.56; malakor.y += malakor.vy;
+
+        for (const p of platforms) { if (!p.floating && rectIntersect(malakor.x, malakor.y, malakor.w, malakor.h, p.x, p.y, p.w, p.h)) { if (malakor.vy > 0) { malakor.y = p.y - malakor.h; malakor.vy = 0; if (player.y < malakor.y - 30 && Math.random() < 0.05) { malakor.vy = -10; } } } }
+
+        malakor.shootTimer--; if (malakor.shootTimer <= 0 && Math.abs(malakor.x - player.x) < 650) { malakor.shootTimer = Math.max(50, 100 - currentLevel * 3); const mDir = player.x < malakor.x ? -1 : 1; projectiles.push({ x: malakor.x + malakor.w / 2, y: malakor.y + 20, vx: mDir * (5.5 + currentLevel * 0.3), vy: 0, r: 9, damage: 20 + currentLevel * 1.5, fromPlayer: false, color: '#f59e0b' }); }
+
+        if (rectIntersect(player.x, player.y, player.w, player.h, malakor.x, malakor.y, malakor.w, malakor.h)) { damagePlayer(25); }
+      }
+
+      for (const s of spikes) { if (rectIntersect(player.x + 4, player.y + 4, player.w - 8, player.h - 4, s.x, s.y, s.w, s.h)) { damagePlayer(25); player.vy = -8; } }
+
+      for (let i = collectibles.length - 1; i >= 0; i--) { const c = collectibles[i]; c.bob += 0.08; if (rectIntersect(player.x, player.y, player.w, player.h, c.x, c.y, c.w, c.h)) { if (c.type === 'potion') { player.hp = Math.min(player.maxHp, player.hp + 35); spawnParticles(c.x + 12, c.y + 12, '#4ade80', 12); } else { score += 100 * currentLevel; spawnParticles(c.x + 12, c.y + 12, '#ffd700', 12); } playSFX('coin'); triggerVibration(25); collectibles.splice(i, 1); } }
+
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i]; e.x += e.vx; if (e.x <= e.minX || e.x >= e.maxX) e.vx *= -1;
+
+        if (e.type === 'armed_goblin' || e.type === 'snowman' || e.type === 'krampus') { e.shootTimer--; if (e.shootTimer <= 0 && Math.abs(e.x - player.x) < 540) { e.shootTimer = e.isBoss ? Math.max(40, 80 - currentLevel * 3) : Math.max(60, 120 - currentLevel * 4); const dir = player.x < e.x ? -1 : 1; projectiles.push({ x: e.x + e.w / 2, y: e.y + e.h * 0.45, vx: dir * (5.0 + currentLevel * 0.25), vy: 0, r: e.isBoss ? 11 : 7, damage: e.isBoss ? 24 : 16 + currentLevel, fromPlayer: false, color: e.isBoss ? '#ef4444' : '#38bdf8' }); } }
+
+        if (rectIntersect(player.x, player.y, player.w, player.h, e.x, e.y, e.w, e.h)) { damagePlayer(e.isBoss ? 30 : 18 + currentLevel); }
+      }
+
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        const pr = projectiles[i]; pr.x += pr.vx; pr.y += pr.vy;
+
+        if (pr.x < cameraX - 100 || pr.x > cameraX + W + 100) { projectiles.splice(i, 1); continue; }
+
+        if (pr.fromPlayer) {
+          let hit = false; if (malakor && rectIntersect(pr.x - pr.r, pr.y - pr.r, pr.r * 2, pr.r * 2, malakor.x, malakor.y, malakor.w, malakor.h)) { malakor.hp -= pr.damage; hit = true; spawnParticles(pr.x, pr.y, '#f59e0b', 8); playSFX('hit'); if (malakor.hp <= 0) { score += 1000 * currentLevel; spawnParticles(malakor.x + malakor.w / 2, malakor.y + malakor.h / 2, '#ffd700', 30); triggerVibration(60); malakor = null; } }
+
+          for (let j = enemies.length - 1; j >= 0; j--) { const e = enemies[j]; if (rectIntersect(pr.x - pr.r, pr.y - pr.r, pr.r * 2, pr.r * 2, e.x, e.y, e.w, e.h)) { e.hp -= pr.damage; hit = true; spawnParticles(pr.x, pr.y, pr.color, 8); playSFX('hit'); if (e.hp <= 0) { score += (e.isBoss ? 1500 : 250) * currentLevel; spawnParticles(e.x + e.w / 2, e.y + e.h / 2, '#ffd700', 22); triggerVibration(55); enemies.splice(j, 1); } break; } } if (hit) projectiles.splice(i, 1);
+        } else { if (rectIntersect(pr.x - pr.r, pr.y - pr.r, pr.r * 2, pr.r * 2, player.x, player.y, player.w, player.h)) { damagePlayer(pr.damage); projectiles.splice(i, 1); } }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) { const pt = particles[i]; pt.x += pt.vx; pt.y += pt.vy; pt.life--; if (pt.life <= 0) particles.splice(i, 1); }
+
+      portal.angle += 0.06; const bossAlive = enemies.some(e => e.isBoss); if (!bossAlive && rectIntersect(player.x, player.y, player.w, player.h, portal.x, portal.y, portal.w, portal.h)) { playSFX('portal'); triggerVibration([50, 50, 100]); document.getElementById('controls-dock').classList.add('hidden'); gameState = 'TRIVIA'; openTriviaModal(currentLevel); }
+
+      const targetCam = player.x - W * 0.35; cameraX += (targetCam - cameraX) * 0.12; cameraX = Math.max(0, Math.min(levelWidth - W, cameraX));
+    }
+
+    function openTriviaModal(lvl) {
+      const tData = educationalTrivia[(lvl - 1) % educationalTrivia.length]; document.getElementById('trivia-subject').textContent = `Área: ${tData.subject} (Nivel ${lvl})`; document.getElementById('trivia-q-text').textContent = tData.question;
+
+      const optContainer = document.getElementById('trivia-options-container'); optContainer.innerHTML = '';
+
+      const feedbackEl = document.getElementById('trivia-feedback'); feedbackEl.textContent = ''; feedbackEl.style.color = '#cbd5e1';
+
+      const nextBtn = document.getElementById('trivia-next-btn'); nextBtn.classList.add('hidden');
+
+      tData.options.forEach((optText, index) => { const btn = document.createElement('button'); btn.className = 'trivia-option-btn'; btn.textContent = `${String.fromCharCode(65 + index)}. ${optText}`; btn.onclick = () => handleTriviaAnswer(index, tData.correct, btn); optContainer.appendChild(btn); });
+
+      document.getElementById('trivia-screen').classList.remove('hidden');
+    }
+
+    function handleTriviaAnswer(selectedIndex, correctIndex, selectedBtn) {
+      const buttons = document.querySelectorAll('.trivia-option-btn'); buttons.forEach(b => b.disabled = true);
+
+      const feedbackEl = document.getElementById('trivia-feedback'); const nextBtn = document.getElementById('trivia-next-btn');
+
+      if (selectedIndex === correctIndex) { selectedBtn.classList.add('correct'); feedbackEl.textContent = '¡Correcto! Has ganado bonificación de sabiduría y puntos.'; feedbackEl.style.color = '#4ade80'; score += 500 * currentLevel; playSFX('coin'); triggerVibration(40); } else { selectedBtn.classList.add('incorrect'); buttons[correctIndex].classList.add('correct'); feedbackEl.textContent = 'Incorrecto. ¡Pero no te preocupes, el portal se abre para seguir aprendiendo!'; feedbackEl.style.color = '#f87171'; playSFX('hit'); triggerVibration(70); }
+
+      nextBtn.classList.remove('hidden');
+    }
+
+    function finishTriviaStep() {
+      document.getElementById('trivia-screen').classList.add('hidden');
+
+      if (currentLevel < maxLevels) { gameState = 'LEVEL_CLEAR'; document.getElementById('end-badge').textContent = `¡NIVEL ${currentLevel} SUPERADO!`; document.getElementById('end-title').textContent = 'Sabiduría Conquistada'; document.getElementById('end-desc').textContent = `Puntuación acumulada: ${score} pts. Prepárate para el Nivel ${currentLevel + 1}.`; document.getElementById('end-action-btn').textContent = `➡️ SIGUIENTE NIVEL (${currentLevel + 1})`; document.getElementById('end-screen').classList.remove('hidden');
+    } else { gameState = 'VICTORY'; document.getElementById('end-badge').textContent = '🏆 ¡MAESTRO DE LA NAVIDAD Y LA SABIDURÍA! 🏆'; document.getElementById('end-title').textContent = '¡Has Completado Todos los Niveles!'; document.getElementById('end-desc').textContent = `Derrotaste a Malakor, Krampus y sus ejércitos armados con ${score} puntos.`; document.getElementById('end-action-btn').textContent = '🎄 JUGAR DESDE NIVEL 1'; document.getElementById('end-screen').classList.remove('hidden'); } }
+
+    function drawGame() {
+      const theme = levelData[currentLevel - 1].theme;
+
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, H); bgGrad.addColorStop(0, theme.skyTop); bgGrad.addColorStop(1, theme.skyBot); ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; for (let px = -((cameraX * 0.35) % 240); px < W; px += 240) { ctx.fillRect(px + 40, 0, 48, H); ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(px + 64, 190, 6 + Math.sin(Date.now() * 0.01) * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; }
+
+      updateAndDrawSnow();
+
+      ctx.save(); ctx.translate(-cameraX, 0);
+
+      for (const p of platforms) {
+        ctx.fillStyle = theme.stone; ctx.fillRect(p.x, p.y, p.w, p.h);
+
+        ctx.fillStyle = '#f8fafc'; ctx.fillRect(p.x, p.y, p.w, 8); ctx.fillStyle = theme.trim; ctx.fillRect(p.x, p.y + 8, p.w, 4);
+
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2; ctx.strokeRect(p.x, p.y, p.w, p.h);
+      }
+
+      for (const s of spikes) { ctx.fillStyle = '#7dd3fc'; const count = 4; const sw = s.w / count; for (let k = 0; k < count; k++) { ctx.beginPath(); ctx.moveTo(s.x + k * sw, s.y + s.h); ctx.lineTo(s.x + k * sw + sw / 2, s.y); ctx.lineTo(s.x + (k + 1) * sw, s.y + s.h); ctx.closePath(); ctx.fill(); } }
+
+      for (const c of collectibles) { const by = c.y + Math.sin(c.bob) * 4; if (c.type === 'gift') { ctx.fillStyle = '#dc2626'; ctx.fillRect(c.x, by, c.w, c.h); ctx.fillStyle = '#ffd700'; ctx.fillRect(c.x + c.w / 2 - 2, by, 4, c.h); ctx.fillRect(c.x, by + c.h / 2 - 2, c.w, 4); } else { ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(c.x + c.w / 2, by + c.h / 2 + 2, 10, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(c.x + c.w / 2 - 3, by, 6, 5); } }
+
+      const bossAlive = enemies.some(e => e.isBoss); ctx.save(); ctx.translate(portal.x + portal.w / 2, portal.y + portal.h / 2); ctx.rotate(portal.angle); ctx.strokeStyle = bossAlive ? '#64748b' : '#ffd700'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(0, 0, 24, 40, 0, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = bossAlive ? 'rgba(100,116,139,0.25)' : 'rgba(56, 189, 248, 0.45)'; ctx.fill(); ctx.restore();
+
+      for (const e of enemies) { drawEnemy(e); }
+
+      if (malakor) { drawMalakor(malakor); }
+
+      drawHeroCharacter(ctx, player.x, player.y, player.w, player.h, selectedGender, player.facing, player.animFrame, player.attackAnim > 0, player.invuln);
+
+      for (const pr of projectiles) { ctx.save(); ctx.fillStyle = pr.color; ctx.shadowColor = pr.color; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r * 0.45, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+
+      for (const pt of particles) { ctx.fillStyle = pt.color; ctx.globalAlpha = Math.max(0, pt.life / 35); ctx.fillRect(pt.x, pt.y, pt.size, pt.size); } ctx.globalAlpha = 1;
+
+      ctx.restore();
+
+      drawHUD();
+    }
+
+    function drawEnemy(e) {
+      ctx.save(); if (e.type === 'armed_goblin') { ctx.fillStyle = '#b91c1c'; ctx.beginPath(); ctx.roundRect(e.x, e.y + 8, e.w, e.h - 8, 8); ctx.fill(); ctx.fillStyle = '#1e293b'; ctx.fillRect(e.x + 4, e.y, 28, 10); ctx.fillStyle = '#f59e0b'; ctx.fillRect(e.facing > 0 ? e.x + 28 : e.x - 12, e.y + 20, 16, 6); } else if (e.type === 'snowman') { ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.arc(e.x + e.w / 2, e.y + 32, 15, 0, Math.PI * 2); ctx.arc(e.x + e.w / 2, e.y + 12, 11, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#334155'; ctx.fillRect(e.x + 7, e.y - 8, 22, 12); ctx.fillStyle = '#f97316'; ctx.fillRect(e.x + 24, e.y + 14, 14, 4); } else if (e.type === 'krampus') { ctx.fillStyle = '#450a0a'; ctx.beginPath(); ctx.roundRect(e.x, e.y + 10, e.w, e.h - 10, 10); ctx.fill(); ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = '#ef4444'; ctx.fillRect(e.x - 8, e.y + 20, 14, 8); }
+
+      const hpPct = Math.max(0, e.hp / e.maxHp); ctx.fillStyle = '#0f172a'; ctx.fillRect(e.x, e.y - 16, e.w, 6); ctx.fillStyle = e.isBoss ? '#ffd700' : '#ef4444'; ctx.fillRect(e.x, e.y - 16, e.w * hpPct, 6); ctx.restore();
+    }
+
+    function drawMalakor(m) {
+      ctx.save(); ctx.translate(m.x + m.w / 2, m.y + m.h / 2); if (m.facing < 0) ctx.scale(-1, 1);
+
+      ctx.fillStyle = '#1e1b4b'; ctx.beginPath(); ctx.roundRect(-16, -20, 32, 40, 8); ctx.fill(); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.stroke();
+
+      ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(0, -22, 12, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(-10, -28); ctx.lineTo(-18, -40); ctx.lineTo(-4, -30); ctx.moveTo(10, -28); ctx.lineTo(18, -40); ctx.lineTo(4, -30); ctx.fill();
+
+      ctx.fillStyle = '#94a3b8'; ctx.fillRect(4, -4, 20, 6);
+
+      ctx.restore();
+
+      const hpPct = Math.max(0, m.hp / m.maxHp); ctx.fillStyle = '#0f172a'; ctx.fillRect(m.x, m.y - 16, m.w, 6); ctx.fillStyle = '#f59e0b'; ctx.fillRect(m.x, m.y - 16, m.w * hpPct, 6);
+    }
+
+    function drawHUD() {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(14, 12, 260, 56, 10); ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = '#ffd700'; ctx.font = 'bold 13px Quicksand, sans-serif'; const heroName = selectedGender === 'male' ? 'Sir Noel' : 'Lady Aurora'; ctx.fillText(`${heroName} • Nivel ${currentLevel} / 10`, 26, 31);
+
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(26, 38, 170, 14); const hpRatio = Math.max(0, player.hp / player.maxHp); ctx.fillStyle = hpRatio > 0.35 ? '#dc2626' : '#f97316'; ctx.fillRect(26, 38, 170 * hpRatio, 14); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(26, 38, 170, 14);
+
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Quicksand, sans-serif'; ctx.fillText(`${Math.ceil(player.hp)} HP`, 92, 49);
+
+      ctx.fillStyle = '#fde047'; ctx.font = 'bold 13px Quicksand, sans-serif'; ctx.fillText(`🎁 ${score}`, 206, 49);
+    }
+
+    function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) { return x2 < x1 + w1 && x2 + w2 > x1 && y2 < y1 + h1 && y2 + h2 > y1; }
+
+    function openLevelIntro() {
+      initAudio(); if (musicEnabled && !bgmInterval) startBGM(); triggerVibration(35);
+
+      const info = levelData[currentLevel - 1]; document.getElementById('intro-badge').textContent = `NIVEL ${info.num} DE ${maxLevels}`; document.getElementById('intro-title').textContent = info.title; document.getElementById('intro-desc').textContent = info.desc;
+
+      document.getElementById('start-screen').classList.add('hidden'); document.getElementById('end-screen').classList.add('hidden'); document.getElementById('controls-dock').classList.add('hidden'); document.getElementById('intro-screen').classList.remove('hidden'); gameState = 'INTRO';
+    }
+
+    function startCurrentLevel() { initAudio(); triggerVibration(40); buildLevel(currentLevel); document.getElementById('intro-screen').classList.add('hidden'); document.getElementById('controls-dock').classList.remove('hidden'); gameState = 'PLAYING'; }
+
+    function retryOrNext() { if (gameState === 'LEVEL_CLEAR') { currentLevel++; openLevelIntro(); } else if (gameState === 'VICTORY') { currentLevel = 1; score = 0; openLevelIntro(); } else { openLevelIntro(); } }
+
+    function returnToMenu() { gameState = 'START'; renderLevelPills(); document.getElementById('intro-screen').classList.add('hidden'); document.getElementById('end-screen').classList.add('hidden'); document.getElementById('controls-dock').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+
+    function gameLoop() { if (gameState === 'START' || gameState === 'INTRO') { drawStartScreenArt(); } else if (gameState === 'PLAYING') { updateGame(); drawGame(); } requestAnimationFrame(gameLoop); }
+
+    requestAnimationFrame(gameLoop); </script>
+</body>
+
+</html>

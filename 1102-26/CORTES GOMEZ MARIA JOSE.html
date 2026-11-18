@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#17213d">
+<title>Lumi y los Portales Perdidos</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#111a31;color:#fff;font-family:system-ui,sans-serif;overscroll-behavior:none}body{display:grid;place-items:center;padding:8px}#app{width:min(960px,100%)}.frame{overflow:hidden;border:2px solid #796bb8;border-radius:20px;background:#20294b;box-shadow:0 18px 55px #050a1bcc}.head,.controls{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 13px;background:#17213d}.brand{font-weight:950;font-size:clamp(12px,3vw,18px)}.stats{display:flex;gap:6px;flex-wrap:wrap;justify-content:end}.stat{background:#35416d;border:1px solid #7581b2;border-radius:99px;padding:5px 8px;font-size:11px;font-weight:800}.stage{position:relative;aspect-ratio:16/9;min-height:210px}canvas{display:block;width:100%;height:100%;touch-action:none}.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;background:linear-gradient(130deg,#111a31dd,#43366cce)}.panel{width:min(530px,100%);padding:clamp(13px,3.5vw,25px);border-radius:22px;border:1px solid #ffffff55;background:#20294bf2}.hero{font-size:clamp(48px,10vw,78px);animation:float 2s ease-in-out infinite}@keyframes float{50%{transform:translateY(-10px) rotate(5deg)}}h1{font-size:clamp(24px,5.8vw,43px);line-height:1.04;color:#ffe69a;text-shadow:0 4px #8d5a9f;margin:3px 0 8px}.sub{font-size:clamp(11px,2.3vw,14px);color:#e4e5ff;line-height:1.45;margin:8px auto 12px;max-width:430px}.byline{display:inline-block;padding:7px 13px;border-radius:12px;background:#35416d;color:#fff0bd;font-size:13px;font-weight:800;line-height:1.5}.actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:12px}button{border:0;border-radius:13px;padding:10px 15px;background:linear-gradient(#ffedaa,#ffc967);color:#302448;font-weight:950;font-size:13px;box-shadow:0 4px #a97542;cursor:pointer}button:active{transform:translateY(2px);box-shadow:0 2px #a97542}button.alt,.pad button{background:#4b5688;color:white;border:1px solid #8995c8;box-shadow:0 3px #293457}.note{font-size:10px;color:#c9d2f3;margin-top:10px}.hide{display:none!important}.pad{display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,33px);gap:4px}.pad button{padding:0;font-size:17px;touch-action:none;user-select:none}.left{grid-column:1;grid-row:2}.right{grid-column:3;grid-row:2}.jump{height:70px;min-width:75px;background:#ff9bc2;color:#512345;box-shadow:0 4px #a9507c;touch-action:none}.controlText{flex:1;text-align:center;color:#c9d2f3;font-size:10px;line-height:1.4}@media(min-width:650px){.pad{grid-template-columns:repeat(3,45px);grid-template-rows:repeat(2,38px)}}@media(max-width:400px){body{padding:3px}.frame{border-radius:14px}.head,.controls{padding:7px}.stat{font-size:9px;padding:4px 6px}.pad{grid-template-columns:repeat(3,33px);grid-template-rows:repeat(2,30px)}.jump{min-width:65px;height:64px}}
+/* Portada adaptable: evita que el contenido se corte en pantallas pequeñas */
+.stage:has(#cover:not(.hide)){aspect-ratio:auto;min-height:min(82svh,760px)}
+#cover{overflow-y:auto;align-items:center;padding:clamp(10px,3vw,24px)}
+#cover .panel{width:min(650px,100%);max-height:none;padding:clamp(16px,4vw,30px)}
+#cover .hero{font-size:clamp(54px,12vw,92px)}
+#cover h1{font-size:clamp(28px,7vw,50px);line-height:1.08}
+#cover .sub{max-width:520px;font-size:clamp(12px,2.6vw,16px)}
+#cover .byline{font-size:clamp(12px,2.4vw,15px)}
+#cover .actions{gap:10px}
+#cover button{font-size:clamp(12px,2.5vw,15px);padding:11px 16px}
+@media(max-width:480px){.stage:has(#cover:not(.hide)){min-height:78svh}#cover .panel{padding:14px 12px}#cover .note{font-size:10px;line-height:1.5}}
+/* El reto sorpresa permite desplazamiento cuando el contenido no cabe en pantalla */
+#starQuiz{overflow-y:auto;overflow-x:hidden;align-items:flex-start;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#starQuiz .panel{flex-shrink:0;margin:auto 0;max-height:none}
+#starQuiz .actions{padding-bottom:8px}
+</style></head><body><div id="app"><div class="frame">
+<header class="head"><div class="brand">🌙 LUMI Y LOS PORTALES PERDIDOS</div><div class="stats"><span class="stat" id="lv">Mundo 1</span><span class="stat" id="sc">✨ 0</span><span class="stat" id="hp">💗 3</span></div></header>
+<main class="stage"><canvas id="game" width="960" height="540"></canvas>
+<section class="overlay" id="cover"><div class="panel"><div class="hero">🧚🏻‍♀️</div><h1>Lumi y los<br>Portales Perdidos</h1><p class="sub">Una pequeña guardiana debe recuperar las estrellas mágicas y encender los portales de tres mundos encantados. ¡Ayúdala en esta aventura!</p><div class="byline">Presentado por: María José Cortés<br>Grado 1102</div><div class="actions"><button id="play">🌟 COMENZAR AVENTURA</button><button class="alt" id="openQuiz">📘 PREICFES MATEMÁTICAS</button><button class="alt" id="sound">🔊 Sonido: sí</button></div><div class="note">Celular: usa las flechas y SALTAR · Computador: ← → y barra espaciadora</div></div></section>
+
+<section class="overlay hide" id="quiz"><div class="panel" style="max-width:650px">
+<div class="hero" style="font-size:42px">📐✨</div>
+<h1>Reto PreICFES<br>Matemáticas</h1>
+<p class="sub">Preguntas de selección múltiple para practicar.</p>
+<div class="byline">María José Cortés · Grado 1102</div>
+<p id="qProgress" class="sub">Pregunta 1 de 5</p>
+<h2 id="qText" style="font-size:clamp(15px,2.7vw,21px);color:#fff;margin:8px 0"></h2>
+<div id="qOptions" style="display:grid;gap:7px;text-align:left"></div>
+<p id="qFeedback" class="sub" aria-live="polite"></p>
+<div class="actions"><button id="qNext" disabled>SIGUIENTE</button><button class="alt" id="qBack">VOLVER A LA PORTADA</button></div>
+</div></section>
+
+
+<section class="overlay hide" id="starQuiz"><div class="panel" style="max-width:650px">
+<div class="hero" style="font-size:42px">⭐📐</div>
+<h1>¡Reto sorpresa!</h1>
+<p class="sub">Recogiste una estrella. Responde esta pregunta de Matemáticas para ganarla.</p>
+<div class="byline">PreICFES · María José Cortés · 1102</div>
+<h2 id="starQText" style="font-size:clamp(15px,2.7vw,21px);color:#fff;margin:12px 0"></h2>
+<div id="starOptions" style="display:grid;gap:7px;text-align:left"></div>
+<p id="starFeedback" class="sub" aria-live="polite"></p>
+<div class="actions"><button id="starContinue" disabled>CONTINUAR JUGANDO</button></div>
+</div></section>
+
+<section class="overlay hide" id="retryQuiz"><div class="panel" style="max-width:650px">
+ <div class="hero" style="font-size:42px">📚⭐</div>
+ <h1>¡Reto para volver a jugar!</h1>
+ <p class="sub">Responde correctamente esta pregunta tipo ICFES para que Lumi pueda comenzar otra aventura.</p>
+ <div class="byline">Reto de Matemáticas · Selección múltiple</div>
+ <h2 id="retryQText" style="font-size:clamp(15px,2.7vw,21px);color:#fff;margin:12px 0"></h2>
+ <div id="retryOptions" style="display:grid;gap:7px;text-align:left"></div>
+ <p id="retryFeedback" class="sub" aria-live="polite"></p>
+ <div class="actions"><button id="retryPlay" disabled>VOLVER A JUGAR 👻</button></div>
+ </div></section>
+
+<section class="overlay hide" id="pause"><div class="panel"><div class="hero">⏸️</div><h1>Aventura en pausa</h1><p class="sub">Lumi está tomando un descanso.</p><div class="actions"><button id="resume">CONTINUAR</button><button class="alt" id="restart">REINICIAR MUNDO</button></div></div></section>
+<section class="overlay hide" id="result"><div class="panel"><div class="hero" id="ri">🌟</div><h1 id="rt">¡Portal activado!</h1><p class="sub" id="rx"></p><div class="actions"><button id="next">SIGUIENTE MUNDO</button><button class="alt" id="again">VOLVER AL INICIO</button></div></div></section>
+</main>
+<nav class="controls"><div class="pad"><span></span><span></span><span></span><button class="left" data-k="left">◀</button><span></span><button class="right" data-k="right">▶</button></div><div class="controlText">Muévete, salta<br>y recoge estrellas ✨</div><button class="jump" data-k="jump">⬆<br>SALTAR</button><button class="alt" id="pauseBtn" style="padding:10px 12px">Ⅱ</button></nav>
+</div></div>
+<script>
+(()=>{
+const cv=document.getElementById('game'),g=cv.getContext('2d'),W=960,H=540,$=id=>document.getElementById(id);
+const worlds=[{n:'Jardín de las luciérnagas',sky:['#79d9c5','#e2f7b7'],land:'#497c69',glow:'#fff0a2',bad:'#e66f9d'},{n:'Montañas de cristal',sky:['#7a9fe5','#e0d7ff'],land:'#59649b',glow:'#a7fff0',bad:'#ff9a8a'},{n:'Castillo de la luna',sky:['#292c65','#9a79b8'],land:'#514b78',glow:'#ffe49a',bad:'#ff82b1'}];
+let world=0,score=0,lives=3,active=false,paused=false,frame=0,cam=0,grace=0,last=0,hero,plats,coins,spikes,gate;const keys={left:false,right:false};
+function hud(){$('lv').textContent=`Mundo ${world+1} · ${worlds[world].n}`;$('sc').textContent='✨ '+score;$('hp').textContent='💗 '+lives}
+function show(el){['cover','pause','result','quiz','starQuiz','retryQuiz'].forEach(id=>$(id).classList.add('hide'));if(el)$(el).classList.remove('hide')}
+function build(){plats=[{x:0,y:465,w:420,h:90},{x:505,y:420,w:175,h:24},{x:765,y:365,w:190,h:24}];let x=990,total=8+world*3;for(let i=0;i<total;i++){let w=130+(i%3)*20;plats.push({x,y:405-(i%4)*48,w,h:22});x+=w+90+(i%2)*35}plats.push({x:x+35,y:435,w:300,h:100});coins=[];spikes=[];for(let i=0;i<total+3;i++){coins.push({x:260+i*205,y:330-(i%4)*43,got:false,p:i*.9});if(i>1&&i%2===0)spikes.push({x:430+i*175,y:430-(i%3)*32,w:34,h:30,p:i})}gate={x:x+240,y:345,w:55,h:90};hero={x:55,y:390,w:38,h:55,vx:0,vy:0,ground:false};cam=0;grace=0;hud()}
+function start(){world=0;score=0;lives=3;build();active=true;paused=false;show(null);last=performance.now();requestAnimationFrame(loop)}
+function restart(){build();active=true;paused=false;show(null);last=performance.now();requestAnimationFrame(loop)}
+function finish(win){active=false;show('result');$('ri').textContent=win?'🏅':'💫';$('rt').textContent=win?(world===2?'¡Misión cumplida!':'¡Portal encendido!'):'¡No te rindas, Lumi!';$('rx').textContent=win?(world===2?'¡Recuperaste la luz de los tres mundos! La magia ha vuelto.':`Completaste ${worlds[world].n}. ¡Un nuevo mundo te espera!`):'Lumi perdió sus corazones. Puedes intentarlo de nuevo.';$('next').textContent=win?(world===2?'JUGAR OTRA VEZ':'SIGUIENTE MUNDO'):'REINTENTAR';$('next').onclick=()=>{if(win&&world<2){world++;build();active=true;show(null);last=performance.now();requestAnimationFrame(loop)}else if(win){start()}else{openRetryQuestion()}}}
+function jump(){if(active&&!paused&&hero.ground){hero.vy=-14;hero.ground=false}}
+function key(k,v){if(k==='jump'){if(v)jump()}else keys[k]=v}
+document.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp',' '].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft')key('left',true);if(e.key==='ArrowRight')key('right',true);if(e.key===' '||e.key==='ArrowUp')jump();if(e.key==='Escape')togglePause()});
+document.addEventListener('keyup',e=>{if(e.key==='ArrowLeft')key('left',false);if(e.key==='ArrowRight')key('right',false)});
+document.querySelectorAll('[data-k]').forEach(b=>{let k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);key(k,true)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();key(k,false)}))});
+function togglePause(){if(!active)return;paused=!paused;show(paused?'pause':null);if(!paused){last=performance.now();requestAnimationFrame(loop)}}
+
+const quizQuestions=[
+ {q:'Una camiseta cuesta $80.000 y tiene un descuento del 25%. ¿Cuánto se paga?',a:['$20.000','$55.000','$60.000','$75.000'],c:2,why:'El 25% de 80.000 es 20.000. Entonces: 80.000 − 20.000 = 60.000.'},
+ {q:'Si una función está dada por y = 3x + 2, ¿cuánto vale y cuando x = 4?',a:['10','12','14','16'],c:2,why:'Reemplazamos x por 4: y = 3(4) + 2 = 14.'},
+ {q:'Al lanzar un dado normal, ¿cuál es la probabilidad de obtener un número par?',a:['1/6','1/3','1/2','2/3'],c:2,why:'Hay 3 resultados pares (2, 4 y 6) entre 6 posibles: 3/6 = 1/2.'},
+ {q:'Un terreno rectangular mide 8 m de largo y 5 m de ancho. ¿Cuál es su área?',a:['13 m²','26 m²','40 m²','80 m²'],c:2,why:'El área del rectángulo es largo × ancho: 8 × 5 = 40 m².'},
+ {q:'En un curso, la razón entre mujeres y hombres es 2:3. Si hay 30 estudiantes, ¿cuántas son mujeres?',a:['10','12','15','18'],c:1,why:'La razón tiene 5 partes. Cada parte vale 30 ÷ 5 = 6; mujeres: 2 × 6 = 12.'}
+];
+let qIndex=0,qScore=0,qAnswered=false;
+function renderQuestion(){
+ const q=quizQuestions[qIndex];qAnswered=false;
+ $('qProgress').textContent=`Pregunta ${qIndex+1} de ${quizQuestions.length} · Aciertos: ${qScore}`;
+ $('qText').textContent=q.q;$('qFeedback').textContent='';$('qNext').disabled=true;
+ $('qNext').textContent=qIndex===quizQuestions.length-1?'VER RESULTADO':'SIGUIENTE';
+ $('qOptions').innerHTML='';
+ q.a.forEach((v,i)=>{const b=document.createElement('button');b.textContent=String.fromCharCode(65+i)+'. '+v;b.style.textAlign='left';b.style.background='#4b5688';b.style.color='white';b.style.boxShadow='none';b.onclick=()=>answerQuestion(i);$('qOptions').appendChild(b)});
+}
+function answerQuestion(i){
+ if(qAnswered)return;qAnswered=true;const q=quizQuestions[qIndex];const buttons=[...$('qOptions').children];
+ buttons.forEach((b,j)=>{b.disabled=true;b.style.opacity='0.8';if(j===q.c)b.style.background='#267b65';else if(j===i)b.style.background='#a34f69'});
+ if(i===q.c){qScore++;$('qFeedback').textContent='¡Correcto! '+q.why}else $('qFeedback').textContent='La respuesta correcta es '+String.fromCharCode(65+q.c)+'. '+q.why;
+ $('qProgress').textContent=`Pregunta ${qIndex+1} de ${quizQuestions.length} · Aciertos: ${qScore}`;
+ $('qNext').disabled=false;
+}
+function startQuiz(){qIndex=0;qScore=0;renderQuestion();show('quiz')}
+
+const starQuestions=[
+ {q:'¿Cuánto es el 15% de 200?',a:['15','20','30','45'],c:2,why:'200 × 0,15 = 30.'},
+ {q:'Si 4 cuadernos cuestan $20.000, ¿cuánto cuestan 2 al mismo precio?',a:['$5.000','$10.000','$15.000','$40.000'],c:1,why:'Cada cuaderno cuesta $5.000; dos cuestan $10.000.'},
+ {q:'¿Cuál es el área de un triángulo de base 10 cm y altura 6 cm?',a:['16 cm²','30 cm²','60 cm²','120 cm²'],c:1,why:'Área = (base × altura) ÷ 2 = (10 × 6) ÷ 2 = 30 cm².'},
+ {q:'Resuelve: 2x + 6 = 16. ¿Cuánto vale x?',a:['3','4','5','6'],c:2,why:'Restamos 6: 2x = 10. Dividimos entre 2: x = 5.'},
+ {q:'En una bolsa hay 3 bolas rojas y 2 azules. ¿Cuál es la probabilidad de sacar una azul?',a:['2/5','3/5','1/2','1/5'],c:0,why:'Hay 2 bolas azules de un total de 5: la probabilidad es 2/5.'},
+ {q:'¿Cuál es el perímetro de un cuadrado cuyo lado mide 7 cm?',a:['14 cm','21 cm','28 cm','49 cm'],c:2,why:'El perímetro del cuadrado es 4 × lado = 4 × 7 = 28 cm.'},
+ {q:'Si y = 2x − 3, ¿cuánto vale y cuando x = 6?',a:['6','9','12','15'],c:1,why:'Sustituimos: y = 2(6) − 3 = 9.'}
+];
+let starQuestionNumber=0,starAnswered=false;
+function openStarQuestion(){
+ paused=true;
+ const q=starQuestions[starQuestionNumber%starQuestions.length];
+ starQuestionNumber++;starAnswered=false;
+ $('starQText').textContent=q.q;$('starFeedback').textContent='';
+ $('starContinue').disabled=true;
+ $('starOptions').innerHTML='';
+ q.a.forEach((v,i)=>{
+  const b=document.createElement('button');b.textContent=String.fromCharCode(65+i)+'. '+v;
+  b.style.textAlign='left';b.style.background='#4b5688';b.style.color='white';b.style.boxShadow='none';
+  b.onclick=()=>{
+   if(starAnswered)return;starAnswered=true;
+   [...$('starOptions').children].forEach((btn,j)=>{btn.disabled=true;if(j===q.c)btn.style.background='#267b65';else if(j===i)btn.style.background='#a34f69'});
+   if(i===q.c){score++;hud();$('starFeedback').textContent='¡Correcto! Ganaste la estrella. '+q.why}
+   else $('starFeedback').textContent='Esta vez no ganaste la estrella. '+q.why;
+   $('starContinue').disabled=false;
+  };
+  $('starOptions').appendChild(b);
+ });
+ show('starQuiz');
+}
+$('starContinue').onclick=()=>{
+ if(!starAnswered)return;
+ paused=false;show(null);last=performance.now();requestAnimationFrame(loop);
+};
+
+
+// Reto de preguntas tipo ICFES al perder todos los corazones.
+const retryQuestions=[
+ {q:'En una tienda, una mochila cuesta $60.000 y tiene un descuento del 10%. ¿Cuánto se paga?',a:['$6.000','$50.000','$54.000','$59.000'],c:2,why:'El 10% de $60.000 es $6.000; $60.000 − $6.000 = $54.000.'},
+ {q:'Un bus recorre 180 kilómetros en 3 horas a velocidad constante. ¿Cuántos kilómetros recorre en una hora?',a:['30 km','60 km','90 km','120 km'],c:1,why:'180 ÷ 3 = 60 kilómetros por hora.'},
+ {q:'Un jardín rectangular mide 9 m de largo y 4 m de ancho. ¿Cuál es su área?',a:['13 m²','26 m²','36 m²','45 m²'],c:2,why:'Área = largo × ancho = 9 × 4 = 36 m².'},
+ {q:'En una encuesta, 12 de 40 estudiantes prefieren el fútbol. ¿Qué porcentaje representan?',a:['12%','20%','30%','40%'],c:2,why:'12 ÷ 40 = 0,3; por tanto, equivale al 30%.'},
+ {q:'Si 3 cuadernos cuestan $12.000, ¿cuánto cuestan 5 al mismo precio?',a:['$15.000','$18.000','$20.000','$24.000'],c:2,why:'Cada cuaderno cuesta $4.000; cinco cuestan $20.000.'},
+ {q:'Resuelve la ecuación 3x + 5 = 20. ¿Cuál es el valor de x?',a:['3','5','7','8'],c:1,why:'3x = 15 y x = 5.'},
+ {q:'En una bolsa hay 4 fichas rojas y 6 azules. ¿Cuál es la probabilidad de sacar una roja?',a:['1/5','2/5','3/5','4/5'],c:1,why:'Hay 4 rojas de 10 fichas: 4/10 = 2/5.'},
+ {q:'¿Cuál es la media de los números 4, 6, 8 y 10?',a:['6','7','8','9'],c:1,why:'(4 + 6 + 8 + 10) ÷ 4 = 7.'},
+ {q:'En un mapa, 1 cm representa 5 km. Si dos lugares están separados por 4 cm, ¿cuál es la distancia real?',a:['9 km','15 km','20 km','25 km'],c:2,why:'4 × 5 = 20 kilómetros.'},
+ {q:'Una figura tiene cuatro lados iguales y cuatro ángulos rectos. ¿Qué figura es?',a:['Triángulo','Rectángulo','Romboide','Cuadrado'],c:3,why:'El cuadrado tiene cuatro lados iguales y cuatro ángulos rectos.'}
+];
+let retryAnswered=false;
+function openRetryQuestion(){
+ retryAnswered=false;
+ const q=retryQuestions[Math.floor(Math.random()*retryQuestions.length)];
+ $('retryQText').textContent=q.q;
+ $('retryFeedback').textContent='Lee el enunciado y selecciona una opción.';
+ $('retryPlay').disabled=true;
+ $('retryOptions').innerHTML='';
+ q.a.forEach((v,i)=>{
+  const b=document.createElement('button');
+  b.textContent=String.fromCharCode(65+i)+'. '+v;
+  b.style.textAlign='left';b.style.background='#4b5688';b.style.color='white';b.style.boxShadow='none';
+  b.onclick=()=>{
+   if(retryAnswered)return;
+   retryAnswered=true;
+   [...$('retryOptions').children].forEach((btn,j)=>{
+    btn.disabled=true;
+    if(j===q.c)btn.style.background='#267b65';
+    else if(j===i)btn.style.background='#a34f69';
+   });
+   if(i===q.c){
+    $('retryFeedback').textContent='¡Correcto! '+q.why+' Lumi está lista para otra aventura.';
+    $('retryPlay').disabled=false;
+   }else{
+    $('retryFeedback').textContent='¡Inténtalo de nuevo! '+q.why;
+    const again=document.createElement('button');
+    again.textContent='OTRA PREGUNTA';
+    again.style.background='#4b5688';again.style.color='white';again.style.boxShadow='none';
+    again.onclick=openRetryQuestion;
+    $('retryOptions').appendChild(again);
+   }
+  };
+  $('retryOptions').appendChild(b);
+ });
+ show('retryQuiz');
+}
+$('retryPlay').onclick=()=>{if(!retryAnswered)return;start()};
+
+$('openQuiz').onclick=startQuiz;
+$('qBack').onclick=()=>show('cover');
+$('qNext').onclick=()=>{
+ if(!qAnswered)return;
+ if(qIndex<quizQuestions.length-1){qIndex++;renderQuestion()}
+ else{$('qProgress').textContent='Práctica terminada';$('qText').textContent=`Obtuviste ${qScore} de ${quizQuestions.length} respuestas correctas.`;$('qOptions').innerHTML='';$('qFeedback').textContent=qScore===5?'¡Excelente trabajo!':qScore>=3?'¡Buen avance! Sigue practicando.':'Repasa los procedimientos y vuelve a intentarlo.';$('qNext').textContent='REPETIR CUESTIONARIO';$('qNext').disabled=false;$('qNext').onclick=startQuiz}
+};
+
+$('play').onclick=start;$('pauseBtn').onclick=togglePause;$('resume').onclick=togglePause;$('restart').onclick=restart;$('again').onclick=start;$('sound').onclick=()=>{$('sound').textContent=$('sound').textContent.includes('sí')?'🔇 Sonido: no':'🔊 Sonido: sí'};
+function background(){let t=worlds[world],gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,t.sky[0]);gr.addColorStop(1,t.sky[1]);g.fillStyle=gr;g.fillRect(0,0,W,H);for(let i=0;i<18;i++){let x=((i*139-cam*.2)%(W+100)+W+100)%(W+100)-40,y=35+(i*59)%270;g.fillStyle='#ffffff70';g.beginPath();g.arc(x,y,2+i%3,0,7);g.fill()}g.fillStyle='#fff4c477';g.beginPath();g.arc(805,95,43,0,7);g.fill();g.fillStyle='#ffffff22';for(let i=0;i<7;i++){let x=((i*200-cam*.4)%(W+240)+W+240)%(W+240)-80;g.beginPath();g.arc(x,480,110,Math.PI,0);g.fill()}}
+function drawWorld(){let t=worlds[world];plats.forEach(p=>{let x=p.x-cam;if(x+p.w<0||x>W)return;g.fillStyle=t.land;g.fillRect(x,p.y,p.w,p.h);g.fillStyle='#ffffff4a';g.fillRect(x,p.y,p.w,5);g.fillStyle='#17213d33';for(let j=15;j<p.w;j+=38)g.fillRect(x+j,p.y+12,13,4)});coins.forEach(o=>{if(o.got)return;let x=o.x-cam;if(x< -20||x>W+20)return;let y=o.y+Math.sin(frame*.08+o.p)*5;g.save();g.shadowColor=t.glow;g.shadowBlur=16;g.fillStyle=t.glow;g.beginPath();g.arc(x,y,13,0,7);g.fill();g.restore();g.fillStyle='#fff';g.font='bold 15px sans-serif';g.textAlign='center';g.fillText('✦',x,y+5)});spikes.forEach(s=>{let x=s.x+Math.sin(frame*.04+s.p)*12-cam;if(x< -40||x>W+40)return;g.fillStyle=t.bad;g.beginPath();g.moveTo(x,s.y+s.h);g.lineTo(x+s.w/2,s.y);g.lineTo(x+s.w,s.y+s.h);g.closePath();g.fill()});let x=gate.x-cam;if(x<W+100){g.save();g.shadowColor=t.glow;g.shadowBlur=28;g.strokeStyle=t.glow;g.lineWidth=9;g.beginPath();g.ellipse(x+27,gate.y+45,27,45,0,0,7);g.stroke();g.restore();g.fillStyle='#fff';g.font='25px sans-serif';g.textAlign='center';g.fillText('✧',x+27,gate.y+52)}}
+function drawHero(){let x=hero.x-cam,y=hero.y;g.save();if(grace>0&&Math.floor(frame/5)%2===0)g.globalAlpha=.4;g.shadowColor='#fff2b7';g.shadowBlur=17;g.fillStyle='#fff6e8';g.beginPath();g.moveTo(x+19,y);g.quadraticCurveTo(x+39,y,x+39,y+20);g.lineTo(x+39,y+42);g.quadraticCurveTo(x+32,y+37,x+26,y+45);g.quadraticCurveTo(x+19,y+53,x+12,y+45);g.quadraticCurveTo(x+6,y+38,x,y+44);g.lineTo(x,y+20);g.quadraticCurveTo(x,y,x+19,y);g.fill();g.shadowBlur=0;g.fillStyle='#493c70';g.beginPath();g.ellipse(x+13,y+22,3,5,0,0,7);g.ellipse(x+27,y+22,3,5,0,0,7);g.fill();g.strokeStyle='#493c70';g.lineWidth=2;g.beginPath();g.arc(x+20,y+29,4,0,Math.PI);g.stroke();g.fillStyle='#ff9bc2';g.beginPath();g.arc(x+7,y+31,4,0,7);g.arc(x+33,y+31,4,0,7);g.fill();g.fillStyle='#ffe18a';g.beginPath();g.moveTo(x+18,y-7);g.lineTo(x+12,y+3);g.lineTo(x+25,y+3);g.closePath();g.fill();g.restore()}
+function hit(){if(grace>0)return;lives--;hud();if(lives<=0){finish(false);return}hero.x=Math.max(35,hero.x-125);hero.y=300;hero.vy=0;grace=95}
+function update(){let p=hero,old=p.y;p.vx=keys.left?-4.6:keys.right?4.6:0;p.x+=p.vx;p.vy=Math.min(14,p.vy+.62);p.y+=p.vy;p.ground=false;plats.forEach(q=>{if(p.x+p.w>q.x&&p.x<q.x+q.w&&old+p.h<=q.y+8&&p.y+p.h>=q.y&&p.vy>=0){p.y=q.y-p.h;p.vy=0;p.ground=true}});if(p.y>H+65)hit();p.x=Math.max(0,p.x);coins.forEach(o=>{if(!o.got&&Math.abs(p.x+19-o.x)<26&&Math.abs(p.y+26-o.y)<34){o.got=true;openStarQuestion()}});spikes.forEach(s=>{let x=s.x+Math.sin(frame*.04+s.p)*12;if(grace<=0&&p.x+p.w-7>x&&p.x+7<x+s.w&&p.y+p.h>s.y+4&&p.y<s.y+s.h)hit()});if(grace>0)grace--;cam=Math.max(0,Math.min(p.x-260,gate.x-W+180));if(p.x+p.w>gate.x&&p.x<gate.x+gate.w&&p.y+p.h>gate.y&&p.y<gate.y+gate.h)finish(true)}
+function draw(){background();drawWorld();drawHero();g.fillStyle='#17213dbb';g.fillRect(15,14,265,38);g.fillStyle='#fff';g.font='bold 16px system-ui';g.textAlign='left';g.fillText('🌟 '+worlds[world].n,28,39)}
+function loop(now){if(!active||paused)return;let dt=Math.min((now-last)/16.67,2);last=now;frame+=dt;update();draw();if(active)requestAnimationFrame(loop)}
+build();draw();
+})();
+</script></body></html>
